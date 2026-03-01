@@ -1,81 +1,617 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
+
 <head>
-    <title>My Personal Website</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>🎯 DartMeme</title>
     <style>
-        /* CSS styling for the website */
-        body {
-            font-family: Arial, sans-serif;
-        }
-        
-        header {
-            background-color: #f2f2f2;
-            padding: 20px;
-            text-align: center;
-        }
-        
-        h1 {
-            color: #333333;
-            margin: 0;
-        }
-        
-        main {
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-        
-        h2 {
-            color: #333333;
-        }
-        
-        p {
-            line-height: 1.5;
-        }
-        
-        .resume-section {
-            margin-bottom: 30px;
-        }
-        
-        .resume-section h3 {
-            color: #333333;
-            margin-bottom: 10px;
-        }
-        
-        .resume-section ul {
+        * {
             margin: 0;
             padding: 0;
-            list-style-type: none;
+            box-sizing: border-box
         }
-        
-        .resume-section li {
-            margin-bottom: 5px;
+
+        body {
+            background: #0a0a0a;
+            color: #fff;
+            font-family: 'Segoe UI', sans-serif;
+            overflow: hidden;
+            height: 100vh
+        }
+
+        @keyframes popIn {
+            0% {
+                transform: scale(0) rotate(-20deg);
+                opacity: 0
+            }
+
+            50% {
+                transform: scale(1.2) rotate(3deg)
+            }
+
+            100% {
+                transform: scale(1) rotate(0);
+                opacity: 1
+            }
+        }
+
+        @keyframes slideUp {
+            0% {
+                transform: translateY(30px);
+                opacity: 0
+            }
+
+            100% {
+                transform: translateY(0);
+                opacity: 1
+            }
+        }
+
+        @keyframes shake {
+
+            0%,
+            100% {
+                transform: translateX(0)
+            }
+
+            15% {
+                transform: translateX(-10px) rotate(-1deg)
+            }
+
+            30% {
+                transform: translateX(10px) rotate(1deg)
+            }
+
+            45% {
+                transform: translateX(-6px)
+            }
+
+            60% {
+                transform: translateX(6px)
+            }
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                transform: scale(1)
+            }
+
+            50% {
+                transform: scale(1.08)
+            }
+        }
+
+        @keyframes bgPan {
+            0% {
+                background-position: 0% 50%
+            }
+
+            50% {
+                background-position: 100% 50%
+            }
+
+            100% {
+                background-position: 0% 50%
+            }
+        }
+
+        @keyframes particle {
+            0% {
+                transform: translateY(0) scale(1);
+                opacity: .9
+            }
+
+            100% {
+                transform: translateY(-140px) scale(0);
+                opacity: 0
+            }
+        }
+
+        @keyframes fadeIn {
+            0% {
+                opacity: 0
+            }
+
+            100% {
+                opacity: 1
+            }
+        }
+
+        @keyframes spinIn {
+            0% {
+                transform: rotate(-360deg) scale(0);
+                opacity: 0
+            }
+
+            60% {
+                transform: rotate(15deg) scale(1.15)
+            }
+
+            100% {
+                transform: rotate(0) scale(1);
+                opacity: 1
+            }
+        }
+
+        @keyframes glitch {
+
+            0%,
+            100% {
+                transform: translate(0)
+            }
+
+            25% {
+                transform: translate(-3px, 2px)
+            }
+
+            50% {
+                transform: translate(3px, -2px)
+            }
+
+            75% {
+                transform: translate(-2px, -1px)
+            }
+        }
+
+        .btn {
+            border: none;
+            cursor: pointer;
+            font-family: monospace;
+            font-weight: 700;
+            transition: transform .15s
+        }
+
+        .btn:hover {
+            transform: scale(1.05)
         }
     </style>
 </head>
+
 <body>
-    <header>
-        <h1>Welcome to My Personal Website</h1>
-    </header>
-    
-    <main>
-        <section>
-            <h2>About Me</h2>
-            <p>Hello! My name is Yugam and I am a web developer with a passion for creating beautiful and functional websites. I have experience in Java, JavaScript, and I am constantly learning and exploring new technologies. I believe in clean and efficient code and strive to create user-friendly web experiences.</p>
-        </section>
+    <div id="app"></div>
+    <script>
+        // ═══════════════════════════════════════
+        //  CONSTANTS
+        // ═══════════════════════════════════════
+        const SEGS = [20, 1, 18, 4, 13, 6, 10, 15, 2, 17, 3, 19, 7, 16, 8, 11, 14, 9, 12, 5];
+        const SA = 18, R_ = { dB: .032, sB: .08, iS: .48, t: .54, oS: .82, d: .88, b: 1 };
+        const PC = ["#E8333A", "#3B82F6", "#F59E0B", "#8B5CF6", "#EC4899", "#14B8A6"];
+
+        // ═══════════════════════════════════════
+        //  MEME LIBRARY — Giphy direct URLs
+        // ═══════════════════════════════════════
+        const MEMES = {
+            legendary: [
+                { gif: "https://media1.giphy.com/media/b09xElu8in7Lq/giphy.gif", cap: "BOW BEFORE THE KING", bg: "linear-gradient(135deg,#FFD700,#FF6B00)" },
+                { gif: "https://media1.giphy.com/media/14rk56liuv7mQo/giphy.gif", cap: "LIKE A BOSS", bg: "linear-gradient(135deg,#7F00FF,#E100FF)" },
+                { gif: "https://media1.giphy.com/media/o5mXsl8mQdYKKbB94F/giphy.gif", cap: "IS IT POSSIBLE TO LEARN THIS POWER?", bg: "linear-gradient(135deg,#00c6ff,#0072ff)" },
+                { gif: "https://media1.giphy.com/media/OHQVIrHQKfEtO/giphy.gif", cap: "ABSOLUTE GOD MODE", bg: "linear-gradient(135deg,#fc00ff,#00dbde)" },
+                { gif: "https://media1.giphy.com/media/artj1R8IMBIpbMcrdx/giphy.gif", cap: "GOAT BEHAVIOR", bg: "linear-gradient(135deg,#f7971e,#ffd200)" },
+                { gif: "https://media1.giphy.com/media/pUeXcg80cO8I8/giphy.gif", cap: "PERFECTION ACHIEVED", bg: "linear-gradient(135deg,#C6FFDD,#FBD786)" },
+                { gif: "https://media1.giphy.com/media/84CRvhy2DJlwA/giphy.gif", cap: "WITNESSED GREATNESS", bg: "linear-gradient(135deg,#f12711,#f5af19)" },
+            ],
+            beast: [
+                { gif: "https://media1.giphy.com/media/3o84sq21TxDH6PyYms/giphy.gif", cap: "UNLIMITED POWER!", bg: "linear-gradient(135deg,#f12711,#f5af19)" },
+                { gif: "https://media1.giphy.com/media/l46CyJmS9KUbokzsI/giphy.gif", cap: "CALL AN AMBULANCE... BUT NOT FOR ME", bg: "linear-gradient(135deg,#FF416C,#FF4B2B)" },
+                { gif: "https://media1.giphy.com/media/XreQmk7ETCak0/giphy.gif", cap: "BEAST MODE ACTIVATED", bg: "linear-gradient(135deg,#11998e,#38ef7d)" },
+                { gif: "https://media1.giphy.com/media/l0HlBO7eyXzSZkJri/giphy.gif", cap: "STOP HE'S ALREADY DEAD", bg: "linear-gradient(135deg,#ED213A,#93291E)" },
+                { gif: "https://media1.giphy.com/media/W9NYNGJbuTpQHyFlPL/giphy.gif", cap: "WARRIOR MODE", bg: "linear-gradient(135deg,#F09819,#EDDE5D)" },
+                { gif: "https://media1.giphy.com/media/6Q29oLyp7TsedLrp38/giphy.gif", cap: "THAT'S A LOT OF DAMAGE", bg: "linear-gradient(135deg,#00B4DB,#0083B0)" },
+            ],
+            hype: [
+                { gif: "https://media1.giphy.com/media/l0MYt5jPR6QX5APnG/giphy.gif", cap: "LET'S GOOOOO!", bg: "linear-gradient(135deg,#00b09b,#96c93d)" },
+                { gif: "https://media1.giphy.com/media/5GoVLqeAOo6PK/giphy.gif", cap: "CLEAN HIT!", bg: "linear-gradient(135deg,#43e97b,#38f9d7)" },
+                { gif: "https://media1.giphy.com/media/26u4cqiYI30juCOGY/giphy.gif", cap: "NICE ONE CHIEF", bg: "linear-gradient(135deg,#4facfe,#00f2fe)" },
+                { gif: "https://media1.giphy.com/media/YRuFixSNWFVcXaxpmX/giphy.gif", cap: "MONEY SHOT 💰", bg: "linear-gradient(135deg,#f7971e,#ffd200)" },
+                { gif: "https://media1.giphy.com/media/3oKIPf3C7HqqYBVcCk/giphy.gif", cap: "OH YEAH BABY", bg: "linear-gradient(135deg,#667eea,#764ba2)" },
+                { gif: "https://media1.giphy.com/media/timWG1lyyfcYw/giphy.gif", cap: "SMOOTH OPERATOR", bg: "linear-gradient(135deg,#a18cd1,#fbc2eb)" },
+                { gif: "https://media1.giphy.com/media/FHBKuj4EyNUpvIQXgK/giphy.gif", cap: "FEELING DANGEROUS", bg: "linear-gradient(135deg,#fc4a1a,#f7b733)" },
+            ],
+            meh: [
+                { gif: "https://media1.giphy.com/media/6v2UJRyFAsTXgvJrin/giphy.gif", cap: "IT AIN'T MUCH BUT IT'S HONEST WORK", bg: "linear-gradient(135deg,#636363,#a2ab58)" },
+                { gif: "https://media1.giphy.com/media/QMHoU66sBXqqLqYvGO/giphy.gif", cap: "THIS IS FINE 🔥", bg: "linear-gradient(135deg,#f093fb,#f5576c)" },
+                { gif: "https://media1.giphy.com/media/jUwpNzg9IcyrK/giphy.gif", cap: "WELL THAT HAPPENED", bg: "linear-gradient(135deg,#834d9b,#d04ed6)" },
+                { gif: "https://media1.giphy.com/media/6uGhT1O4sxpi8/giphy.gif", cap: "SLOW CLAP", bg: "linear-gradient(135deg,#3a6186,#89253e)" },
+                { gif: "https://media1.giphy.com/media/eGSllq1QBa1WFD0OYo/giphy.gif", cap: "MY HONEST REACTION", bg: "linear-gradient(135deg,#544a7d,#ffd452)" },
+                { gif: "https://media1.giphy.com/media/0KmEps7W2VDZYE3wpa/giphy.gif", cap: "INTERESTING STRATEGY...", bg: "linear-gradient(135deg,#606c88,#3f4c6b)" },
+                { gif: "https://media1.giphy.com/media/3uHqVTVsvzuZia7z39/giphy.gif", cap: "COULD BE WORSE... MAYBE", bg: "linear-gradient(135deg,#4e54c8,#8f94fb)" },
+            ],
+            roast: [
+                { gif: "https://media1.giphy.com/media/hyyV7pnbE0FqLNBAzs/giphy.gif", cap: "MY DISAPPOINTMENT IS IMMEASURABLE", bg: "linear-gradient(135deg,#c31432,#240b36)" },
+                { gif: "https://media1.giphy.com/media/jOpLbiGmHR9y0/giphy.gif", cap: "ARE YOU EVEN TRYING?", bg: "linear-gradient(135deg,#200122,#6f0000)" },
+                { gif: "https://media1.giphy.com/media/l2JehQ2GitHGdVG9Y/giphy.gif", cap: "BRUH. JUST BRUH.", bg: "linear-gradient(135deg,#0f0c29,#302b63)" },
+                { gif: "https://media1.giphy.com/media/a9xhxAxaqOfQs/giphy.gif", cap: "PARKOUR! (INTO FAILURE)", bg: "linear-gradient(135deg,#6441A5,#2a0845)" },
+                { gif: "https://media1.giphy.com/media/7TqDfr0EN8mnMguHOz/giphy.gif", cap: "I CAN'T EVEN WATCH", bg: "linear-gradient(135deg,#232526,#414345)" },
+                { gif: "https://media1.giphy.com/media/WI2ZbidnGj4nPjFZ34/giphy.gif", cap: "YOUR ANCESTORS ARE WATCHING", bg: "linear-gradient(135deg,#0B486B,#F56217)" },
+                { gif: "https://media1.giphy.com/media/wPUaB2niBJHZC/giphy.gif", cap: "GOOGLE: HOW TO THROW DARTS", bg: "linear-gradient(135deg,#4b134f,#c94b4b)" },
+                { gif: "https://media1.giphy.com/media/KGTTNpVuGVhN6/giphy.gif", cap: "TASK FAILED SUCCESSFULLY", bg: "linear-gradient(135deg,#667eea,#764ba2)" },
+                { gif: "https://media1.giphy.com/media/li0dswKqIZNpm/giphy.gif", cap: "DELETE THIS THROW", bg: "linear-gradient(135deg,#1f1c2c,#928DAB)" },
+            ],
+            bust: [
+                { gif: "https://media1.giphy.com/media/3oEjI67Egb8G9jqs3m/giphy.gif", cap: "YOU PLAYED YOURSELF", bg: "linear-gradient(135deg,#870000,#190A05)" },
+                { gif: "https://media1.giphy.com/media/3oAt21Fnr4i54uK8vK/giphy.gif", cap: "INSTANT REGRET", bg: "linear-gradient(135deg,#1a2a6c,#b21f1f)" },
+                { gif: "https://media1.giphy.com/media/l1J9u3TZfpmeDLkD6/giphy.gif", cap: "MATH IS HARD", bg: "linear-gradient(135deg,#141E30,#243B55)" },
+                { gif: "https://media1.giphy.com/media/L5WQjD4p8IpO0/giphy.gif", cap: "BUSTED! ABSOLUTELY BUSTED!", bg: "linear-gradient(135deg,#cb2d3e,#ef473a)" },
+                { gif: "https://media1.giphy.com/media/XzW42JpfV3nX2/giphy.gif", cap: "RIP THAT ROUND", bg: "linear-gradient(135deg,#0f0c29,#302b63)" },
+                { gif: "https://media1.giphy.com/media/lNMF3DXBSVvlhbME4R/giphy.gif", cap: "WHAT JUST HAPPENED", bg: "linear-gradient(135deg,#2c3e50,#fd746c)" },
+            ],
+            killer_kill: [
+                { gif: "https://media1.giphy.com/media/W9NYNGJbuTpQHyFlPL/giphy.gif", cap: "ELIMINATED! FATALITY!", bg: "linear-gradient(135deg,#cb2d3e,#ef473a)" },
+                { gif: "https://media1.giphy.com/media/l46CyJmS9KUbokzsI/giphy.gif", cap: "ANOTHER ONE BITES THE DUST", bg: "linear-gradient(135deg,#870000,#190A05)" },
+                { gif: "https://media1.giphy.com/media/l0HlBO7eyXzSZkJri/giphy.gif", cap: "TAKEN DOWN. NO MERCY.", bg: "linear-gradient(135deg,#200122,#6f0000)" },
+                { gif: "https://media1.giphy.com/media/n2Y3VO5jrtyaXHzvT8/giphy.gif", cap: "FINISH HIM!", bg: "linear-gradient(135deg,#c31432,#240b36)" },
+            ],
+            killer_become: [
+                { gif: "https://media1.giphy.com/media/3o84sq21TxDH6PyYms/giphy.gif", cap: "KILLER ACTIVATED!", bg: "linear-gradient(135deg,#b21f1f,#fdbb2d)" },
+                { gif: "https://media1.giphy.com/media/4pYEl2h5Y1RZZCtMcS/giphy.gif", cap: "NOW THE REAL GAME STARTS", bg: "linear-gradient(135deg,#c31432,#240b36)" },
+                { gif: "https://media1.giphy.com/media/80UiDzgw8opqTvIFWe/giphy.gif", cap: "LOCKED AND LOADED", bg: "linear-gradient(135deg,#f12711,#f5af19)" },
+                { gif: "https://media1.giphy.com/media/GnX61exfc2VKsaduol/giphy.gif", cap: "THE HUNT BEGINS", bg: "linear-gradient(135deg,#870000,#190A05)" },
+            ],
+        };
+        const RULES = {
+            standard501: {
+                name: "501", rules: [
+                    { i: "🎯", t: "Goal", d: "Start at 501. First to exactly 0 wins!" },
+                    { i: "🎲", t: "Turns", d: "3 darts per turn. Subtract total from score." },
+                    { i: "⚡", t: "Zones", d: "Thin outer = Double 2×. Thin inner = Treble 3×. Bull 25/50." },
+                    { i: "💥", t: "Bust", d: "Below 0 or land on 1? Turn resets." },
+                    { i: "🏆", t: "Win", d: "Hit exactly 0!" },
+                ]
+            },
+            aroundTheClock: {
+                name: "Around the Clock", rules: [
+                    { i: "🎯", t: "Goal", d: "Hit 1 through 20 in order." },
+                    { i: "🔄", t: "Play", d: "Hit your current number to advance. Double=skip 2, Treble=skip 3." },
+                    { i: "🏆", t: "Win", d: "First past 20 wins!" },
+                ]
+            },
+            killer: {
+                name: "Killer", rules: [
+                    { i: "🎯", t: "Setup", d: "Each player gets a number on the board (shown in their color)." },
+                    { i: "🔪", t: "Become Killer", d: "Hit YOUR number 3 times to become a Killer." },
+                    { i: "☠️", t: "Hunt", d: "Killers hit OTHER players' numbers to take lives. 3 lives each." },
+                    { i: "⚠️", t: "Self-Hit", d: "Killers who hit their OWN number lose a life!" },
+                    { i: "🏆", t: "Win", d: "Last player standing wins!" },
+                ]
+            },
+        };
+
+        const KNUMS = { 2: [20, 3], 3: [20, 6, 3], 4: [20, 13, 2, 19], 5: [20, 13, 2, 19, 8], 6: [20, 4, 10, 17, 19, 8] };
+        function rng(a) { return a[Math.floor(Math.random() * a.length)] }
+        function p2s(d, a) {
+            if (d <= R_.dB) return { seg: 25, mul: 2, sc: 50, lbl: "D-BULL" };
+            if (d <= R_.sB) return { seg: 25, mul: 1, sc: 25, lbl: "S-BULL" };
+            if (d > R_.b) return { seg: 0, mul: 0, sc: 0, lbl: "MISS" };
+            let a2 = ((a + SA / 2) % 360 + 360) % 360, i = Math.floor(a2 / SA) % 20, s = SEGS[i];
+            if (d <= R_.iS) return { seg: s, mul: 1, sc: s, lbl: "S" + s };
+            if (d <= R_.t) return { seg: s, mul: 3, sc: s * 3, lbl: "T" + s };
+            if (d <= R_.oS) return { seg: s, mul: 1, sc: s, lbl: "S" + s };
+            if (d <= R_.d) return { seg: s, mul: 2, sc: s * 2, lbl: "D" + s };
+            return { seg: 0, mul: 0, sc: 0, lbl: "MISS" };
+        }
+        function memeCat(sc, mul, seg) {
+            if (seg === 25 && mul === 2) return "legendary"; if (seg === 25) return "hype";
+            if (mul === 3 && sc >= 45) return "beast"; if (mul === 3) return "hype";
+            if (sc === 0) return "roast"; if (sc <= 5) return "roast"; if (sc >= 40) return "beast";
+            if (sc <= 15) return "meh"; return "hype";
+        }
         
-        <section class="resume-section">
-            <h3>Resume</h3>
-            <ul>
-                <li><strong>Education:</strong> Bachelor's Degree from IIT Kharagpur</li>
-                <li><strong>Experience:</strong> Web Developer at DP World (2021-current)</li>
-                <li><strong>Skills:</strong> HTML, CSS, JavaScript, Responsive Design, Git</li>
-            </ul>
-        </section>
-    </main>
-    
-    <footer>
-        <p>&copy; 2023 My Personal Website. All rights reserved.</p>
-    </footer>
+        // return a non-repeating meme from a category, resetting when all have been shown
+        function pickMeme(cat) {
+            const arr = MEMES[cat] || [];
+            if (!S.usedMemes[cat] || S.usedMemes[cat].length >= arr.length) {
+                S.usedMemes[cat] = [];
+            }
+            if (arr.length === 0) return null;
+            let idx;
+            do {
+                idx = Math.floor(Math.random() * arr.length);
+            } while (S.usedMemes[cat].includes(idx) && S.usedMemes[cat].length < arr.length);
+            S.usedMemes[cat].push(idx);
+            // include category so we can recover if the gif fails
+            return { ...arr[idx], cat };
+        }
+
+        // ═══════════════════════════════════════
+        //  STATE
+        // ═══════════════════════════════════════
+        let S = {
+            phase: "setup", gid: "standard501",
+            players: [{ n: "", c: PC[0] }, { n: "", c: PC[1] }],
+            scores: [], targets: [], cp: 0, darts: [], turnSc: 0,
+            meme: null, winner: null, hist: [], sr: false, srStep: 0,
+            kNums: [], kHits: [], kIsK: [], kLives: [],
+            usedMemes: {}          // track which memes have been shown per category
+        }; 
+
+        function snap() { return JSON.parse(JSON.stringify({ scores: S.scores, targets: S.targets, cp: S.cp, darts: S.darts, turnSc: S.turnSc, kHits: S.kHits, kIsK: S.kIsK, kLives: S.kLives })) }
+        function restore(s) { Object.assign(S, s); S.winner = null; S.meme = null; }
+
+        // ═══════════════════════════════════════
+        //  SVG BOARD BUILDER
+        // ═══════════════════════════════════════
+        function boardSVG(sz, hl) {
+            const R = sz / 2;
+            let svg = `<svg width="${sz}" height="${sz}" viewBox="${-R - 20} ${-R - 20} ${sz + 40} ${sz + 40}" style="cursor:crosshair;user-select:none;display:block">`;
+            svg += `<circle cx="0" cy="0" r="${R * R_.b}" fill="#1a1a1a" stroke="#333" stroke-width="2"/>`;
+            for (let i = 0; i < 20; i++) {
+                const s1 = (i * SA - SA / 2 - 90) * Math.PI / 180, s2 = ((i + 1) * SA - SA / 2 - 90) * Math.PI / 180, ev = i % 2 === 0;
+                const sn = SEGS[i], hc = hl[sn];
+                [[R_.sB, R_.iS, hc || (ev ? "#1a1a1a" : "#F2E8D5")], [R_.iS, R_.t, ev ? "#E8333A" : "#2D8C4E"],
+                [R_.t, R_.oS, hc || (ev ? "#1a1a1a" : "#F2E8D5")], [R_.oS, R_.d, ev ? "#E8333A" : "#2D8C4E"]
+                ].forEach(([ri, ro, cl], j) => {
+                    const ir = ri * R, or = ro * R, c1 = Math.cos(s1), n1 = Math.sin(s1), c2 = Math.cos(s2), n2 = Math.sin(s2);
+                    const op = hc && (j === 0 || j === 2) ? "0.65" : "1";
+                    svg += `<path d="M${c1 * ir} ${n1 * ir}A${ir} ${ir} 0 0 1 ${c2 * ir} ${n2 * ir}L${c2 * or} ${n2 * or}A${or} ${or} 0 0 0 ${c1 * or} ${n1 * or}Z" fill="${cl}" stroke="#333" stroke-width=".5" opacity="${op}"/>`;
+                });
+                const la = (i * SA - 90) * Math.PI / 180, lr = R_.b * R + 14;
+                svg += `<text x="${Math.cos(la) * lr}" y="${Math.sin(la) * lr}" fill="${hc || '#888'}" font-size="11" font-weight="${hc ? '900' : '700'}" text-anchor="middle" dominant-baseline="central" style="font-family:monospace;pointer-events:none">${sn}</text>`;
+            }
+            svg += `<circle cx="0" cy="0" r="${R * R_.sB}" fill="#2D8C4E" stroke="#333" stroke-width=".5"/>`;
+            svg += `<circle cx="0" cy="0" r="${R * R_.dB}" fill="#E8333A" stroke="#333" stroke-width=".5"/>`;
+            S.darts.forEach(d => {
+                svg += `<circle cx="${d.x * R}" cy="${d.y * R}" r="5" fill="#FFD700" stroke="#000" stroke-width="1.5"/>`;
+                svg += `<circle cx="${d.x * R}" cy="${d.y * R}" r="2" fill="#000"/>`;
+            });
+            svg += `</svg>`;
+            return svg;
+        }
+
+        // ═══════════════════════════════════════
+        //  RENDER
+        // ═══════════════════════════════════════
+        function render() {
+            const $ = document.getElementById("app");
+            if (S.phase === "setup") return renderSetup($);
+            if (S.phase === "over") return renderOver($);
+            renderGame($);
+        }
+
+        function renderSetup($) {
+            let h = `<div style="min-height:100vh;background:linear-gradient(135deg,#080808,#120818,#081018);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px">`;
+            h += `<div style="font-size:clamp(32px,7vw,58px);font-weight:900;font-family:Impact,sans-serif;letter-spacing:3">🎯 DART<span style="color:#E8333A">MEME</span></div>`;
+            h += `<div style="color:#444;font-size:11px;letter-spacing:4px;font-family:monospace;margin-top:4px">THROW · SCORE · GET ROASTED</div>`;
+            // Game select
+            h += `<div style="margin-top:20px;display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:center">`;
+            for (const [id, g] of Object.entries(RULES)) {
+                const sel = S.gid === id;
+                h += `<button class="btn" onclick="S.gid='${id}';render()" style="padding:7px 14px;border-radius:9px;border:2px solid ${sel ? '#E8333A' : '#181818'};background:${sel ? 'rgba(232,51,58,.1)' : 'rgba(255,255,255,.02)'};color:${sel ? '#fff' : '#555'};font-size:11px">${g.name}</button>`;
+            }
+            h += `<button class="btn" onclick="S.sr=true;S.srStep=0;render()" style="width:28px;height:28px;border-radius:50%;border:2px solid #FFD700;background:none;color:#FFD700;font-size:13px">ℹ</button></div>`;
+            // Players
+            h += `<div style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap;justify-content:center">`;
+            S.players.forEach((p, i) => {
+                h += `<div style="background:rgba(255,255,255,.03);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;align-items:center;gap:6px;position:relative;border:1px solid #151515">`;
+                if (S.players.length > 2) h += `<button onclick="S.players.splice(${i},1);render()" style="position:absolute;top:3px;right:7px;background:none;border:none;color:#333;cursor:pointer;font-size:11px">✕</button>`;
+                h += `<div style="width:42px;height:42px;border-radius:50%;background:${p.c};display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:900;color:#fff;font-family:monospace;border:2px solid rgba(255,255,255,.12)">${(p.n || '?')[0].toUpperCase()}</div>`;
+                h += `<input value="${p.n}" oninput="S.players[${i}].n=this.value;render()" placeholder="Player ${i + 1}" maxlength="10" style="background:rgba(255,255,255,.04);border:1px solid #1a1a1a;border-radius:8px;padding:6px 8px;color:#fff;text-align:center;width:82px;font-size:12px;outline:none;font-family:monospace"/>`;
+                h += `</div>`;
+            });
+            if (S.players.length < 6) h += `<button class="btn" onclick="S.players.push({n:'',c:PC[S.players.length%6]});render()" style="width:95px;height:95px;border-radius:12px;border:2px dashed #181818;background:none;color:#2a2a2a;font-size:22px">+</button>`;
+            h += `</div>`;
+            const ok = S.players.every(p => p.n.trim());
+            h += `<button class="btn" ${ok ? `onclick="startGame()"` : 'disabled'} style="margin-top:20px;padding:11px 40px;font-size:15px;background:${ok ? 'linear-gradient(135deg,#E8333A,#b0222a)' : '#151515'};color:${ok ? '#fff' : '#333'};border:none;border-radius:11px;letter-spacing:2px;box-shadow:${ok ? '0 4px 20px rgba(232,51,58,.25)' : 'none'}">START GAME</button>`;
+            h += `</div>`;
+            if (S.sr) h += rulesHTML();
+            $.innerHTML = h;
+        }
+
+        function renderOver($) {
+            $.innerHTML = `<div style="min-height:100vh;background:linear-gradient(135deg,#080808,#081a08);display:flex;flex-direction:column;align-items:center;justify-content:center">
+    <div style="font-size:80px">🏆</div>
+    <div style="font-size:42px;font-weight:900;font-family:Impact,sans-serif;margin-top:10px;letter-spacing:2px">${S.winner} WINS!</div>
+    <button class="btn" onclick="S.phase='setup';render()" style="margin-top:24px;padding:11px 36px;font-size:15px;background:#2D8C4E;color:#fff;border:none;border-radius:10px">PLAY AGAIN</button>
+  </div>`;
+        }
+
+        function renderGame($) {
+            const hl = {};
+            if (S.gid === "killer") S.kNums.forEach((n, i) => { if (S.kLives[i] > 0) hl[n] = S.players[i].c; });
+            const bsz = Math.min(420, Math.min(window.innerHeight - 16, window.innerWidth * .46));
+            const cp = S.players[S.cp];
+
+            let h = `<div style="height:100vh;display:flex;overflow:hidden">`;
+            // LEFT
+            h += `<div id="boardArea" style="flex:0 0 50%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#0d0d0d;border-right:1px solid #141414">`;
+            h += boardSVG(bsz, hl);
+            if (S.gid === "aroundTheClock") h += `<div style="margin-top:6px;font-family:monospace;font-size:12px;color:#FFD700;font-weight:700">🎯 Target: ${S.targets[S.cp] <= 20 ? S.targets[S.cp] : 'DONE!'}</div>`;
+            if (S.gid === "killer" && !S.kIsK[S.cp]) h += `<div style="margin-top:6px;font-family:monospace;font-size:12px;color:${cp.c};font-weight:700">🎯 Hit ${S.kNums[S.cp]} to become Killer (${S.kHits[S.cp]}/3)</div>`;
+            if (S.gid === "killer" && S.kIsK[S.cp]) h += `<div style="margin-top:6px;font-family:monospace;font-size:12px;color:#E8333A;font-weight:700">🔪 KILLER — Hit other players' numbers!</div>`;
+            h += `</div>`;
+
+            // RIGHT
+            h += `<div style="flex:0 0 50%;display:flex;flex-direction:column;padding:10px 14px;overflow:auto">`;
+            // Header
+            h += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-shrink:0"><div style="font-size:14px;font-weight:900;font-family:monospace;letter-spacing:2px">🎯 DART<span style="color:#E8333A">MEME</span> <span style="font-size:10px;color:#444;margin-left:5px">${RULES[S.gid]?.name}</span></div>`;
+            h += `<button class="btn" onclick="S.sr=true;S.srStep=0;render()" style="width:24px;height:24px;border-radius:50%;border:2px solid #FFD700;background:none;color:#FFD700;font-size:11px">ℹ</button></div>`;
+            // Players
+            h += `<div style="display:flex;gap:5px;margin-bottom:8px;flex-shrink:0;flex-wrap:wrap">`;
+            S.players.forEach((p, i) => {
+                const dead = S.gid === "killer" && S.kLives[i] <= 0;
+                const act = i === S.cp;
+                h += `<div style="flex:1;min-width:60px;background:${act ? 'rgba(232,51,58,.1)' : 'rgba(255,255,255,.02)'};border:2px solid ${act ? '#E8333A' : '#121212'};border-radius:9px;padding:6px 4px;text-align:center;opacity:${dead ? .45 : 1}">`;
+                h += `<div style="width:26px;height:26px;border-radius:50%;background:${dead ? '#333' : p.c};display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;color:${dead ? '#555' : '#fff'};font-family:monospace;border:2px solid rgba(255,255,255,.12)">${p.n[0].toUpperCase()}</div>`;
+                h += `<div style="font-size:9px;color:${act ? '#E8333A' : '#555'};font-weight:700;font-family:monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:2px">${p.n}</div>`;
+                if (S.gid === "standard501") h += `<div style="font-size:20px;font-weight:900;font-family:monospace;color:${act ? '#fff' : '#666'}">${S.scores[i]}</div>`;
+                if (S.gid === "aroundTheClock") h += `<div style="font-size:20px;font-weight:900;font-family:monospace;color:${act ? '#fff' : '#666'}">${S.scores[i]}/20</div>`;
+                if (S.gid === "killer") {
+                    h += `<div style="font-size:10px;font-family:monospace;color:${S.kIsK[i] ? '#E8333A' : '#555'};font-weight:700">${dead ? 'DEAD' : S.kIsK[i] ? '🔪 KILLER' : S.kHits[i] + '/3'}</div>`;
+                    if (!dead) h += `<div style="font-size:11px;font-family:monospace">${'❤️'.repeat(S.kLives[i])}${'🖤'.repeat(3 - S.kLives[i])}</div>`;
+                    h += `<div style="font-size:9px;color:${p.c};font-weight:700;font-family:monospace">#${S.kNums[i]}</div>`;
+                }
+                if (act && !dead) h += `<div style="font-size:7px;color:#E8333A;font-weight:700;letter-spacing:2px">▶ TURN</div>`;
+                h += `</div>`;
+            });
+            h += `</div>`;
+            // Last throw
+            h += `<div style="flex:1;background:rgba(255,255,255,.015);border-radius:11px;border:1px solid #121212;display:flex;align-items:center;justify-content:center;min-height:60px;margin-bottom:8px">`;
+            if (S.darts.length > 0) {
+                const ld = S.darts[S.darts.length - 1];
+                h += `<div style="text-align:center"><div style="font-size:34px;font-weight:900;font-family:Impact,sans-serif;color:#FFD700;letter-spacing:2px">${ld.lbl}</div><div style="font-size:12px;color:#555;font-family:monospace">+${ld.sc} pts</div></div>`;
+            } else h += `<div style="color:#1a1a1a;font-size:11px;font-family:monospace">🎯 Tap board to throw</div>`;
+            h += `</div>`;
+            // Dart slots
+            h += `<div style="display:flex;gap:4px;margin-bottom:8px;flex-shrink:0">`;
+            [0, 1, 2].forEach(i => {
+                const d = S.darts[i];
+                h += `<div style="flex:1;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;background:${d ? 'rgba(232,51,58,.08)' : 'rgba(255,255,255,.01)'};border:1px solid ${d ? 'rgba(232,51,58,.25)' : '#121212'};font-size:10px;font-weight:700;font-family:monospace;color:${d ? '#ccc' : '#222'}">${d ? d.lbl + ' (' + d.sc + ')' : 'D' + (i + 1)}</div>`;
+            });
+            h += `</div>`;
+            // Actions
+            h += `<div style="display:flex;gap:5px;align-items:center;flex-shrink:0;flex-wrap:wrap">`;
+            if (S.gid === "standard501") h += `<div style="font-family:monospace;font-size:11px;color:#444;margin-right:auto">Turn: <span style="color:#FFD700;font-weight:700;font-size:15px">${S.turnSc}</span></div>`;
+            else h += `<div style="margin-right:auto"></div>`;
+            if (S.darts.length > 0 && !S.meme) h += `<button class="btn" onclick="undo()" style="padding:6px 12px;font-size:10px;background:rgba(255,165,0,.08);color:#FFA500;border:1px solid rgba(255,165,0,.2);border-radius:7px">↩ UNDO</button>`;
+            if (S.darts.length > 0 && !S.meme) h += `<button class="btn" onclick="endTurn()" style="padding:6px 14px;font-size:10px;background:#2D8C4E;color:#fff;border:none;border-radius:7px">${S.darts.length >= 3 ? 'NEXT →' : 'END TURN →'}</button>`;
+            h += `<button class="btn" onclick="S.phase='setup';render()" style="padding:6px 10px;font-size:10px;background:#111;color:#333;border:1px solid #181818;border-radius:7px">QUIT</button>`;
+            h += `</div></div></div>`;
+            // Fullscreen btn
+            if (!S.meme) h += `<button class="btn" onclick="toggleFS()" style="position:fixed;bottom:8px;right:8px;z-index:100;width:32px;height:32px;border-radius:8px;background:rgba(255,255,255,.06);border:1px solid #222;color:#777;font-size:15px">⛶</button>`;
+            if (S.meme) h += memeHTML(S.meme);
+            if (S.sr) h += rulesHTML();
+            $.innerHTML = h;
+            // Attach board click
+            const ba = document.getElementById("boardArea");
+            if (ba) { const svg = ba.querySelector("svg"); if (svg) svg.onclick = boardClick; }
+        }
+
+        function memeHTML(m) {
+            // assign ids so error handler can target elements
+            const imgId = 'memeImg';
+            const capId = 'memeCap';
+            let h = `<div onclick="dismissMeme()" style="position:fixed;inset:0;z-index:200;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;background-size:200% 200%;animation:bgPan 3s ease infinite;background:${m.bg}">`;
+            h += `<div style="position:absolute;inset:0;background:rgba(0,0,0,.35)"></div>`;
+            // particles
+            for (let i = 0; i < 8; i++) h += `<div style="position:absolute;left:${10 + Math.random() * 80}%;bottom:20%;font-size:${16 + Math.random() * 20}px;animation:particle ${1.5 + Math.random() * 1.5}s ease-out ${Math.random() * .8}s forwards;pointer-events:none">✨</div>`;
+            h += `<div style="position:relative;z-index:1;text-align:center;padding:16px;max-width:90vw">`;
+            // GIF
+            h += `<div style="max-width:90vw;max-height:90vh;width:auto;height:auto;border-radius:12px;overflow:hidden;background:#111;display:flex;align-items:center;justify-content:center;border:2px solid rgba(255,255,255,.15);box-shadow:0 20px 60px rgba(0,0,0,.5);margin:0 auto;animation:popIn .5s ease-out">`;
+            h += `<img id="${imgId}" src="${m.gif}" style="max-width:100%;max-height:100%;object-fit:contain" onerror="handleMemeError('${m.cat}','${capId}','${imgId}')" /><div style="display:none;font-size:60px">😂</div>`;
+            h += `</div>`;
+            // Caption
+            h += `<div id="${capId}" style="margin-top:14px;font-size:clamp(20px,4.5vw,40px);font-weight:900;color:#fff;font-family:Impact,sans-serif;text-transform:uppercase;text-shadow:3px 3px 0 rgba(0,0,0,.7);letter-spacing:2px;line-height:1.15;animation:slideUp .4s ease-out .15s both">${m.cap}</div>`;
+            if (m.sub) h += `<div style="margin-top:8px;font-size:16px;color:rgba(255,255,255,.7);font-family:monospace;font-weight:700;animation:slideUp .4s ease-out .3s both">${m.sub}</div>`;
+            h += `<div style="margin-top:20px;color:rgba(255,255,255,.25);font-size:11px;letter-spacing:4px;font-family:monospace">TAP TO CONTINUE</div>`;
+            h += `</div></div>`;
+            return h;
+        }
+        
+        function handleMemeError(cat, capId, imgId) {
+            // log failing URL so authors can replace it manually if desired
+            const img = document.getElementById(imgId);
+            if (img) console.warn('meme failed to load, cat:', cat, 'url:', img.src);
+            // when an image fails, try another meme in same category
+            const newm = pickMeme(cat);
+            if (!newm) return;
+            const cap = document.getElementById(capId);
+            if (img) img.src = newm.gif;
+            if (cap) cap.textContent = newm.cap;
+        }
+
+        function rulesHTML() {
+            const r = RULES[S.gid]; if (!r) return ''; const c = r.rules[S.srStep];
+            let h = `<div onclick="S.sr=false;render()" style="position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:300;display:flex;align-items:center;justify-content:center">`;
+            h += `<div onclick="event.stopPropagation()" style="background:#1c1c1c;border-radius:16px;padding:20px 24px;max-width:370px;width:90%;color:#fff">`;
+            h += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><span style="font-size:17px;font-weight:900;font-family:monospace">📖 ${r.name}</span><button onclick="S.sr=false;render()" style="background:none;border:none;color:#555;font-size:20px;cursor:pointer">✕</button></div>`;
+            h += `<div style="text-align:center;padding:8px 0"><div style="font-size:40px">${c.i}</div><div style="font-size:14px;font-weight:800;color:#FFD700;margin:6px 0 4px;font-family:monospace">${c.t}</div><div style="font-size:13px;color:#bbb;line-height:1.5">${c.d}</div></div>`;
+            h += `<div style="display:flex;justify-content:center;gap:5px;margin:8px 0">`;
+            r.rules.forEach((_, i) => { h += `<div style="width:7px;height:7px;border-radius:50%;background:${i === S.srStep ? '#FFD700' : '#333'}"></div>`; });
+            h += `</div><div style="display:flex;gap:8px;justify-content:center">`;
+            if (S.srStep > 0) h += `<button class="btn" onclick="S.srStep--;render()" style="padding:6px 14px;background:#333;border:none;border-radius:8px;color:#fff;font-size:12px">← Back</button>`;
+            if (S.srStep < r.rules.length - 1) h += `<button class="btn" onclick="S.srStep++;render()" style="padding:6px 14px;background:#E8333A;border:none;border-radius:8px;color:#fff;font-size:12px">Next →</button>`;
+            else h += `<button class="btn" onclick="S.sr=false;render()" style="padding:6px 14px;background:#2D8C4E;border:none;border-radius:8px;color:#fff;font-size:12px">Got it ✓</button>`;
+            h += `</div></div></div>`; return h;
+        }
+
+        // ═══════════════════════════════════════
+        //  GAME LOGIC
+        // ═══════════════════════════════════════
+        function startGame() {
+            const pls = S.players.map((p, i) => ({ n: p.n.trim(), c: p.c, id: 'p' + i }));
+            S.players = pls; S.cp = 0; S.darts = []; S.turnSc = 0; S.meme = null; S.winner = null; S.hist = [];
+            S.usedMemes = {}; // clear meme history when a new game starts
+            if (S.gid === "standard501") { S.scores = pls.map(() => 501); S.targets = []; }
+            else if (S.gid === "aroundTheClock") { S.scores = pls.map(() => 0); S.targets = pls.map(() => 1); }
+            else if (S.gid === "killer") {
+                const nums = KNUMS[pls.length] || KNUMS[2];
+                S.kNums = nums; S.kHits = pls.map(() => 0); S.kIsK = pls.map(() => false); S.kLives = pls.map(() => 3); S.scores = [];
+            }
+            S.phase = "play"; render();
+        }
+
+        function boardClick(e) {
+            if (S.meme || S.darts.length >= 3 || S.winner) return;
+            const svg = e.currentTarget, rc = svg.getBoundingClientRect();
+            const sz = rc.width, R = sz / 2;
+            const x = e.clientX - rc.left - R, y = e.clientY - rc.top - R;
+            const d = Math.sqrt(x * x + y * y) / R, a = ((Math.atan2(y, x) * 180 / Math.PI) + 90 + 360) % 360;
+            const hit = { ...p2s(d, a), x: x / R, y: y / R };
+            S.hist.push(snap());
+
+            if (S.gid === "aroundTheClock") {
+                const t = S.targets[S.cp], isH = hit.seg === t, adv = isH ? hit.mul : 0, nt = Math.min(21, t + adv), won = nt > 20;
+                S.targets[S.cp] = nt; S.scores[S.cp] = nt - 1; S.darts.push(hit);
+                const cat = won ? "legendary" : isH ? (hit.mul >= 2 ? "beast" : "hype") : (hit.sc === 0 ? "roast" : "meh");
+                S.meme = { ...pickMeme(cat), sub: won ? `🏆 ${S.players[S.cp].n} WINS!` : undefined, isWin: won };
+                if (won) S.winner = S.players[S.cp].n;
+                render(); autoDissmiss(); return;
+            }
+
+            if (S.gid === "killer") {
+                S.darts.push(hit); const my = S.kNums[S.cp];
+                if (!S.kIsK[S.cp]) {
+                    if (hit.seg === my) { S.kHits[S.cp] += hit.mul; if (S.kHits[S.cp] >= 3) { S.kIsK[S.cp] = true; S.meme = { ...pickMeme("killer_become"), sub: S.players[S.cp].n + ' is KILLER!' }; } else S.meme = { ...pickMeme("hype"), sub: S.kHits[S.cp] + '/3 to Killer' }; }
+                    else S.meme = pickMeme(hit.sc === 0 ? "roast" : "meh");
+                } else {
+                    if (hit.seg === my) { S.kLives[S.cp] = Math.max(0, S.kLives[S.cp] - 1); checkKillerWin(); S.meme = { ...pickMeme("bust"), sub: 'Self-hit! ' + S.kLives[S.cp] + ' lives' }; }
+                    else { const vi = S.kNums.indexOf(hit.seg); if (vi >= 0 && vi !== S.cp && S.kLives[vi] > 0) { S.kLives[vi] = Math.max(0, S.kLives[vi] - 1); checkKillerWin(); S.meme = S.kLives[vi] <= 0 ? { ...pickMeme("killer_kill"), sub: S.players[vi].n + ' ELIMINATED!' } : { ...pickMeme("beast"), sub: S.players[vi].n + ': ' + S.kLives[vi] + ' lives' }; } else S.meme = pickMeme(hit.sc === 0 ? "roast" : "meh"); }
+                }
+                render(); autoDissmiss(); return;
+            }
+
+            // 501
+            const ns = S.scores[S.cp] - hit.sc;
+            if (ns < 0 || ns === 1) { S.darts.push(hit); S.meme = { ...rng(MEMES.bust), isBust: true }; render(); autoDissmiss(); return; }
+            S.scores[S.cp] = ns; S.darts.push(hit); S.turnSc += hit.sc;
+            if (ns === 0) { S.winner = S.players[S.cp].n; S.meme = { ...rng(MEMES.legendary), sub: '🏆 ' + S.players[S.cp].n + ' WINS!', isWin: true }; }
+            else S.meme = rng(MEMES[memeCat(hit.sc, hit.mul, hit.seg)]);
+            render(); autoDissmiss();
+        }
+
+        function checkKillerWin() {
+            const alive = S.kLives.reduce((a, v, i) => v > 0 ? [...a, i] : a, []);
+            if (alive.length <= 1 && alive.length > 0) { S.winner = S.players[alive[0]].n; S.meme = { ...rng(MEMES.legendary), sub: '🏆 ' + S.winner + ' WINS!', isWin: true }; }
+        }
+
+        function autoDissmiss() { clearTimeout(window._mt); window._mt = setTimeout(dismissMeme, 4500); }
+
+        function dismissMeme() {
+            clearTimeout(window._mt);
+            const wasBust = S.meme?.isBust, wasWin = S.meme?.isWin;
+            S.meme = null;
+            if (wasWin) { S.phase = "over"; render(); return; }
+            if (wasBust && S.hist.length) { const s = S.hist[S.hist.length - 1]; S.scores = s.scores; }
+            if (wasBust || S.darts.length >= 3) { S.darts = []; S.turnSc = 0; S.hist = []; nextPlayer(); }
+            render();
+        }
+
+        function nextPlayer() {
+            if (S.gid === "killer") { let n = (S.cp + 1) % S.players.length; for (let i = 0; i < S.players.length; i++) { if (S.kLives[n] > 0) break; n = (n + 1) % S.players.length; } S.cp = n; }
+            else S.cp = (S.cp + 1) % S.players.length;
+        }
+
+        function undo() { if (!S.hist.length || S.meme) return; const s = S.hist.pop(); restore(s); render(); }
+        function endTurn() { S.darts = []; S.turnSc = 0; S.hist = []; nextPlayer(); render(); }
+        function toggleFS() { if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(() => { }); else document.exitFullscreen().catch(() => { }); }
+
+        // ═══════════════════════════════════════
+        //  INIT
+        // ═══════════════════════════════════════
+        render();
+    </script>
 </body>
+
 </html>
