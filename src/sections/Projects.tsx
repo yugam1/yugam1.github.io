@@ -73,14 +73,28 @@ export default function Projects() {
                         </span>
                       )}
                     </div>
-                    <a 
-                      href={`https://github.com/${RESUME_DATA.personal.github}`}
-                      target="_blank"
-                      rel="noopener noreferrer" 
-                      className="text-white/50 hover:text-white transition-colors"
-                    >
-                      <Github className="w-5 h-5" />
-                    </a>
+                    <div className="flex gap-3">
+                      {project.link && (
+                        <a 
+                          href={project.link}
+                          target="_blank"
+                          rel="noopener noreferrer" 
+                          className="text-white/50 hover:text-white transition-colors"
+                          title="Open Project"
+                        >
+                          <Rocket className="w-5 h-5 rotate-45" />
+                        </a>
+                      )}
+                      <a 
+                        href={`https://github.com/${RESUME_DATA.personal.github}`}
+                        target="_blank"
+                        rel="noopener noreferrer" 
+                        className="text-white/50 hover:text-white transition-colors"
+                        title="View Code"
+                      >
+                        <Github className="w-5 h-5" />
+                      </a>
+                    </div>
                   </div>
 
                   <h3 className="text-xl font-bold text-white mb-2 group-hover:text-accent transition-colors">

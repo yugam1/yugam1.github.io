@@ -30,6 +30,7 @@ export interface WeekendProject {
   status: "In Progress" | "Built" | "Exploring";
   highlight?: boolean;
   award?: string;
+  link?: string;
 }
 
 export interface Skill {
@@ -135,10 +136,11 @@ export const RESUME_DATA: ResumeData = {
       award: "🏆 Winner",
     },
     {
-      name: "Virtual Try-On",
-      desc: "Local AI model for wardrobe visualization",
-      tech: ["Python", "Stable Diffusion", "LoRA"],
-      status: "Exploring",
+      name: "MemeDart 🎯",
+      desc: "Fun dart scoring app with meme feedback — throws darts, roasts you for missing!",
+      tech: ["HTML", "Vanilla JS", "CSS Animations", "Giphy"],
+      status: "Built",
+      link: "/memedart.html",
     },
   ],
   skills: [
