@@ -65,7 +65,7 @@ export const RESUME_DATA: ResumeData = {
     location: "Bengaluru, IN",
     email: "yugam.iitkgp@gmail.com",
     linkedin: "in/yugam-prasad",
-    github: "yugam66",
+    github: "yugam1",
   },
   tagline: "I build something new every weekend using AI",
   stats: {
@@ -141,6 +141,13 @@ export const RESUME_DATA: ResumeData = {
       tech: ["HTML", "Vanilla JS", "CSS Animations", "Giphy"],
       status: "Built",
       link: "/memedart.html",
+    },
+    {
+      name: "Karaoke App",
+      desc: "Cross-platform karaoke app with Bluetooth speaker support and dynamic echo damping",
+      tech: ["React Native", "Bluetooth", "Audio Processing"],
+      status: "In Progress",
+      link: "https://github.com/yugam1/KaraokeApp",
     },
   ],
   skills: [
