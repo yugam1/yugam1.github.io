@@ -8,7 +8,7 @@ import { RESUME_DATA } from '../data/resume';
 const subtitles = [
   "SDE2 @ DP World",
   "IIT KGP Alumnus",
-  "AI Weekend Builder",
+  "Vibe Coder",
   "Hackathon Winner"
 ];
 
