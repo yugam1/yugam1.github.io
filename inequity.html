@@ -1,0 +1,1020 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inequity Exchange — Not All People Are Equal</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box
+        }
+
+        :root {
+            --bg: #08080c;
+            --surface: #0e0e14;
+            --surface2: #131320;
+            --border: #1a1a2e;
+            --accent: #e11d48;
+            --accent2: #f43f5e;
+            --glow: rgba(225, 29, 72, 0.15);
+            --green: #22c55e;
+            --red: #ef4444;
+            --gold: #eab308;
+            --blue: #3b82f6;
+            --purple: #a855f7;
+            --text: #e0e0e0;
+            --muted: #666;
+            --dim: #444
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'SF Mono', 'Fira Code', 'Courier New', monospace;
+            font-size: 13px;
+            min-height: 100vh
+        }
+
+        .header {
+            background: linear-gradient(135deg, var(--surface), #1a0a16);
+            padding: 14px 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center
+        }
+
+        .logo {
+            font-size: 22px;
+            font-weight: 900;
+            letter-spacing: -0.5px;
+            color: #fff
+        }
+
+        .logo-accent {
+            color: var(--accent)
+        }
+
+        .logo-dim {
+            color: var(--dim);
+            font-weight: 400;
+            font-size: 14px
+        }
+
+        .tagline {
+            color: var(--muted);
+            font-size: 10px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-top: 2px
+        }
+
+        .header-stats {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            font-size: 12px
+        }
+
+        .stat-box {
+            text-align: right
+        }
+
+        .stat-label {
+            color: var(--dim);
+            font-size: 9px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            font-weight: 600
+        }
+
+        .divider {
+            width: 1px;
+            height: 28px;
+            background: var(--border)
+        }
+
+        .ticker-wrap {
+            overflow: hidden;
+            background: #06060a;
+            border-bottom: 1px solid #1a1a1a;
+            padding: 6px 0;
+            font-size: 11px;
+            white-space: nowrap
+        }
+
+        .ticker-inner {
+            display: inline-block;
+            animation: scroll 30s linear infinite;
+            color: #555
+        }
+
+        @keyframes scroll {
+            0% {
+                transform: translateX(0)
+            }
+
+            100% {
+                transform: translateX(-50%)
+            }
+        }
+
+        .nav {
+            display: flex;
+            gap: 2px;
+            padding: 8px 20px;
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            align-items: center
+        }
+
+        .nav-btn {
+            padding: 8px 20px;
+            border: none;
+            background: transparent;
+            color: var(--muted);
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            border-radius: 6px;
+            font-family: inherit;
+            transition: all .2s;
+            border-bottom: 2px solid transparent
+        }
+
+        .nav-btn.active {
+            background: var(--surface2);
+            color: var(--accent);
+            border-bottom-color: var(--accent)
+        }
+
+        .live-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--green);
+            animation: pulse 2s infinite;
+            display: inline-block
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1
+            }
+
+            50% {
+                opacity: .3
+            }
+        }
+
+        .main {
+            display: flex;
+            max-width: 1200px;
+            margin: 0 auto
+        }
+
+        .list {
+            flex: 1;
+            padding: 12px;
+            overflow-y: auto
+        }
+
+        .sidebar {
+            width: 340px;
+            border-left: 1px solid var(--border);
+            padding: 16px;
+            background: var(--surface)
+        }
+
+        .filter-bar {
+            display: flex;
+            gap: 6px;
+            padding: 0 0 10px;
+            flex-wrap: wrap;
+            align-items: center
+        }
+
+        .filter-btn {
+            padding: 4px 12px;
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--muted);
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 11px;
+            font-family: inherit
+        }
+
+        .filter-btn.active {
+            border-color: var(--accent);
+            background: var(--glow);
+            color: var(--accent)
+        }
+
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px 14px;
+            margin-bottom: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: all .15s
+        }
+
+        .card:hover {
+            border-color: #2a2a4a
+        }
+
+        .card.selected {
+            background: var(--surface2);
+            border-color: rgba(225, 29, 72, 0.4);
+            box-shadow: 0 0 20px var(--glow)
+        }
+
+        .rank-badge {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: 700;
+            color: var(--muted);
+            flex-shrink: 0
+        }
+
+        .card-icon {
+            font-size: 28px;
+            width: 36px;
+            text-align: center
+        }
+
+        .card-body {
+            flex: 1;
+            min-width: 0
+        }
+
+        .card-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline
+        }
+
+        .card-name {
+            font-weight: 700
+        }
+
+        .pair {
+            color: var(--accent);
+            font-size: 11px;
+            font-weight: 600
+        }
+
+        .card-price {
+            font-weight: 700;
+            font-size: 15px;
+            text-align: right
+        }
+
+        .card-bottom {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 4px
+        }
+
+        .chips {
+            display: flex;
+            gap: 4px
+        }
+
+        .chip {
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 10px;
+            background: var(--surface2);
+            color: var(--muted)
+        }
+
+        .chart-area {
+            display: flex;
+            align-items: center;
+            gap: 8px
+        }
+
+        .change {
+            font-weight: 600;
+            font-size: 12px;
+            min-width: 60px;
+            text-align: right
+        }
+
+        .green {
+            color: var(--green)
+        }
+
+        .red {
+            color: var(--red)
+        }
+
+        .sidebar-empty {
+            text-align: center;
+            color: var(--dim);
+            margin-top: 80px
+        }
+
+        .sidebar-empty div:first-child {
+            font-size: 48px;
+            margin-bottom: 12px;
+            opacity: .5
+        }
+
+        .detail-header {
+            text-align: center;
+            margin-bottom: 16px
+        }
+
+        .detail-icon {
+            font-size: 48px
+        }
+
+        .detail-name {
+            font-size: 18px;
+            font-weight: 800;
+            margin-top: 4px
+        }
+
+        .price-box {
+            display: flex;
+            justify-content: space-between;
+            padding: 14px;
+            background: var(--bg);
+            border-radius: 8px;
+            margin-bottom: 12px;
+            border: 1px solid var(--border)
+        }
+
+        .price-big {
+            font-size: 24px;
+            font-weight: 800;
+            color: #fff
+        }
+
+        .change-big {
+            font-size: 20px;
+            font-weight: 700
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 8px;
+            margin: 12px 0;
+            font-size: 11px
+        }
+
+        .stats-grid>div {
+            background: var(--bg);
+            border-radius: 6px;
+            padding: 8px;
+            text-align: center;
+            border: 1px solid var(--border)
+        }
+
+        .stats-grid .val {
+            font-weight: 600;
+            margin-top: 2px
+        }
+
+        .btn-row {
+            display: flex;
+            gap: 8px;
+            margin-top: 4px
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            color: #fff;
+            cursor: pointer;
+            font-weight: 700;
+            font-size: 13px;
+            font-family: inherit;
+            width: 100%;
+            transition: all .15s
+        }
+
+        .btn-long {
+            background: linear-gradient(135deg, #16a34a, #15803d)
+        }
+
+        .btn-short {
+            background: linear-gradient(135deg, #dc2626, #b91c1c)
+        }
+
+        .btn-close {
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            margin-top: 10px;
+            padding: 7px;
+            font-size: 11px
+        }
+
+        .about-pair {
+            margin-top: 14px;
+            padding: 10px;
+            background: var(--bg);
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            font-size: 11px;
+            color: var(--muted)
+        }
+
+        .about-pair .title {
+            font-weight: 600;
+            color: var(--dim);
+            margin-bottom: 4px
+        }
+
+        .page {
+            max-width: 860px;
+            margin: 0 auto;
+            padding: 20px;
+            display: none
+        }
+
+        .page.active {
+            display: block
+        }
+
+        .market-page.active {
+            display: flex
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-bottom: 24px
+        }
+
+        .summary-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px;
+            text-align: center
+        }
+
+        .summary-card .val {
+            font-weight: 700;
+            font-size: 18px;
+            margin-top: 6px
+        }
+
+        .section-label {
+            color: var(--muted);
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            font-weight: 600;
+            margin-bottom: 14px
+        }
+
+        .pos-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 8px
+        }
+
+        .pos-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center
+        }
+
+        .pos-left {
+            display: flex;
+            align-items: center;
+            gap: 10px
+        }
+
+        .pos-icon {
+            font-size: 28px
+        }
+
+        .tag {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 700;
+            margin-left: 6px
+        }
+
+        .tag-long {
+            background: #052e16;
+            color: var(--green)
+        }
+
+        .tag-short {
+            background: #3b0712;
+            color: var(--red)
+        }
+
+        .empty-state {
+            text-align: center;
+            color: var(--dim);
+            padding: 60px 0;
+            background: var(--surface);
+            border-radius: 8px;
+            border: 1px solid var(--border)
+        }
+
+        .empty-state .icon {
+            font-size: 40px;
+            margin-bottom: 12px;
+            opacity: .4
+        }
+
+        .history-list {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            overflow: hidden
+        }
+
+        .history-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 14px;
+            border-bottom: 1px solid var(--border)
+        }
+
+        .history-row:last-child {
+            border-bottom: none
+        }
+
+        .history-left {
+            display: flex;
+            align-items: center;
+            gap: 10px
+        }
+
+        .news-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 8px;
+            display: flex;
+            gap: 12px;
+            align-items: center
+        }
+
+        .news-body {
+            flex: 1
+        }
+
+        .news-title {
+            font-weight: 600;
+            margin-bottom: 4px;
+            line-height: 1.4
+        }
+
+        .news-meta {
+            display: flex;
+            gap: 8px;
+            font-size: 11px;
+            align-items: center
+        }
+
+        .news-btn {
+            padding: 6px 14px;
+            font-size: 11px;
+            white-space: nowrap;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: #fff;
+            cursor: pointer;
+            font-family: inherit;
+            font-weight: 600
+        }
+
+        .info-box {
+            margin-top: 20px;
+            padding: 16px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px
+        }
+
+        .info-box .label {
+            color: var(--accent);
+            font-size: 11px;
+            font-weight: 700;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 1px
+        }
+
+        .info-box p {
+            color: var(--muted);
+            font-size: 12px;
+            line-height: 1.7
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, .75);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            backdrop-filter: blur(4px)
+        }
+
+        .modal-overlay.open {
+            display: flex
+        }
+
+        .modal {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+            width: 360px;
+            box-shadow: 0 0 40px var(--glow)
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px
+        }
+
+        .modal-header .title {
+            font-size: 15px;
+            font-weight: 700
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: var(--muted);
+            cursor: pointer;
+            font-size: 18px
+        }
+
+        .modal-price-box {
+            padding: 12px;
+            background: var(--bg);
+            border-radius: 6px;
+            margin-bottom: 14px;
+            border: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between
+        }
+
+        .modal-price {
+            font-size: 22px;
+            font-weight: 800;
+            color: #fff
+        }
+
+        .modal-emoji {
+            font-size: 36px
+        }
+
+        .qty-row {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 14px
+        }
+
+        .qty-row input {
+            flex: 1;
+            padding: 10px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: #fff;
+            font-size: 14px;
+            font-family: inherit;
+            outline: none
+        }
+
+        .qty-btn {
+            padding: 8px 10px;
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--muted);
+            border-radius: 6px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 12px
+        }
+
+        .qty-btn.active {
+            border-color: var(--accent);
+            color: var(--accent);
+            background: var(--glow)
+        }
+
+        .cost-row {
+            padding: 10px 12px;
+            background: var(--bg);
+            border-radius: 6px;
+            margin-bottom: 16px;
+            border: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px
+        }
+
+        .cost-label {
+            color: var(--muted)
+        }
+
+        .cost-val {
+            font-weight: 700
+        }
+
+        @media(max-width:800px) {
+            .main {
+                flex-direction: column
+            }
+
+            .sidebar {
+                width: 100%;
+                border-left: none;
+                border-top: 1px solid var(--border)
+            }
+
+            .summary-grid {
+                grid-template-columns: repeat(2, 1fr)
+            }
+
+            .header {
+                flex-direction: column;
+                gap: 10px
+            }
+
+            .header-stats {
+                flex-wrap: wrap;
+                justify-content: center
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="header">
+        <div>
+            <div class="logo"><span class="logo-accent">INE</span>QUITY<span class="logo-dim">.exchange</span></div>
+            <div class="tagline">Not all people are equal</div>
+        </div>
+        <div class="header-stats">
+            <div class="stat-box">
+                <div class="stat-label">$INEQ Balance</div>
+                <div id="hdr-balance" style="color:var(--accent);font-weight:700;font-size:15px">$100,000</div>
+            </div>
+            <div class="divider"></div>
+            <div class="stat-box">
+                <div class="stat-label">Portfolio</div>
+                <div id="hdr-portfolio" style="font-weight:700;font-size:15px">$0</div>
+            </div>
+            <div class="divider"></div>
+            <div class="stat-box">
+                <div class="stat-label">Unrealized P&L</div>
+                <div id="hdr-pnl" style="font-weight:700;font-size:15px" class="green">+0.00</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="ticker-wrap">
+        <div class="ticker-inner" id="ticker"></div>
+    </div>
+
+    <div class="nav">
+        <button class="nav-btn active" data-view="market">Trade</button>
+        <button class="nav-btn" data-view="portfolio">Portfolio</button>
+        <button class="nav-btn" data-view="history">History</button>
+        <button class="nav-btn" data-view="news">Feed</button>
+        <div style="margin-left:auto;display:flex;align-items:center;gap:6px">
+            <div class="live-dot"></div>
+            <span style="color:var(--muted);font-size:10px">LIVE</span>
+        </div>
+    </div>
+
+    <div class="main market-page active" id="view-market">
+        <div class="list">
+            <div class="filter-bar" id="filter-bar"></div>
+            <div id="people-list"></div>
+        </div>
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-empty" id="sidebar-empty">
+                <div>⟵</div>
+                <div style="font-size:14px">Select a person to trade</div>
+                <div style="color:var(--muted);font-size:11px;margin-top:4px">Click any row on the left</div>
+            </div>
+            <div id="sidebar-detail" style="display:none"></div>
+        </div>
+    </div>
+
+    <div class="page" id="view-portfolio"></div>
+    <div class="page" id="view-history"></div>
+    <div class="page" id="view-news"></div>
+
+    <div class="modal-overlay" id="trade-modal">
+        <div class="modal" id="modal-content"></div>
+    </div>
+
+    <script>
+        const PEOPLE = [
+            { id: "elon", name: "Elon Musk", ticker: "ELON", sector: "Tech", basePrice: 234.5, img: "🚀", tags: ["Tesla", "SpaceX", "xAI"], rank: 1 },
+            { id: "jensen", name: "Jensen Huang", ticker: "JENSEN", sector: "Tech", basePrice: 112.8, img: "🟢", tags: ["NVIDIA", "AI Chips"], rank: 2 },
+            { id: "bezos", name: "Jeff Bezos", ticker: "BEZOS", sector: "Tech", basePrice: 198.3, img: "📦", tags: ["Amazon", "Blue Origin"], rank: 3 },
+            { id: "zuck", name: "Mark Zuckerberg", ticker: "ZUCK", sector: "Tech", basePrice: 178.2, img: "👓", tags: ["Meta", "AI"], rank: 4 },
+            { id: "arnault", name: "Bernard Arnault", ticker: "ARNLT", sector: "Luxury", basePrice: 165.4, img: "👜", tags: ["LVMH", "Luxury"], rank: 5 },
+            { id: "gates", name: "Bill Gates", ticker: "GATES", sector: "Tech", basePrice: 128.9, img: "🪟", tags: ["Microsoft", "Philanthropy"], rank: 6 },
+            { id: "ellison", name: "Larry Ellison", ticker: "LARRY", sector: "Tech", basePrice: 152.7, img: "☁️", tags: ["Oracle", "Cloud"], rank: 7 },
+            { id: "warren", name: "Warren Buffett", ticker: "BUFFT", sector: "Finance", basePrice: 138.1, img: "🏦", tags: ["Berkshire", "Value"], rank: 8 },
+            { id: "sama", name: "Sam Altman", ticker: "SAMA", sector: "AI", basePrice: 12.4, img: "🤖", tags: ["OpenAI", "Startup"], rank: 9 },
+            { id: "satya", name: "Satya Nadella", ticker: "SATYA", sector: "Tech", basePrice: 85.3, img: "💻", tags: ["Microsoft", "CEO"], rank: 10 },
+            { id: "ambani", name: "Mukesh Ambani", ticker: "AMBN", sector: "Energy", basePrice: 98.6, img: "⛽", tags: ["Reliance", "Jio"], rank: 11 },
+            { id: "adani", name: "Gautam Adani", ticker: "ADNI", sector: "Infra", basePrice: 72.1, img: "🏗️", tags: ["Adani Group", "Ports"], rank: 12 },
+        ];
+
+        const NEWS = [
+            { person: "elon", text: "SpaceX Starship completes orbital test — ELON/INEQ surges 8%", sentiment: "+", time: "2m ago" },
+            { person: "jensen", text: "NVIDIA announces next-gen Blackwell Ultra chips at GTC", sentiment: "+", time: "15m ago" },
+            { person: "sama", text: "OpenAI rumored $500B valuation — SAMA/INEQ hits all-time high", sentiment: "+", time: "32m ago" },
+            { person: "zuck", text: "Meta's AI assistant crosses 1B monthly active users", sentiment: "+", time: "1h ago" },
+            { person: "adani", text: "Adani Group faces new short-seller report — ADNI/INEQ drops 12%", sentiment: "-", time: "1h ago" },
+            { person: "warren", text: "Buffett increases Berkshire cash reserves to record $350B", sentiment: "~", time: "2h ago" },
+            { person: "ambani", text: "Jio Platforms IPO filing rumored — AMBN/INEQ rallies", sentiment: "+", time: "3h ago" },
+            { person: "bezos", text: "Blue Origin wins $5.8B NASA lunar logistics contract", sentiment: "+", time: "4h ago" },
+            { person: "satya", text: "Microsoft Copilot revenue exceeds $10B ARR milestone", sentiment: "+", time: "5h ago" },
+            { person: "gates", text: "Gates Foundation pledges $10B for climate tech over 5 years", sentiment: "~", time: "6h ago" },
+            { person: "ellison", text: "Oracle Cloud surpasses AWS in government contracts", sentiment: "+", time: "7h ago" },
+            { person: "arnault", text: "LVMH Q1 results miss estimates — luxury slowdown fears", sentiment: "-", time: "8h ago" },
+        ];
+
+        let prices = {}, history = {}, portfolio = [], balance = 100000, selected = null, currentView = "market", filter = "All", sort = "rank", tradeHist = [];
+
+        function genHistory(base) { const pts = []; let p = base * (0.85 + Math.random() * 0.1); for (let i = 30; i >= 0; i--) { p += (Math.random() - 0.48) * base * 0.02; p = Math.max(p, base * 0.5); pts.push({ day: i, price: +p.toFixed(2) }) } pts[pts.length - 1].price = base; return pts }
+
+        function miniSvg(data, color, w = 120, h = 40) { if (!data || data.length < 2) return ''; const mn = Math.min(...data.map(d => d.price)), mx = Math.max(...data.map(d => d.price)), rng = mx - mn || 1; const pts = data.map((d, i) => `${(i / (data.length - 1)) * w},${h - ((d.price - mn) / rng) * h * 0.8 - h * 0.1}`).join(' '); return `<svg width="${w}" height="${h}"><polyline points="${pts}" fill="none" stroke="${color}" stroke-width="1.5"/></svg>` }
+
+        function bigSvg(data, color) { if (!data || data.length < 2) return ''; const w = 500, h = 180, pad = 40, mn = Math.min(...data.map(d => d.price)), mx = Math.max(...data.map(d => d.price)), rng = mx - mn || 1; const pts = data.map((d, i) => ({ x: pad + (i / (data.length - 1)) * (w - pad * 2), y: h - pad - ((d.price - mn) / rng) * (h - pad * 2) })); const line = pts.map(p => `${p.x},${p.y}`).join(' '); const area = `${pts[0].x},${h - pad} ${line} ${pts[pts.length - 1].x},${h - pad}`; let grid = '';[0, .25, .5, .75, 1].forEach(f => { const v = mn + rng * (1 - f), y = pad + f * (h - pad * 2); grid += `<line x1="${pad}" y1="${y}" x2="${w - pad}" y2="${y}" stroke="#222" stroke-width="0.5" stroke-dasharray="3"/><text x="${pad - 4}" y="${y + 4}" text-anchor="end" fill="#555" font-size="9">$${v.toFixed(1)}B</text>` }); pts.forEach((p, i) => { if (i % 5 === 0) grid += `<text x="${p.x}" y="${h - 8}" text-anchor="middle" fill="#555" font-size="8">${30 - i}d</text>` }); return `<svg width="100%" viewBox="0 0 ${w} ${h}"><defs><linearGradient id="ag" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="${color}" stop-opacity="0.3"/><stop offset="100%" stop-color="${color}" stop-opacity="0.02"/></linearGradient></defs><polygon points="${area}" fill="url(#ag)"/><polyline points="${line}" fill="none" stroke="${color}" stroke-width="2"/>${grid}</svg>` }
+
+        function init() { PEOPLE.forEach(p => { prices[p.id] = { price: p.basePrice, prevPrice: p.basePrice, change: 0, changePct: 0, vol: Math.floor(Math.random() * 50000) + 10000, high: p.basePrice * 1.08, low: p.basePrice * 0.92 }; history[p.id] = genHistory(p.basePrice) }); buildFilters(); render(); setInterval(tick, 2000) }
+
+        let tickCount = 0;
+        function tick() {
+            tickCount++;
+            PEOPLE.forEach(p => { const o = prices[p.id]; const drift = (Math.random() - 0.48) * o.price * 0.008; const shock = Math.random() < 0.03 ? (Math.random() - 0.5) * o.price * 0.05 : 0; const np = Math.max(+(o.price + drift + shock).toFixed(2), 0.1); const ch = +(np - p.basePrice).toFixed(2); prices[p.id] = { price: np, prevPrice: o.price, change: ch, changePct: +((ch / p.basePrice) * 100).toFixed(2), vol: o.vol + Math.floor(Math.random() * 500), high: Math.max(o.high, np), low: Math.min(o.low, np) } });
+            if (tickCount % 5 === 0) PEOPLE.forEach(p => { const a = history[p.id]; if (a) { a.shift(); a.push({ day: 0, price: prices[p.id].price }) } });
+            render();
+        }
+
+        function fmt(n) { return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',') }
+
+        function calcPnL() { let total = 0, invested = 0; portfolio.forEach(pos => { const p = prices[pos.id]; if (!p) return; const pnl = pos.type === 'long' ? (p.price - pos.avgPrice) * pos.qty : (pos.avgPrice - p.price) * pos.qty; total += pnl; invested += pos.type === 'long' ? p.price * pos.qty : pos.avgPrice * pos.qty }); return { total, invested } }
+
+        function updateHeader() { const { total, invested } = calcPnL(); document.getElementById('hdr-balance').textContent = '$' + fmt(balance.toFixed(0)); document.getElementById('hdr-portfolio').textContent = '$' + fmt(invested.toFixed(0)); const el = document.getElementById('hdr-pnl'); el.textContent = (total >= 0 ? '+' : '') + total.toFixed(2); el.className = total >= 0 ? 'green' : 'red' }
+
+        function updateTicker() { const items = PEOPLE.map(p => { const d = prices[p.id]; if (!d) return ''; const up = d.changePct >= 0; return `${p.ticker}/INEQ ${up ? '▲' : '▼'}${Math.abs(d.changePct)}%` }).join('    ·    '); document.getElementById('ticker').innerHTML = `<span>${items}    ·    ${items}</span>` }
+
+        function buildFilters() { const sectors = ['All', ...new Set(PEOPLE.map(p => p.sector))]; let h = ''; sectors.forEach(s => { h += `<button class="filter-btn${filter === s ? ' active' : ''}" onclick="setFilter('${s}')">${s}</button>` }); h += '<span style="margin-left:auto;color:var(--dim);font-size:10px">Sort:</span>';[['rank', 'Rank'], ['change', 'Movers'], ['price', 'Price'], ['vol', 'Volume']].forEach(([k, l]) => { h += `<button class="filter-btn${sort === k ? ' active' : ''}" onclick="setSort('${k}')">${l}</button>` }); document.getElementById('filter-bar').innerHTML = h }
+
+        function setFilter(f) { filter = f; buildFilters(); renderList() }
+        function setSort(s) { sort = s; buildFilters(); renderList() }
+
+        function getSorted() { let f = PEOPLE.filter(p => filter === 'All' || p.sector === filter); return f.sort((a, b) => { const pa = prices[a.id], pb = prices[b.id]; if (!pa || !pb) return 0; if (sort === 'rank') return a.rank - b.rank; if (sort === 'change') return Math.abs(pb.changePct) - Math.abs(pa.changePct); if (sort === 'price') return pb.price - pa.price; if (sort === 'vol') return pb.vol - pa.vol; return 0 }) }
+
+        function renderList() {
+            const list = document.getElementById('people-list'); let h = ''; getSorted().forEach(p => {
+                const d = prices[p.id]; if (!d) return; const up = d.changePct >= 0; const col = up ? 'var(--green)' : 'var(--red)'; h += `<div class="card${selected === p.id ? ' selected' : ''}" onclick="selectPerson('${p.id}')">
+<div class="rank-badge">#${p.rank}</div><div class="card-icon">${p.img}</div><div class="card-body">
+<div class="card-top"><div><span class="card-name">${p.name}</span><span class="pair"> ${p.ticker}/INEQ</span></div><div class="card-price">$${d.price.toFixed(2)}B</div></div>
+<div class="card-bottom"><div class="chips">${p.tags.map(t => `<span class="chip">${t}</span>`).join('')}</div>
+<div class="chart-area">${miniSvg(history[p.id], col)}<span class="change" style="color:${col}">${up ? '▲' : '▼'} ${Math.abs(d.changePct)}%</span></div></div></div></div>`
+            }); list.innerHTML = h
+        }
+
+        function selectPerson(id) { selected = id; renderList(); renderSidebar() }
+
+        function renderSidebar() {
+            const se = document.getElementById('sidebar-empty'), sd = document.getElementById('sidebar-detail'); if (!selected) { se.style.display = 'block'; sd.style.display = 'none'; return } se.style.display = 'none'; sd.style.display = 'block'; const p = PEOPLE.find(x => x.id === selected), d = prices[selected]; if (!p || !d) return; const up = d.changePct >= 0; const col = up ? 'var(--green)' : 'var(--red)';
+            sd.innerHTML = `<div class="detail-header"><div class="detail-icon">${p.img}</div><div class="detail-name">${p.name}</div><div class="pair">${p.ticker}/INEQ · ${p.sector} · Rank #${p.rank}</div></div>
+<div class="price-box"><div><div class="stat-label">Net Worth</div><div class="price-big">$${d.price.toFixed(2)}B</div></div><div style="text-align:right"><div class="stat-label">24h Change</div><div class="change-big" style="color:${col}">${up ? '+' : ''}${d.changePct}%</div></div></div>
+${bigSvg(history[selected], up ? '#22c55e' : '#ef4444')}
+<div class="stats-grid"><div><div class="stat-label">24h Vol</div><div class="val">${(d.vol / 1000).toFixed(1)}K</div></div><div><div class="stat-label">24h High</div><div class="val">$${d.high.toFixed(1)}B</div></div><div><div class="stat-label">24h Low</div><div class="val">$${d.low.toFixed(1)}B</div></div></div>
+<div class="btn-row"><button class="btn btn-long" onclick="openTrade('${p.id}','buy')">▲ Long ${p.ticker}</button><button class="btn btn-short" onclick="openTrade('${p.id}','short')">▼ Short ${p.ticker}</button></div>
+<div class="about-pair"><div class="title">About this pair</div><span style="color:var(--accent)">${p.ticker}/INEQ</span> tracks ${p.name}'s estimated net worth. Price moves with real-time wealth data from public holdings, company valuations, and market sentiment.</div>`
+        }
+
+        function renderPortfolio() {
+            const { total, invested } = calcPnL(); const nw = balance + invested + total;
+            let h = `<div class="summary-grid">
+<div class="summary-card"><div class="stat-label">$INEQ Cash</div><div class="val" style="color:var(--accent)">$${fmt(balance.toFixed(0))}</div></div>
+<div class="summary-card"><div class="stat-label">Invested</div><div class="val" style="color:var(--blue)">$${fmt(invested.toFixed(0))}</div></div>
+<div class="summary-card"><div class="stat-label">Unrealized P&L</div><div class="val ${total >= 0 ? 'green' : 'red'}">${total >= 0 ? '+' : ''}$${total.toFixed(2)}</div></div>
+<div class="summary-card"><div class="stat-label">Net Worth</div><div class="val" style="color:var(--gold)">$${fmt(nw.toFixed(0))}</div></div></div>
+<div class="section-label">Open Positions (${portfolio.length})</div>`;
+            if (!portfolio.length) { h += `<div class="empty-state"><div class="icon">📊</div><div style="font-size:14px">No open positions</div><div style="color:var(--muted);font-size:11px;margin-top:4px">Go to Trade to open your first position</div></div>` }
+            portfolio.forEach((pos, i) => {
+                const p = PEOPLE.find(x => x.id === pos.id), d = prices[pos.id]; if (!p || !d) return; const pnl = pos.type === 'long' ? (d.price - pos.avgPrice) * pos.qty : (pos.avgPrice - d.price) * pos.qty; const pct = ((pnl / (pos.avgPrice * pos.qty)) * 100).toFixed(2);
+                h += `<div class="pos-card"><div class="pos-top"><div class="pos-left"><span class="pos-icon">${p.img}</span><div><div class="card-name">${p.name}<span class="tag tag-${pos.type}">${pos.type.toUpperCase()}</span></div><div style="color:var(--muted);font-size:11px"><span class="pair">${p.ticker}/INEQ</span> · ${pos.qty} coins @ $${pos.avgPrice.toFixed(2)}B avg</div></div></div><div style="text-align:right"><div class="${pnl >= 0 ? 'green' : 'red'}" style="font-weight:700;font-size:16px">${pnl >= 0 ? '+' : ''}${pnl.toFixed(2)} (${pct}%)</div><div style="color:var(--muted);font-size:11px">Mark: $${d.price.toFixed(2)}B</div></div></div>
+<button class="btn btn-close" onclick="closePosition(${i})">Close Position → ${pnl >= 0 ? 'Take Profit' : 'Cut Loss'} (${pnl >= 0 ? '+' : ''}${pnl.toFixed(2)})</button></div>`
+            });
+            document.getElementById('view-portfolio').innerHTML = h
+        }
+
+        function renderHistory() {
+            let h = `<div class="section-label">Trade History</div>`;
+            if (!tradeHist.length) { h += `<div class="empty-state"><div class="icon">📋</div><div>No trades yet</div></div>` } else { h += '<div class="history-list">'; tradeHist.forEach(t => { h += `<div class="history-row"><div class="history-left"><span class="tag tag-${t.type === 'LONG' ? 'long' : 'short'}">${t.type}</span><div><span class="pair">${t.ticker}/INEQ</span><span style="color:var(--muted);font-size:11px;margin-left:8px">${t.qty} @ $${t.price.toFixed(2)}B</span></div></div><div style="text-align:right">${t.pnl !== undefined ? `<div class="${t.pnl >= 0 ? 'green' : 'red'}" style="font-weight:600;font-size:12px">${t.pnl >= 0 ? '+' : ''}${t.pnl.toFixed(2)}</div>` : ''}<div style="color:var(--dim);font-size:10px">${t.time}</div></div></div>` }); h += '</div>' }
+            document.getElementById('view-history').innerHTML = h
+        }
+
+        function renderNews() {
+            const feed = NEWS.sort(() => Math.random() - 0.5).slice(0, 6); let h = `<div class="section-label">Live Feed — Market Moving News</div>`;
+            feed.forEach(n => {
+                const p = PEOPLE.find(x => x.id === n.person); const sCol = n.sentiment === '+' ? 'var(--green)' : n.sentiment === '-' ? 'var(--red)' : 'var(--gold)'; const sLabel = n.sentiment === '+' ? 'Bullish' : n.sentiment === '-' ? 'Bearish' : 'Neutral';
+                h += `<div class="news-card"><span style="font-size:28px">${p?.img || ''}</span><div class="news-body"><div class="news-title">${n.text}</div><div class="news-meta"><span class="pair">${p?.ticker}/INEQ</span><span style="color:${sCol};font-weight:600">${sLabel}</span><span style="color:var(--dim)">·</span><span style="color:var(--dim)">${n.time}</span></div></div><button class="news-btn" onclick="selected='${p?.id}';switchView('market')">Trade →</button></div>`
+            });
+            h += `<div class="info-box"><div class="label">How inequity.exchange works</div><p>Each person on the exchange is represented as a trading pair (<span style="color:var(--accent)">TICKER/INEQ</span>). Their coin price tracks real-time net worth data sourced from Forbes, Bloomberg, SEC filings, and market sentiment analysis. When you go long, you're betting their wealth grows. When you short, you're betting it shrinks. News events, product launches, lawsuits, and market shifts all move prices. Early conviction pays the most.</p></div>`;
+            document.getElementById('view-news').innerHTML = h
+        }
+
+        function render() { updateHeader(); updateTicker(); if (currentView === 'market') { renderList(); renderSidebar() } else if (currentView === 'portfolio') { renderPortfolio() } else if (currentView === 'history') { renderHistory() } else if (currentView === 'news') { renderNews() } }
+
+        function switchView(v) { currentView = v; document.querySelectorAll('.nav-btn').forEach(b => { b.classList.toggle('active', b.dataset.view === v) });['market', 'portfolio', 'history', 'news'].forEach(id => { const el = document.getElementById('view-' + id); if (id === 'market') { el.classList.toggle('active', v === 'market') } else { el.classList.toggle('active', v === id) } }); render() }
+
+        document.querySelectorAll('.nav-btn').forEach(b => b.addEventListener('click', () => switchView(b.dataset.view)));
+
+        function openTrade(id, type) {
+            const p = PEOPLE.find(x => x.id === id), d = prices[id]; if (!p || !d) return; const isBuy = type === 'buy';
+            document.getElementById('modal-content').innerHTML = `<div class="modal-header"><div class="title">${isBuy ? '▲ Long' : '▼ Short'} <span class="pair">${p.ticker}/INEQ</span></div><button class="modal-close" onclick="closeTrade()">×</button></div>
+<div class="modal-price-box"><div><div class="stat-label">Current Price</div><div class="modal-price">$${d.price.toFixed(2)}B</div></div><div class="modal-emoji">${p.img}</div></div>
+<div style="color:var(--muted);font-size:11px;margin-bottom:6px">Quantity (coins)</div>
+<div class="qty-row"><input type="number" id="qty-input" value="10" min="1" oninput="updateCost('${id}','${type}')">
+${[5, 10, 25, 50].map(q => `<button class="qty-btn${q === 10 ? ' active' : ''}" onclick="setQty(${q},'${id}','${type}')">${q}</button>`).join('')}</div>
+<div class="cost-row"><span class="cost-label">Total Cost</span><span class="cost-val" id="cost-display">$${(d.price * 10).toFixed(2)}</span></div>
+<button class="btn ${isBuy ? 'btn-long' : 'btn-short'}" id="exec-btn" onclick="executeTrade('${id}','${type}')">${isBuy ? 'Long' : 'Short'} 10 ${p.ticker}/INEQ</button>`;
+            document.getElementById('trade-modal').classList.add('open')
+        }
+
+        function closeTrade() { document.getElementById('trade-modal').classList.remove('open') }
+        document.getElementById('trade-modal').addEventListener('click', e => { if (e.target === document.getElementById('trade-modal')) closeTrade() });
+
+        function setQty(q, id, type) { document.getElementById('qty-input').value = q; document.querySelectorAll('.qty-btn').forEach(b => b.classList.toggle('active', parseInt(b.textContent) === q)); updateCost(id, type) }
+
+        function updateCost(id, type) { const q = Math.max(1, parseInt(document.getElementById('qty-input').value) || 1); const d = prices[id], p = PEOPLE.find(x => x.id === id); const cost = d.price * q; const el = document.getElementById('cost-display'); el.textContent = '$' + cost.toFixed(2); el.style.color = type === 'buy' && cost > balance ? 'var(--red)' : '#fff'; const btn = document.getElementById('exec-btn'); const isBuy = type === 'buy'; btn.textContent = `${isBuy ? 'Long' : 'Short'} ${q} ${p.ticker}/INEQ`; btn.style.opacity = isBuy && cost > balance ? '0.4' : '1' }
+
+        function executeTrade(personId, type) {
+            const q = Math.max(1, parseInt(document.getElementById('qty-input').value) || 1); const d = prices[personId], p = PEOPLE.find(x => x.id === personId); if (!d || !p) return; const cost = d.price * q;
+            if (type === 'buy' && cost > balance) { alert('Insufficient $INEQ balance!'); return }
+            if (type === 'buy') { balance = +(balance - cost).toFixed(2); const ex = portfolio.find(x => x.id === personId && x.type === 'long'); if (ex) { ex.avgPrice = +((ex.avgPrice * ex.qty + d.price * q) / (ex.qty + q)).toFixed(2); ex.qty += q } else { portfolio.push({ id: personId, type: 'long', qty: q, avgPrice: d.price }) } }
+            else { balance = +(balance + cost).toFixed(2); const ex = portfolio.find(x => x.id === personId && x.type === 'short'); if (ex) { ex.avgPrice = +((ex.avgPrice * ex.qty + d.price * q) / (ex.qty + q)).toFixed(2); ex.qty += q } else { portfolio.push({ id: personId, type: 'short', qty: q, avgPrice: d.price }) } }
+            tradeHist.unshift({ id: personId, ticker: p.ticker, type: type === 'buy' ? 'LONG' : 'SHORT', qty: q, price: d.price, time: new Date().toLocaleTimeString() }); if (tradeHist.length > 20) tradeHist.pop();
+            closeTrade(); render()
+        }
+
+        function closePosition(idx) {
+            const pos = portfolio[idx]; if (!pos) return; const d = prices[pos.id], p = PEOPLE.find(x => x.id === pos.id); if (!d || !p) return;
+            const val = pos.type === 'long' ? pos.qty * d.price : pos.qty * (2 * pos.avgPrice - d.price); const pnl = pos.type === 'long' ? (d.price - pos.avgPrice) * pos.qty : (pos.avgPrice - d.price) * pos.qty;
+            balance = +(balance + val).toFixed(2);
+            tradeHist.unshift({ id: pos.id, ticker: p.ticker, type: 'CLOSE', qty: pos.qty, price: d.price, pnl: +pnl.toFixed(2), time: new Date().toLocaleTimeString() }); if (tradeHist.length > 20) tradeHist.pop();
+            portfolio.splice(idx, 1); render()
+        }
+
+        init();
+    </script>
+</body>
+
+</html>
