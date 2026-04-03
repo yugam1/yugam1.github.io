@@ -64,7 +64,7 @@ export const RESUME_DATA: ResumeData = {
     title: "SDE2 @ DP World",
     location: "Bengaluru, IN",
     email: "yugam.iitkgp@gmail.com",
-    linkedin: "in/yugam-prasad",
+    linkedin: "in/yugam-15a645126",
     github: "yugam1",
   },
   tagline: "I build something new every weekend using AI",
