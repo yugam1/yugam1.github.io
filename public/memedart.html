@@ -343,12 +343,134 @@
       default: [{ f: 520, d: .1 }]
     };
 
+    // ═══════════════════════════════════════
+    //  PRELOADER — 1 GIF per category + priority sounds only
+    // ═══════════════════════════════════════
+    const PRECACHE = { gifs: {}, audio: {}, blobs: {}, ready: false, progress: 0, total: 0 };
+    // Only these 4 sounds preload eagerly (~80% of all throws land here)
+    const PRIORITY_SOUNDS = ['default', 'hype', 'meh', 'roast'];
+
+    function preloadAssets(onDone) {
+      var gifUrls = [];
+      var cats = Object.keys(MEMES);
+      cats.forEach(function (cat) {
+        if (MEMES[cat] && MEMES[cat][0]) gifUrls.push({ cat: cat, url: MEMES[cat][0].gif });
+      });
+
+      // Only priority sounds in initial batch
+      var soundUrls = [];
+      PRIORITY_SOUNDS.forEach(function (k) {
+        if (SOUNDTRACK[k]) soundUrls.push({ cat: k, url: SOUNDTRACK[k] });
+      });
+
+      PRECACHE.total = gifUrls.length + soundUrls.length;
+      PRECACHE.progress = 0;
+      var done = 0;
+
+      function tick() {
+        done++;
+        PRECACHE.progress = done / PRECACHE.total;
+        renderPreloadBar();
+        if (done >= PRECACHE.total) {
+          PRECACHE.ready = true;
+          if (onDone) onDone();
+        }
+      }
+
+      // Preload GIFs
+      gifUrls.forEach(function (item) {
+        var img = new Image();
+        img.onload = function () { PRECACHE.gifs[item.cat] = img; tick(); };
+        img.onerror = function () { tick(); };
+        img.src = item.url;
+      });
+
+      // Preload priority sounds as Audio objects (decoded, instant play)
+      soundUrls.forEach(function (item) {
+        var a = new Audio();
+        a.preload = 'auto';
+        var settled = false;
+        a.oncanplaythrough = function () {
+          if (settled) return; settled = true;
+          a.oncanplaythrough = null;
+          PRECACHE.audio[item.cat] = a;
+          tick();
+        };
+        a.onerror = function () { if (!settled) { settled = true; tick(); } };
+        setTimeout(function () { if (!settled) { settled = true; tick(); } }, 4000);
+        a.src = item.url;
+      });
+
+      // Safety net
+      setTimeout(function () { if (!PRECACHE.ready) { PRECACHE.ready = true; if (onDone) onDone(); } }, 8000);
+    }
+
+    // Lazy-fetch a sound as blob on first use (lightweight — no decode until play)
+    function lazyCacheSound(cat) {
+      if (PRECACHE.audio[cat] || PRECACHE.blobs[cat]) return; // already cached
+      var src = SOUNDTRACK[cat];
+      if (!src) return;
+      PRECACHE.blobs[cat] = 'loading'; // prevent duplicate fetches
+      fetch(src).then(function (r) { return r.blob(); }).then(function (blob) {
+        var url = URL.createObjectURL(blob);
+        var a = new Audio();
+        a.preload = 'auto';
+        a.src = url;
+        a.oncanplaythrough = function () {
+          a.oncanplaythrough = null;
+          PRECACHE.audio[cat] = a; // promote to full cache
+          PRECACHE.blobs[cat] = url;
+        };
+      }).catch(function () { PRECACHE.blobs[cat] = null; });
+    }
+
+    // Lazy-cache a meme GIF when encountered during gameplay
+    function cacheGif(url) {
+      if (!PRECACHE.gifs[url]) {
+        var img = new Image();
+        img.onload = function () { PRECACHE.gifs[url] = img; };
+        img.src = url;
+      }
+    }
+
+    function renderPreloadBar() {
+      var el = document.getElementById('preload-bar');
+      if (el) el.style.width = Math.round(PRECACHE.progress * 100) + '%';
+      var pct = document.getElementById('preload-pct');
+      if (pct) pct.textContent = Math.round(PRECACHE.progress * 100) + '%';
+    }
+
     // FIX: Proper audio playback — waits for data before playing, clean fallback
     function playMemeSound(cat) {
       if (!S.soundOn) return;
-      var a = document.getElementById('memeAudio');
       var src = SOUNDTRACK[cat] || SOUNDTRACK.default;
-      if (!a || !src) { playTone(cat); return; }
+      var effectiveCat = SOUNDTRACK[cat] ? cat : 'default';
+      if (!src) { playTone(cat); return; }
+
+      // 1. Instant path — precached or blob-promoted Audio exists
+      var cached = PRECACHE.audio[effectiveCat];
+      if (cached) {
+        try {
+          var clone = cached.cloneNode();
+          clone.currentTime = 0;
+          clone.volume = 1;
+          var p = clone.play();
+          if (p && p.catch) p.catch(function () { playTone(cat); });
+          window._memeClone = clone;
+        } catch (e) { playTone(cat); }
+        setTimeout(function () { playTone(cat, true); }, 80);
+        // Kick lazy-cache for this category if not already cached
+        lazyCacheSound(effectiveCat);
+        return;
+      }
+
+      // 2. Not cached yet — play tone immediately (no lag), start lazy-fetch for next time
+      playTone(cat);
+      lazyCacheSound(effectiveCat);
+
+      // 3. Also try the <audio> element as a slower fallback
+      var a = document.getElementById('memeAudio');
+      if (!a) return;
       try {
         a.pause();
         a.oncanplaythrough = null;
@@ -358,20 +480,11 @@
         a.oncanplaythrough = function () {
           a.oncanplaythrough = null;
           a.currentTime = 0;
-          var p = a.play();
-          if (p && p.catch) {
-            p.catch(function () { playTone(cat); });
-          }
+          a.play().catch(function () { });
         };
-        a.onerror = function () {
-          a.onerror = null;
-          playTone(cat);
-        };
+        a.onerror = null;
         a.load();
-      } catch (e) {
-        playTone(cat);
-      }
-      setTimeout(function () { playTone(cat, true); }, 80);
+      } catch (e) { }
     }
 
     function playTone(cat, quiet) {
@@ -433,7 +546,13 @@
       var arr = MEMES[cat] || []; if (!arr.length) return null;
       if (!S.usedMemes[cat] || S.usedMemes[cat].length >= arr.length) S.usedMemes[cat] = [];
       var idx; do { idx = Math.floor(Math.random() * arr.length); } while (S.usedMemes[cat].includes(idx) && S.usedMemes[cat].length < arr.length);
-      S.usedMemes[cat].push(idx); return { ...arr[idx], cat: cat };
+      S.usedMemes[cat].push(idx);
+      // Lazy-cache: preload next 2 GIFs from this category in background
+      for (var k = 1; k <= 2; k++) {
+        var ni = (idx + k) % arr.length;
+        if (arr[ni] && arr[ni].gif) cacheGif(arr[ni].gif);
+      }
+      return { ...arr[idx], cat: cat };
     }
     function dartToPins(sc, max) { return sc === 0 ? 0 : Math.min(max, Math.ceil(sc / 5)); }
 
@@ -489,6 +608,14 @@
       var h = '<div style="min-height:100vh;background:linear-gradient(135deg,#080808,#120818,#081018);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px">';
       h += '<div style="font-size:clamp(32px,7vw,58px);font-weight:900;font-family:Impact,sans-serif;letter-spacing:3">🎯 MEME<span style="color:#E8333A">DART</span></div>';
       h += '<div style="color:#444;font-size:11px;letter-spacing:4px;font-family:monospace;margin-top:4px">THROW · SCORE · GET ROASTED</div>';
+      // Preload progress bar
+      if (!PRECACHE.ready) {
+        h += '<div style="margin-top:12px;width:180px;height:4px;background:#111;border-radius:4px;overflow:hidden">';
+        h += '<div id="preload-bar" style="height:100%;background:linear-gradient(90deg,#E8333A,#FFD700);border-radius:4px;transition:width .3s;width:' + Math.round(PRECACHE.progress * 100) + '%"></div></div>';
+        h += '<div id="preload-pct" style="color:#333;font-size:9px;font-family:monospace;margin-top:3px">' + Math.round(PRECACHE.progress * 100) + '%</div>';
+      } else {
+        h += '<div style="margin-top:12px;color:#2D8C4E;font-size:9px;font-family:monospace;letter-spacing:2px">✓ READY</div>';
+      }
       h += '<div style="margin-top:20px;display:flex;gap:5px;align-items:center;flex-wrap:wrap;justify-content:center">';
       for (var id in RULES) {
         var sel = S.gid === id;
@@ -741,6 +868,10 @@
       var pls = S.players.map(function (p, i) { return { n: p.n.trim(), c: p.c, id: 'p' + i }; });
       S.players = pls; S.cp = 0; S.darts = []; S.turnSc = 0; S.meme = null; S.winner = null; S.hist = []; S.usedMemes = {};
       var g = S.gid;
+      // Lazy-preload game-mode specific sounds
+      if (g === 'bowling') { lazyCacheSound('strike'); lazyCacheSound('spare'); }
+      if (g === 'killer') { lazyCacheSound('killer_become'); lazyCacheSound('killer_kill'); }
+      lazyCacheSound('legendary'); lazyCacheSound('beast'); lazyCacheSound('bust');
       if (g === "standard501") S.scores = pls.map(function () { return 501 });
       else if (g === "standard301") S.scores = pls.map(function () { return 301 });
       else if (g === "aroundTheClock") { S.scores = pls.map(function () { return 0 }); S.targets = pls.map(function () { return 15 }); }
@@ -785,7 +916,9 @@
         var cat = won ? "legendary" : isH ? (hit.mul >= 2 ? "beast" : "hype") : (hit.sc === 0 ? "roast" : "meh");
         S.meme = Object.assign({}, pickMeme(cat), { sub: won ? '🏆 ' + S.players[S.cp].n + ' WINS!' : undefined, isWin: won });
         if (won) S.winner = S.players[S.cp].n;
-        render(); autoDissmiss(); return;
+        render();
+        // Start preloading first GIF per category + all sounds immediately
+        preloadAssets(function () { render(); }); autoDissmiss(); return;
       }
       if (g === "killer") {
         S.darts.push(hit); var my = S.kNums[S.cp];
@@ -890,6 +1023,7 @@
       // Stop any playing audio on dismiss
       var a = document.getElementById('memeAudio');
       if (a) { a.pause(); a.currentTime = 0; }
+      if (window._memeClone) { try { window._memeClone.pause(); window._memeClone = null; } catch (e) { } }
       if (wasWin) { S.phase = "over"; render(); return; }
       var g = S.gid;
       if (g === "bowling") {
