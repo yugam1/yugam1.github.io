@@ -149,6 +149,13 @@ export const RESUME_DATA: ResumeData = {
       status: "In Progress",
       link: "https://github.com/yugam1/KaraokeApp",
     },
+    {
+      name: "Inequity Exchange 💹",
+      desc: "Trade people like crypto — simulated exchange where you long/short billionaires based on net worth movements, with live tickers, P&L tracking, and shorting mechanics.",
+      tech: ["React", "Solidity", "Hardhat", "ethers.js", "ERC-20", "AMM"],
+      status: "In Progress",
+      link: "/inequity.html",
+    },
   ],
   skills: [
     {
