@@ -82,9 +82,9 @@ export const RESUME_DATA: ResumeData = {
       location: "Bengaluru, IN",
       bullets: [
         "Led cross-functional initiatives and mentored team members.",
-        "Architected scalable microservices and integrated modern technologies."
+        "Architected scalable microservices and integrated modern technologies.",
       ],
-      techStack: ["Java", "Spring Boot", "React", "AWS"]
+      techStack: ["Java", "Spring Boot", "React", "AWS"],
     },
     {
       company: "DP World",
@@ -93,9 +93,9 @@ export const RESUME_DATA: ResumeData = {
       location: "Bengaluru, IN",
       bullets: [
         "Developed core backend services and optimized database queries.",
-        "Collaborated with product teams to gather requirements and deliver features."
+        "Collaborated with product teams to gather requirements and deliver features.",
       ],
-      techStack: ["Java", "Spring Boot", "SQL"]
+      techStack: ["Java", "Spring Boot", "SQL"],
     },
     {
       company: "KPIT",
@@ -104,9 +104,9 @@ export const RESUME_DATA: ResumeData = {
       location: "Bengaluru, IN",
       bullets: [
         "Designed and implemented software components for automotive systems.",
-        "Improved system performance and efficiency through code refactoring."
+        "Improved system performance and efficiency through code refactoring.",
       ],
-      techStack: ["C++", "Python", "Embedded Systems"]
+      techStack: ["C++", "Python", "Embedded Systems"],
     },
     {
       company: "Innoplexus",
@@ -115,10 +115,10 @@ export const RESUME_DATA: ResumeData = {
       location: "Pune, IN",
       bullets: [
         "Built robust data pipelines and scraping tools to collect structured data.",
-        "Automated data extraction and preprocessing tasks."
+        "Automated data extraction and preprocessing tasks.",
       ],
-      techStack: ["Python", "Spark", "SQL"]
-    }
+      techStack: ["Python", "Spark", "SQL"],
+    },
   ],
   weekendProjects: [
     {
@@ -155,6 +155,13 @@ export const RESUME_DATA: ResumeData = {
       tech: ["React", "Solidity", "Hardhat", "ethers.js", "ERC-20", "AMM"],
       status: "In Progress",
       link: "/inequity.html",
+    },
+    {
+      name: "DontOpenThis 💌",
+      desc: "Cute interactive yes/no message cards with runaway buttons — for when you messed up or just want to be adorable",
+      tech: ["HTML", "Vanilla JS", "CSS Animations"],
+      status: "Built",
+      link: "/DontOpenThis.html",
     },
   ],
   skills: [
