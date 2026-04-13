@@ -1,791 +1,1763 @@
-<!DOCTYPE html>
+<!doctype html>
+<!--
+  ╔═══════════════════════════════════════════════════════════╗
+  ║  DontOpenThis — Cute Interactive Message Cards            ║
+  ║  Copyright (c) 2026 Yugam Prasad. All rights reserved.   ║
+  ║  https://yugam1.github.io                                 ║
+  ║                                                           ║
+  ║  Unauthorized copying, modification, distribution, or     ║
+  ║  reuse of this code, in whole or in part, is strictly     ║
+  ║  prohibited without prior written permission.             ║
+  ╚═══════════════════════════════════════════════════════════╝
+-->
 <html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>💌 Send Something Cute</title>
-<link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&family=Sacramento&family=Caveat:wght@400;500;600;700&display=swap" rel="stylesheet">
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-NHZ2WTB36C"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', 'G-NHZ2WTB36C');
-</script>
-<style>
-  :root {
-    --pink-100: #fff0f5;
-    --pink-200: #ffd6e7;
-    --pink-300: #ffb3d1;
-    --pink-400: #ff80b5;
-    --pink-500: #ff4d94;
-    --pink-600: #e6005c;
-    --lavender: #e8d5f5;
-    --peach: #ffe5d9;
-    --mint: #d5f5e3;
-    --warm-white: #fffaf5;
-    --text-dark: #4a2040;
-    --text-medium: #7a4068;
-    --text-light: #a06080;
-    --shadow-soft: 0 4px 20px rgba(255, 77, 148, 0.15);
-    --shadow-glow: 0 0 30px rgba(255, 77, 148, 0.2);
-  }
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body {
-    font-family: 'Quicksand', sans-serif;
-    background: var(--warm-white);
-    color: var(--text-dark);
-    overflow-x: hidden;
-    min-height: 100vh;
-  }
-
-  .bg-hearts { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
-  .bg-hearts .heart { position: absolute; font-size: 20px; opacity: 0; animation: floatUp linear infinite; }
-  @keyframes floatUp {
-    0%   { transform: translateY(100vh) rotate(0deg) scale(0.5); opacity: 0; }
-    10%  { opacity: 0.6; }
-    90%  { opacity: 0.3; }
-    100% { transform: translateY(-10vh) rotate(360deg) scale(1); opacity: 0; }
-  }
-
-  .sparkle-field { position: fixed; inset: 0; pointer-events: none; z-index: 0; }
-  .sparkle {
-    position: absolute; width: 4px; height: 4px; border-radius: 50%;
-    background: var(--pink-400); opacity: 0; animation: twinkle 3s ease-in-out infinite;
-  }
-  @keyframes twinkle {
-    0%, 100% { opacity: 0; transform: scale(0.5); }
-    50% { opacity: 0.8; transform: scale(1.2); }
-  }
-
-  /* ── Landing ── */
-  .landing {
-    position: relative; z-index: 1; min-height: 100vh;
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    padding: 40px 20px;
-    background:
-      radial-gradient(ellipse at 20% 50%, rgba(255,179,209,0.25) 0%, transparent 50%),
-      radial-gradient(ellipse at 80% 20%, rgba(232,213,245,0.3) 0%, transparent 50%),
-      radial-gradient(ellipse at 50% 80%, rgba(255,229,217,0.25) 0%, transparent 50%),
-      var(--warm-white);
-  }
-  .landing-title {
-    font-family: 'Sacramento', cursive;
-    font-size: clamp(48px, 10vw, 90px);
-    color: var(--pink-500); text-align: center; margin-bottom: 8px;
-    text-shadow: 2px 2px 10px rgba(255,77,148,0.2);
-    animation: fadeInDown 1s ease;
-  }
-  .landing-sub {
-    font-size: clamp(14px, 2.5vw, 18px); color: var(--text-light);
-    text-align: center; margin-bottom: 28px; font-weight: 500;
-    animation: fadeInDown 1s ease 0.2s both;
-  }
-  @keyframes fadeInDown {
-    from { opacity: 0; transform: translateY(-20px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
-
-  /* ── Name Input ── */
-  .name-area {
-    display: flex; flex-direction: column; align-items: center;
-    margin-bottom: 36px; animation: fadeInDown 1s ease 0.3s both;
-  }
-  .name-label { font-family: 'Caveat', cursive; font-size: 22px; color: var(--text-medium); margin-bottom: 10px; }
-  .name-input {
-    padding: 12px 22px; border: 2.5px solid var(--pink-300); border-radius: 50px;
-    font-family: 'Quicksand', sans-serif; font-size: 16px; font-weight: 600;
-    color: var(--text-dark); background: white; outline: none;
-    width: 280px; max-width: 80vw; text-align: center;
-    transition: all 0.3s; box-shadow: 0 2px 12px rgba(255,77,148,0.08);
-  }
-  .name-input::placeholder { color: var(--pink-300); font-weight: 500; }
-  .name-input:focus { border-color: var(--pink-500); box-shadow: 0 0 0 4px rgba(255,77,148,0.12), 0 2px 12px rgba(255,77,148,0.15); }
-  .name-input.shake { animation: shakeInput 0.5s ease; border-color: var(--pink-600); }
-  @keyframes shakeInput {
-    0%, 100% { transform: translateX(0); }
-    20% { transform: translateX(-8px); } 40% { transform: translateX(8px); }
-    60% { transform: translateX(-6px); } 80% { transform: translateX(6px); }
-  }
-  .name-hint { font-size: 12px; color: var(--pink-500); margin-top: 8px; height: 16px; opacity: 0; transition: opacity 0.3s; font-weight: 600; }
-  .name-hint.show { opacity: 1; }
-
-  /* ── Card Grid ── */
-  .card-grid {
-    display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-    gap: 20px; max-width: 960px; width: 100%; padding: 0 20px;
-    animation: fadeIn 1s ease 0.4s both;
-  }
-  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
-  .msg-card {
-    background: white; border-radius: 20px; padding: 28px 24px;
-    text-align: center; cursor: pointer; border: 2px solid transparent;
-    box-shadow: var(--shadow-soft); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    position: relative; overflow: hidden;
-  }
-  .msg-card::before {
-    content: ''; position: absolute; inset: 0;
-    background: linear-gradient(135deg, rgba(255,179,209,0.1), rgba(232,213,245,0.1));
-    opacity: 0; transition: opacity 0.3s;
-  }
-  .msg-card:hover { transform: translateY(-4px); border-color: var(--pink-300); box-shadow: var(--shadow-glow); }
-  .msg-card:hover::before { opacity: 1; }
-  .card-emoji { font-size: 44px; display: block; margin-bottom: 14px; transition: transform 0.3s; }
-  .msg-card:hover .card-emoji { transform: scale(1.15) rotate(-5deg); }
-  .card-title { font-family: 'Caveat', cursive; font-size: 22px; font-weight: 700; color: var(--text-dark); line-height: 1.3; }
-  .card-tag {
-    display: inline-block; margin-top: 10px; padding: 3px 12px; border-radius: 20px;
-    font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;
-  }
-  .tag-love   { background: var(--pink-200); color: var(--pink-600); }
-  .tag-sorry  { background: var(--lavender); color: #6b3fa0; }
-  .tag-flirty { background: var(--peach); color: #c45e2c; }
-  .tag-funny  { background: var(--mint); color: #2e7d52; }
-  .tag-sweet  { background: #fce4ec; color: #c62828; }
-
-  /* ── Question Page ── */
-  .question-page {
-    display: none; position: fixed; inset: 0; z-index: 10;
-    flex-direction: column; align-items: center; justify-content: center;
-    padding: 30px; text-align: center; overflow: hidden;
-  }
-  .question-page.active { display: flex; animation: pageIn 0.5s ease; }
-  @keyframes pageIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
-  .q-bg { position: absolute; inset: 0; z-index: -1; }
-  .q-back-btn {
-    position: absolute; top: 20px; left: 20px;
-    background: rgba(255,255,255,0.7); border: none; border-radius: 50%;
-    width: 44px; height: 44px; font-size: 20px; cursor: pointer;
-    backdrop-filter: blur(10px); transition: all 0.2s; z-index: 5;
-    display: flex; align-items: center; justify-content: center;
-  }
-  .q-back-btn:hover { background: white; transform: scale(1.1); }
-  .question-page.receiver-mode .q-back-btn { display: none; }
-
-  .q-name-greeting {
-    font-family: 'Sacramento', cursive; font-size: clamp(28px, 6vw, 44px);
-    color: var(--pink-500); margin-bottom: 4px; opacity: 0.9;
-    animation: fadeInDown 0.5s ease 0.1s both;
-  }
-  .q-emoji {
-    font-size: clamp(60px, 15vw, 100px); margin-bottom: 20px;
-    animation: bounceIn 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-  }
-  @keyframes bounceIn { 0% { transform: scale(0); } 60% { transform: scale(1.15); } 100% { transform: scale(1); } }
-  .q-text {
-    font-family: 'Caveat', cursive; font-size: clamp(32px, 7vw, 56px);
-    font-weight: 700; color: var(--text-dark); max-width: 600px; line-height: 1.2;
-    margin-bottom: 10px; animation: fadeInDown 0.6s ease 0.2s both;
-  }
-  .q-subtext {
-    font-size: clamp(13px, 2vw, 16px); color: var(--text-light);
-    margin-bottom: 36px; font-weight: 500; font-style: italic;
-    animation: fadeInDown 0.6s ease 0.3s both;
-  }
-
-  .btn-row {
-    display: flex; gap: 20px; align-items: center; justify-content: center;
-    flex-wrap: wrap; animation: fadeIn 0.6s ease 0.4s both;
-    min-height: 70px; position: relative;
-  }
-
-  /* Primary = the "wanted" answer */
-  .btn-primary {
-    padding: 14px 48px; border: none; border-radius: 50px;
-    font-family: 'Quicksand', sans-serif; font-size: 18px; font-weight: 700;
-    cursor: pointer; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    letter-spacing: 0.5px; position: relative; overflow: hidden; color: white;
-  }
-  .btn-primary::after {
-    content: ''; position: absolute; inset: 0;
-    background: linear-gradient(135deg, rgba(255,255,255,0.3), transparent);
-    pointer-events: none;
-  }
-  .btn-primary:hover { transform: scale(1.08); box-shadow: 0 6px 25px rgba(255,77,148,0.35); }
-  .btn-primary:active { transform: scale(1.02); }
-
-  /* Secondary = the "unwanted" / dodge button */
-  .btn-dodge {
-    padding: 14px 48px; border: 2px solid var(--pink-300); border-radius: 50px;
-    background: white; font-family: 'Quicksand', sans-serif; font-size: 18px;
-    font-weight: 700; color: var(--text-medium); cursor: pointer;
-    transition: all 0.15s ease; user-select: none; position: relative;
-  }
-
-  /* ── Yes Response ── */
-  .yes-response {
-    display: none; position: fixed; inset: 0; z-index: 20;
-    flex-direction: column; align-items: center; justify-content: center;
-    padding: 30px; text-align: center;
-    background: radial-gradient(ellipse at center, rgba(255,179,209,0.3) 0%, transparent 70%), var(--warm-white);
-  }
-  .yes-response.active { display: flex; animation: pageIn 0.5s ease; }
-  .yes-emoji { font-size: 80px; animation: heartBeat 1s ease infinite; }
-  @keyframes heartBeat {
-    0%, 100% { transform: scale(1); } 15% { transform: scale(1.15); }
-    30% { transform: scale(1); } 45% { transform: scale(1.1); }
-  }
-  .yes-text {
-    font-family: 'Sacramento', cursive; font-size: clamp(36px, 8vw, 64px);
-    color: var(--pink-500); margin: 20px 0 10px;
-  }
-  .yes-sub { font-size: 18px; color: var(--text-medium); font-weight: 500; }
-  .yes-response .btn-back-home {
-    margin-top: 30px; padding: 12px 32px; border: 2px solid var(--pink-300);
-    border-radius: 50px; background: white; font-family: 'Quicksand', sans-serif;
-    font-size: 15px; font-weight: 600; color: var(--text-medium); cursor: pointer; transition: all 0.2s;
-  }
-  .yes-response .btn-back-home:hover { background: var(--pink-100); }
-
-  /* ── Confetti ── */
-  .confetti-container { position: fixed; inset: 0; pointer-events: none; z-index: 25; overflow: hidden; }
-  .confetti-piece { position: absolute; top: -20px; width: 10px; height: 10px; border-radius: 2px; animation: confettiFall linear forwards; }
-  @keyframes confettiFall { 0% { transform: translateY(0) rotate(0deg); opacity: 1; } 100% { transform: translateY(100vh) rotate(720deg); opacity: 0; } }
-
-  /* ── Chaos Messages ── */
-  .chaos-msg {
-    position: fixed; font-family: 'Caveat', cursive; font-size: 20px; font-weight: 700;
-    color: var(--pink-500); pointer-events: none; z-index: 15;
-    animation: popFade 3.5s ease forwards; white-space: nowrap;
-  }
-  @keyframes popFade {
-    0%   { opacity: 0; transform: scale(0.5) translateY(0); }
-    10%  { opacity: 1; transform: scale(1.1) translateY(-10px); }
-    75%  { opacity: 1; transform: scale(1) translateY(-15px); }
-    100% { opacity: 0; transform: scale(0.8) translateY(-50px); }
-  }
-
-  /* ── Share Bar ── */
-  .share-bar {
-    position: absolute; bottom: 24px; left: 50%; transform: translateX(-50%);
-    display: flex; align-items: center; gap: 8px;
-    background: rgba(255,255,255,0.85); backdrop-filter: blur(12px);
-    border: 2px solid var(--pink-200); border-radius: 16px;
-    padding: 10px 14px; box-shadow: 0 4px 20px rgba(255,77,148,0.1);
-    z-index: 12; max-width: 92vw; animation: fadeIn 0.6s ease 0.6s both;
-  }
-  .share-bar-label { font-size: 13px; font-weight: 600; color: var(--text-light); white-space: nowrap; }
-  .share-bar input {
-    width: 240px; max-width: 45vw; padding: 8px 12px;
-    border: 1.5px solid var(--pink-200); border-radius: 10px;
-    font-family: 'Quicksand', sans-serif; font-size: 12px;
-    color: var(--text-medium); background: var(--pink-100); outline: none; text-overflow: ellipsis;
-  }
-  .share-bar input:focus { border-color: var(--pink-400); }
-  .copy-btn {
-    background: var(--pink-500); border: none; border-radius: 10px;
-    width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;
-    cursor: pointer; transition: all 0.25s; flex-shrink: 0; position: relative;
-  }
-  .copy-btn:hover { background: var(--pink-600); transform: scale(1.08); }
-  .copy-btn:active { transform: scale(0.95); }
-  .copy-btn svg {
-    width: 18px; height: 18px; fill: none; stroke: white; stroke-width: 2;
-    stroke-linecap: round; stroke-linejoin: round; transition: all 0.25s;
-  }
-  .copy-btn.copied { background: #27ae60; }
-  .copy-btn.copied .icon-copy { opacity: 0; transform: scale(0.5); }
-  .copy-btn .icon-check { position: absolute; opacity: 0; transform: scale(0.5); transition: all 0.25s; }
-  .copy-btn.copied .icon-check { opacity: 1; transform: scale(1); }
-  .question-page.receiver-mode .share-bar { display: none; }
-
-  .copy-toast {
-    position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%);
-    background: var(--text-dark); color: white; padding: 10px 24px;
-    border-radius: 50px; font-size: 14px; font-weight: 600; z-index: 35;
-    animation: toastIn 2.2s ease forwards; white-space: nowrap;
-  }
-  @keyframes toastIn {
-    0% { opacity: 0; transform: translateX(-50%) translateY(10px); }
-    15%, 70% { opacity: 1; transform: translateX(-50%) translateY(0); }
-    100% { opacity: 0; transform: translateX(-50%) translateY(-10px); }
-  }
-
-  .footer { text-align: center; padding: 40px 20px 30px; color: var(--text-light); font-size: 13px; position: relative; z-index: 1; }
-  .footer span { color: var(--pink-400); }
-
-  @media (max-width: 600px) {
-    .card-grid { grid-template-columns: 1fr 1fr; gap: 14px; }
-    .msg-card { padding: 20px 16px; }
-    .card-emoji { font-size: 34px; }
-    .card-title { font-size: 18px; }
-    .btn-primary, .btn-dodge { padding: 12px 36px; font-size: 16px; }
-    .share-bar { flex-wrap: wrap; justify-content: center; padding: 10px 10px; bottom: 12px; gap: 6px; }
-    .share-bar input { width: 180px; max-width: 55vw; }
-    .share-bar-label { display: none; }
-  }
-  @media (max-width: 380px) { .card-grid { grid-template-columns: 1fr; } }
-</style>
-</head>
-<body>
-
-<div class="bg-hearts" id="bgHearts"></div>
-<div class="sparkle-field" id="sparkleField"></div>
-
-<div class="landing" id="landing">
-  <div class="landing-title">send something cute</div>
-  <div class="landing-sub">pick a message · send the link · wait for a smile 💗</div>
-  <div class="name-area">
-    <div class="name-label">✨ first, who's the lucky one? ✨</div>
-    <input type="text" class="name-input" id="nameInput" placeholder="her name here..." maxlength="30" autocomplete="off" spellcheck="false">
-    <div class="name-hint" id="nameHint">psst... enter her name first! 💕</div>
-  </div>
-  <div class="card-grid" id="cardGrid"></div>
-  <div class="footer">made with <span>♥</span> for people in love</div>
-</div>
-
-<div id="questionPages"></div>
-
-<div class="yes-response" id="yesResponse">
-  <div class="yes-emoji" id="yesEmoji">💖</div>
-  <div class="yes-text" id="yesText">Yay!</div>
-  <div class="yes-sub" id="yesSub"></div>
-  <button class="btn-back-home" id="btnBackHome" onclick="goHome()">← send another</button>
-</div>
-
-<div class="confetti-container" id="confettiContainer"></div>
-
-<script>
-// ═══════════════════════════════════════
-//  QUESTION CODES  (single letter → question id)
-// ═══════════════════════════════════════
-const Q_CODES = {
-  a:'valentine', b:'still-mad', c:'kiss', d:'date', e:'forgive', f:'cuddle',
-  g:'hoodie', h:'fries', i:'miss-me', j:'puppy', k:'best-thing', l:'food-run'
-};
-const ID_TO_CODE = Object.fromEntries(Object.entries(Q_CODES).map(([k,v])=>[v,k]));
-
-// ═══════════════════════════════════════
-//  ENCODE / DECODE  (name only — XOR + base64 + reverse)
-//  URL format:  #a.xR4kZm~nBq   (letter.encodedName)
-// ═══════════════════════════════════════
-const K = 13;
-function encodeName(name) {
-  if (!name) return '';
-  let x = '';
-  for (let i = 0; i < name.length; i++) x += String.fromCharCode(name.charCodeAt(i) ^ K);
-  return btoa(unescape(encodeURIComponent(x))).split('').reverse().join('').replace(/=/g, '~');
-}
-function decodeName(s) {
-  try {
-    let b = s.replace(/~/g, '=').split('').reverse().join('');
-    const x = decodeURIComponent(escape(atob(b))); let n = '';
-    for (let i = 0; i < x.length; i++) n += String.fromCharCode(x.charCodeAt(i) ^ K);
-    return n;
-  } catch { return ''; }
-}
-
-// ═══════════════════════════════════════
-//  TEMPLATES
-//
-//  wantYes (default true) = "Yes" is the good answer, "No" dodges
-//  wantYes: false          = "No" is the good answer, "Yes" dodges
-//
-//  goodEmoji/goodText/goodSub = response when the WANTED button is clicked
-//  dodgeMessages              = chaos messages when the UNWANTED button is hovered
-//  dodgeLabels                = text the dodge button cycles through
-// ═══════════════════════════════════════
-const messages = [
-  {
-    id: "valentine", emoji: "💝",
-    title: "Will you be my Valentine?",
-    sub: "say yes... please? 🥺",
-    tag: "love", tagLabel: "love",
-    bg: "linear-gradient(135deg, #fff0f5, #ffe0ec, #ffd6e7)",
-    btnColor: "#ff4d94",
-    wantYes: true,
-    goodEmoji: "💖", goodText: "I knew you'd say yes!", goodSub: "best valentine ever 🥰",
-    dodgeMessages: ["Are you sure?? 🥺","Think again!","Wrong button!","My heart is breaking 💔","Please reconsider!","I'll ask nicer... PLEASE?","Not an option babe","The button is lying to you","Try the other one 👉"],
-    dodgeLabels: ["No?","Nope?","Really?","Hmm..","Still no?","😢","💔","🥺","Fine.","..."]
-  },
-  {
-    id: "still-mad", emoji: "🥺",
-    title: "Are you still mad at me?",
-    sub: "i promise i'm sorry...",
-    tag: "sorry", tagLabel: "sorry",
-    bg: "linear-gradient(135deg, #f3e8ff, #e8d5f5, #f0e0ff)",
-    btnColor: "#9b59b6",
-    wantYes: false,
-    goodEmoji: "🥹", goodText: "Phew! Thank god!", goodSub: "i promise to never mess up again 🤞",
-    dodgeMessages: ["Nooo please! 🥺","I said I'm sorry!","Give me another chance!","I'll make it up to you!","Not the silent treatment 😭","I'll do ANYTHING","What can I do to fix this??","My heart can't take this 💔","I'll buy you ice cream??"],
-    dodgeLabels: ["Yes?","Still?","Really?","😰","Sure??","Think...","Ugh 😭","Please no","💔","..."]
-  },
-  {
-    id: "kiss", emoji: "💋",
-    title: "Can I get a kiss?",
-    sub: "just one... okay maybe two",
-    tag: "flirty", tagLabel: "flirty",
-    bg: "linear-gradient(135deg, #ffe5d9, #ffd1c1, #ffe0d0)",
-    btnColor: "#e74c3c",
-    wantYes: true,
-    goodEmoji: "😘", goodText: "Mwaaah!", goodSub: "sending a million kisses 💋💋💋",
-    dodgeMessages: ["Not even a small one?","A peck? 🥺","On the cheek??","Air kiss at least?","You're being cruel 😤","My lips are lonely","Fine I'll kiss the mirror","PLEASE","What about a forehead kiss?"],
-    dodgeLabels: ["No?","Nope?","Really?","Hmm..","Still no?","😢","💔","🥺","Fine.","..."]
-  },
-  {
-    id: "date", emoji: "🌹",
-    title: "Go on a date with me?",
-    sub: "i'll plan everything, just show up cute",
-    tag: "love", tagLabel: "love",
-    bg: "linear-gradient(135deg, #fff0f5, #fce4ec, #ffeef5)",
-    btnColor: "#e91e63",
-    wantYes: true,
-    goodEmoji: "🥳", goodText: "It's a date!", goodSub: "wear something cute 💃",
-    dodgeMessages: ["I'll pay for everything!","Free food though??","Even dessert! 🍰","Did I mention free food?","I made reservations 😭","Don't break my heart","I already picked an outfit","PLEASE I begged the waiter","What if I bring flowers? 🌷"],
-    dodgeLabels: ["No?","Nope?","Really?","Hmm..","Still no?","😢","💔","🥺","Fine.","..."]
-  },
-  {
-    id: "forgive", emoji: "🥹",
-    title: "Do you forgive me?",
-    sub: "i really really messed up...",
-    tag: "sorry", tagLabel: "sorry",
-    bg: "linear-gradient(135deg, #e8d5f5, #f3e8ff, #ede0f7)",
-    btnColor: "#8e44ad",
-    wantYes: true,
-    goodEmoji: "🤗", goodText: "Thank you!", goodSub: "i promise to do better 🤞",
-    dodgeMessages: ["I deserve that 😔","What if I grovel?","I'll buy you food?","How about chocolate? 🍫","I am on my KNEES","Give me one more chance!","I'll clean the whole house","I'll do the dishes for a WEEK","Please my heart can't take this"],
-    dodgeLabels: ["No?","Nope?","Really?","Hmm..","Still no?","😢","💔","🥺","Fine.","..."]
-  },
-  {
-    id: "cuddle", emoji: "🧸",
-    title: "Can we cuddle tonight?",
-    sub: "i'll be the big spoon or small spoon, your call",
-    tag: "sweet", tagLabel: "sweet",
-    bg: "linear-gradient(135deg, #fce4ec, #fff0f5, #ffeaf2)",
-    btnColor: "#ff6b9d",
-    wantYes: true,
-    goodEmoji: "🤗", goodText: "Come here youuu!", goodSub: "bringing the blankets and snacks 🍿",
-    dodgeMessages: ["But I'm cold 🥶","I'll bring snacks!","Netflix AND cuddles?","I promise no cold feet","What if I bring a blanket?","You're so mean 😤","I'll be the perfect spoon","Even 5 minutes??","My teddy bear said yes"],
-    dodgeLabels: ["No?","Nope?","Really?","Hmm..","Still no?","😢","💔","🥺","Fine.","..."]
-  },
-  {
-    id: "hoodie", emoji: "👕",
-    title: "Can I steal your hoodie?",
-    sub: "the one that smells like you...",
-    tag: "flirty", tagLabel: "flirty",
-    bg: "linear-gradient(135deg, #ffe5d9, #fff0e8, #ffe8d5)",
-    btnColor: "#e67e22",
-    wantYes: true,
-    goodEmoji: "🥰", goodText: "It's mine now!", goodSub: "no take-backs ever 😤",
-    dodgeMessages: ["But it's cozy!","I look cute in it!","You have like 50!","Sharing is caring 🥺","I'll trade you a kiss?","Too late I'm wearing it","Finders keepers!","It smells like you and I NEED that","What's yours is mine babe"],
-    dodgeLabels: ["No?","Nope?","Really?","Hmm..","Still no?","😢","💔","🥺","Fine.","..."]
-  },
-  {
-    id: "fries", emoji: "🍟",
-    title: "Will you share your fries?",
-    sub: "just a few... okay maybe half",
-    tag: "funny", tagLabel: "funny",
-    bg: "linear-gradient(135deg, #fff8e1, #ffecb3, #fff3d0)",
-    btnColor: "#f39c12",
-    wantYes: true,
-    goodEmoji: "😋", goodText: "You're the best!", goodSub: "okay fine you can have some of mine too 🍟",
-    dodgeMessages: ["Not even ONE fry??","The crispy ones? 🥺","I'll trade a nugget!","This is a dealbreaker","What about the burnt ones?","I thought you loved me","Fine I'll order my own... 😤","But sharing is ROMANTIC","I'm stealing one anyway"],
-    dodgeLabels: ["No?","Nope?","Really?","Hmm..","Still no?","😢","💔","🥺","Fine.","..."]
-  },
-  {
-    id: "miss-me", emoji: "💭",
-    title: "Do you miss me right now?",
-    sub: "because i definitely miss you...",
-    tag: "sweet", tagLabel: "sweet",
-    bg: "linear-gradient(135deg, #e3f2fd, #e8eaf6, #ede7f6)",
-    btnColor: "#5c6bc0",
-    wantYes: true,
-    goodEmoji: "🥺💕", goodText: "I miss you more!", goodSub: "counting the minutes till I see you",
-    dodgeMessages: ["LIAR","Your heart says otherwise","Not even a little?? 🥺","I miss YOU though","Think about it harder","Check your heart again","Impossible. Try again.","I know you do 😏","That's not what your eyes say"],
-    dodgeLabels: ["No?","Nope?","Really?","Hmm..","Still no?","😢","💔","🥺","Fine.","..."]
-  },
-  {
-    id: "puppy", emoji: "🐶",
-    title: "Can we get a puppy together?",
-    sub: "look at this face... how can you say no",
-    tag: "funny", tagLabel: "funny",
-    bg: "linear-gradient(135deg, #d5f5e3, #e8f5e9, #dcedc8)",
-    btnColor: "#27ae60",
-    wantYes: true,
-    goodEmoji: "🐕", goodText: "We're puppy parents!", goodSub: "time to pick names!! 🎉",
-    dodgeMessages: ["But PUPPIES!","Look at those eyes 🥺","A small one??","What about a cat then?","A hamster? A fish?? ANYTHING?","I already named it!","It'll love you SO much","It can sleep in MY side","Wrong answer, try again 🐾"],
-    dodgeLabels: ["No?","Nope?","Really?","Hmm..","Still no?","😢","💔","🥺","Fine.","..."]
-  },
-  {
-    id: "best-thing", emoji: "⭐",
-    title: "Am I the best thing in your life?",
-    sub: "be honest... but also say yes",
-    tag: "flirty", tagLabel: "flirty",
-    bg: "linear-gradient(135deg, #fff8e1, #fff3cd, #ffeaa7)",
-    btnColor: "#f1c40f",
-    wantYes: true,
-    goodEmoji: "🌟", goodText: "Obviously!", goodSub: "and you're the best thing in mine ✨",
-    dodgeMessages: ["EXCUSE ME?!","I'm offended 😤","Take that back!","Not even top 3?? 🥺","I'm calling my mom","Wow just wow","I need a moment...","That physically hurt me","One more chance to answer correctly"],
-    dodgeLabels: ["No?","Nope?","Really?","Hmm..","Still no?","😢","💔","🥺","Fine.","..."]
-  },
-  {
-    id: "food-run", emoji: "🌮",
-    title: "Late night food run?",
-    sub: "i'm hungry and you're cute, let's go",
-    tag: "funny", tagLabel: "funny",
-    bg: "linear-gradient(135deg, #ffe0b2, #ffcc80, #ffe0cc)",
-    btnColor: "#e65100",
-    wantYes: true,
-    goodEmoji: "🚗💨", goodText: "Let's gooo!", goodSub: "shotgun picks the music 🎵",
-    dodgeMessages: ["But TACOS!","I'll drive!","I'll buy! 💰","Not even for ice cream?? 🍦","It's a bonding experience!","We can get drive-thru!","I'll eat your leftovers too","Food > sleep, always","You KNOW you're hungry"],
-    dodgeLabels: ["No?","Nope?","Really?","Hmm..","Still no?","😢","💔","🥺","Fine.","..."]
-  }
-];
-
-// ═══════════════════════════════════════
-//  STATE
-// ═══════════════════════════════════════
-let currentMsg = null, currentName = '', isReceiverMode = false;
-let dodgeCount = {};
-const dodgePools = {};
-messages.forEach(m => { dodgePools[m.id] = [...m.dodgeMessages]; });
-
-// ═══════════════════════════════════════
-//  BUILD DOM
-// ═══════════════════════════════════════
-const grid = document.getElementById('cardGrid');
-const qPages = document.getElementById('questionPages');
-const copySVG = `<svg class="icon-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg><svg class="icon-check" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
-
-messages.forEach((m) => {
-  // Card
-  const card = document.createElement('div');
-  card.className = 'msg-card';
-  card.innerHTML = `<span class="card-emoji">${m.emoji}</span><div class="card-title">${m.title}</div><span class="card-tag tag-${m.tag}">${m.tagLabel}</span>`;
-  card.addEventListener('click', () => tryOpen(m.id));
-  grid.appendChild(card);
-
-  // Question page — button order depends on wantYes
-  const page = document.createElement('div');
-  page.className = 'question-page';
-  page.id = `page-${m.id}`;
-
-  let btnHTML;
-  if (m.wantYes !== false) {
-    // Normal: Yes is primary (wanted), No is dodge
-    btnHTML = `
-      <button class="btn-primary" style="background:${m.btnColor}" onclick="handleGood('${m.id}')">Yes 💕</button>
-      <button class="btn-dodge" id="dodge-${m.id}" onmouseenter="doDodge('${m.id}')" onclick="doDodge('${m.id}')">No</button>`;
-  } else {
-    // Inverted: No is primary (wanted), Yes is dodge
-    btnHTML = `
-      <button class="btn-dodge" id="dodge-${m.id}" onmouseenter="doDodge('${m.id}')" onclick="doDodge('${m.id}')">Yes</button>
-      <button class="btn-primary" style="background:${m.btnColor}" onclick="handleGood('${m.id}')">No 💕</button>`;
-  }
-
-  page.innerHTML = `
-    <div class="q-bg" style="background:${m.bg}"></div>
-    <button class="q-back-btn" onclick="goHome()">←</button>
-    <div class="q-name-greeting" id="greet-${m.id}"></div>
-    <div class="q-emoji">${m.emoji}</div>
-    <div class="q-text">${m.title}</div>
-    <div class="q-subtext">${m.sub}</div>
-    <div class="btn-row" id="btnRow-${m.id}">${btnHTML}</div>
-    <div class="share-bar" id="shareBar-${m.id}">
-      <span class="share-bar-label">send it →</span>
-      <input type="text" id="shareIn-${m.id}" readonly>
-      <button class="copy-btn" id="copyBtn-${m.id}" onclick="copyLink('${m.id}')">${copySVG}</button>
-    </div>`;
-  qPages.appendChild(page);
-});
-
-// ═══════════════════════════════════════
-//  NAVIGATION
-// ═══════════════════════════════════════
-function tryOpen(id) {
-  const inp = document.getElementById('nameInput');
-  const name = inp.value.trim();
-  if (!name) {
-    inp.classList.add('shake');
-    document.getElementById('nameHint').classList.add('show');
-    inp.focus();
-    setTimeout(() => inp.classList.remove('shake'), 500);
-    return;
-  }
-  currentName = name;
-  openQ(id, name, false);
-  if (typeof gtag === 'function') gtag('event', 'question_selected', { question: id });
-}
-
-function openQ(id, name, receiver) {
-  currentMsg = id;
-  dodgeCount[id] = 0;
-  const m = messages.find(x => x.id === id);
-  dodgePools[id] = [...m.dodgeMessages];
-  isReceiverMode = receiver;
-
-  document.getElementById('landing').style.display = 'none';
-  const page = document.getElementById(`page-${id}`);
-  page.classList.add('active');
-  if (receiver) page.classList.add('receiver-mode');
-  else page.classList.remove('receiver-mode');
-
-  document.getElementById(`greet-${id}`).textContent = name ? `Hey ${name} 💕` : '';
-
-  const code = ID_TO_CODE[id] || 'a';
-  const hashed = encodeName(name || '');
-  const url = location.origin + location.pathname + '#' + code + '.' + hashed;
-  const inp = document.getElementById(`shareIn-${id}`);
-  if (inp) inp.value = url;
-
-  // Reset dodge button
-  const dodge = document.getElementById(`dodge-${id}`);
-  dodge.style.cssText = '';
-  dodge.textContent = m.wantYes !== false ? 'No' : 'Yes';
-}
-
-function goHome() {
-  document.querySelectorAll('.question-page').forEach(p => p.classList.remove('active','receiver-mode'));
-  document.getElementById('yesResponse').classList.remove('active');
-  document.getElementById('landing').style.display = '';
-  document.getElementById('confettiContainer').innerHTML = '';
-  document.getElementById('btnBackHome').style.display = '';
-  currentMsg = null;
-  isReceiverMode = false;
-}
-
-// ═══════════════════════════════════════
-//  GOOD ANSWER (the wanted one)
-// ═══════════════════════════════════════
-function handleGood(id) {
-  const m = messages.find(x => x.id === id);
-  document.getElementById(`page-${id}`).classList.remove('active');
-  document.getElementById('yesEmoji').textContent = m.goodEmoji;
-  document.getElementById('yesText').textContent = m.goodText;
-  document.getElementById('yesSub').textContent = m.goodSub;
-  if (isReceiverMode) document.getElementById('btnBackHome').style.display = 'none';
-  document.getElementById('yesResponse').classList.add('active');
-  launchConfetti();
-  if (typeof gtag === 'function') gtag('event', 'good_answer', { question: id, answer: m.wantYes !== false ? 'yes' : 'no' });
-}
-
-// ═══════════════════════════════════════
-//  DODGE BUTTON (the unwanted one)
-// ═══════════════════════════════════════
-function doDodge(id) {
-  const m = messages.find(x => x.id === id);
-  if (typeof gtag === 'function' && (dodgeCount[id] || 0) === 0) gtag('event', 'dodge_attempt', { question: id });
-  const btn = document.getElementById(`dodge-${id}`);
-  const page = document.getElementById(`page-${id}`);
-  const r = page.getBoundingClientRect();
-
-  // Fly to random position
-  const x = Math.max(10, Math.random() * (r.width - 130));
-  const y = Math.max(10, Math.random() * (r.height - 80));
-  btn.style.position = 'fixed';
-  btn.style.left = x + 'px';
-  btn.style.top = y + 'px';
-  btn.style.zIndex = '12';
-  btn.style.transition = 'all 0.15s ease';
-
-  dodgeCount[id] = (dodgeCount[id] || 0) + 1;
-  btn.style.transform = `scale(${Math.max(0.4, 1 - dodgeCount[id] * 0.06)})`;
-  btn.style.opacity = Math.max(0.3, 1 - dodgeCount[id] * 0.07);
-
-  // Pop a chaos message
-  const pool = dodgePools[id];
-  if (pool.length) {
-    const i = Math.floor(Math.random() * pool.length);
-    const txt = pool.splice(i, 1)[0];
-    const el = document.createElement('div');
-    el.className = 'chaos-msg';
-    el.textContent = txt;
-    el.style.left = (Math.random() * 60 + 20) + '%';
-    el.style.top = (Math.random() * 50 + 15) + '%';
-    page.appendChild(el);
-    setTimeout(() => el.remove(), 3700);
-  }
-
-  // Cycle dodge button label
-  const labels = m.dodgeLabels;
-  btn.textContent = labels[Math.min(dodgeCount[id], labels.length - 1)];
-}
-
-// ═══════════════════════════════════════
-//  CONFETTI
-// ═══════════════════════════════════════
-function launchConfetti() {
-  const c = document.getElementById('confettiContainer'); c.innerHTML = '';
-  const cols = ['#ff4d94','#ff80b5','#ffb3d1','#e8d5f5','#ffe5d9','#ffd6e7','#f39c12','#e74c3c','#9b59b6','#3498db'];
-  for (let i = 0; i < 80; i++) {
-    const p = document.createElement('div');
-    p.className = 'confetti-piece';
-    p.style.left = Math.random()*100+'%';
-    p.style.background = cols[Math.floor(Math.random()*cols.length)];
-    p.style.animationDuration = (Math.random()*2+1.5)+'s';
-    p.style.animationDelay = (Math.random()*0.8)+'s';
-    p.style.width = (Math.random()*8+6)+'px';
-    p.style.height = (Math.random()*8+6)+'px';
-    p.style.borderRadius = Math.random()>0.5?'50%':'2px';
-    c.appendChild(p);
-  }
-}
-
-// ═══════════════════════════════════════
-//  COPY LINK
-// ═══════════════════════════════════════
-function copyLink(id) {
-  const inp = document.getElementById(`shareIn-${id}`);
-  const btn = document.getElementById(`copyBtn-${id}`);
-  navigator.clipboard.writeText(inp.value).then(() => {
-    btn.classList.add('copied');
-    if (typeof gtag === 'function') gtag('event', 'link_copied', { question: id });
-    const t = document.createElement('div');
-    t.className = 'copy-toast';
-    t.textContent = 'Copied! Now send it to bae 💌';
-    document.body.appendChild(t);
-    setTimeout(() => t.remove(), 2400);
-    setTimeout(() => btn.classList.remove('copied'), 2000);
-  });
-}
-
-// ═══════════════════════════════════════
-//  DEEP LINK
-// ═══════════════════════════════════════
-function checkHash() {
-  const h = location.hash.slice(1);
-  if (!h || !h.includes('.')) return;
-  const [code, ...rest] = h.split('.');
-  const qId = Q_CODES[code];
-  if (!qId || !messages.find(m => m.id === qId)) return;
-  const name = decodeName(rest.join('.'));
-  currentName = name;
-  openQ(qId, name, true);
-  // GA event: link opened
-  if (typeof gtag === 'function') gtag('event', 'link_opened', { question: qId, has_name: !!name });
-}
-window.addEventListener('load', checkHash);
-
-// ═══════════════════════════════════════
-//  AMBIENT EFFECTS
-// ═══════════════════════════════════════
-const hearts = ['💕','💗','💖','💓','💝','🩷','♡','❤️‍🔥','💘'];
-const bh = document.getElementById('bgHearts');
-for (let i = 0; i < 20; i++) {
-  const h = document.createElement('div');
-  h.className = 'heart';
-  h.textContent = hearts[Math.floor(Math.random()*hearts.length)];
-  h.style.left = Math.random()*100+'%';
-  h.style.animationDuration = (Math.random()*8+6)+'s';
-  h.style.animationDelay = (Math.random()*10)+'s';
-  h.style.fontSize = (Math.random()*16+14)+'px';
-  bh.appendChild(h);
-}
-const sf = document.getElementById('sparkleField');
-for (let i = 0; i < 30; i++) {
-  const s = document.createElement('div');
-  s.className = 'sparkle';
-  s.style.left = Math.random()*100+'%';
-  s.style.top = Math.random()*100+'%';
-  s.style.animationDelay = (Math.random()*5)+'s';
-  s.style.background = ['#ff4d94','#9b59b6','#e74c3c','#f39c12','#ff80b5'][Math.floor(Math.random()*5)];
-  sf.appendChild(s);
-}
-
-document.getElementById('nameInput').addEventListener('input', function() {
-  if (this.value.trim()) document.getElementById('nameHint').classList.remove('show');
-});
-</script>
-</body>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>💌 Send Something Cute</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&family=Sacramento&family=Caveat:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <script
+      async
+      src="https://www.googletagmanager.com/gtag/js?id=G-NHZ2WTB36C"
+    ></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() {
+        dataLayer.push(arguments);
+      }
+      gtag("js", new Date());
+      gtag("config", "G-NHZ2WTB36C");
+    </script>
+    <style>
+      :root {
+        --pink-100: #fff0f5;
+        --pink-200: #ffd6e7;
+        --pink-300: #ffb3d1;
+        --pink-400: #ff80b5;
+        --pink-500: #ff4d94;
+        --pink-600: #e6005c;
+        --lavender: #e8d5f5;
+        --peach: #ffe5d9;
+        --mint: #d5f5e3;
+        --warm-white: #fffaf5;
+        --text-dark: #4a2040;
+        --text-medium: #7a4068;
+        --text-light: #a06080;
+        --shadow-soft: 0 4px 20px rgba(255, 77, 148, 0.15);
+        --shadow-glow: 0 0 30px rgba(255, 77, 148, 0.2);
+      }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family: "Quicksand", sans-serif;
+        background: var(--warm-white);
+        color: var(--text-dark);
+        overflow-x: hidden;
+        min-height: 100vh;
+      }
+      .bg-hearts {
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        z-index: 0;
+        overflow: hidden;
+      }
+      .bg-hearts .heart {
+        position: absolute;
+        font-size: 20px;
+        opacity: 0;
+        animation: floatUp linear infinite;
+      }
+      @keyframes floatUp {
+        0% {
+          transform: translateY(100vh) rotate(0deg) scale(0.5);
+          opacity: 0;
+        }
+        10% {
+          opacity: 0.6;
+        }
+        90% {
+          opacity: 0.3;
+        }
+        100% {
+          transform: translateY(-10vh) rotate(360deg) scale(1);
+          opacity: 0;
+        }
+      }
+      .sparkle-field {
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        z-index: 0;
+      }
+      .sparkle {
+        position: absolute;
+        width: 4px;
+        height: 4px;
+        border-radius: 50%;
+        background: var(--pink-400);
+        opacity: 0;
+        animation: twinkle 3s ease-in-out infinite;
+      }
+      @keyframes twinkle {
+        0%,
+        100% {
+          opacity: 0;
+          transform: scale(0.5);
+        }
+        50% {
+          opacity: 0.8;
+          transform: scale(1.2);
+        }
+      }
+      .landing {
+        position: relative;
+        z-index: 1;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-start;
+        padding: 40px 20px 60px;
+        background:
+          radial-gradient(
+            ellipse at 20% 50%,
+            rgba(255, 179, 209, 0.25) 0%,
+            transparent 50%
+          ),
+          radial-gradient(
+            ellipse at 80% 20%,
+            rgba(232, 213, 245, 0.3) 0%,
+            transparent 50%
+          ),
+          radial-gradient(
+            ellipse at 50% 80%,
+            rgba(255, 229, 217, 0.25) 0%,
+            transparent 50%
+          ),
+          var(--warm-white);
+      }
+      .landing-title {
+        font-family: "Sacramento", cursive;
+        font-size: clamp(48px, 10vw, 90px);
+        color: var(--pink-500);
+        text-align: center;
+        margin-bottom: 8px;
+        text-shadow: 2px 2px 10px rgba(255, 77, 148, 0.2);
+        animation: fadeInDown 1s ease;
+      }
+      .landing-sub {
+        font-size: clamp(14px, 2.5vw, 18px);
+        color: var(--text-light);
+        text-align: center;
+        margin-bottom: 28px;
+        font-weight: 500;
+        animation: fadeInDown 1s ease 0.2s both;
+      }
+      @keyframes fadeInDown {
+        from {
+          opacity: 0;
+          transform: translateY(-20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      .name-area {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin-bottom: 36px;
+        animation: fadeInDown 1s ease 0.3s both;
+      }
+      .name-label {
+        font-family: "Caveat", cursive;
+        font-size: 22px;
+        color: var(--text-medium);
+        margin-bottom: 10px;
+      }
+      .name-input {
+        padding: 12px 22px;
+        border: 2.5px solid var(--pink-300);
+        border-radius: 50px;
+        font-family: "Quicksand", sans-serif;
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--text-dark);
+        background: white;
+        outline: none;
+        width: 280px;
+        max-width: 80vw;
+        text-align: center;
+        transition: all 0.3s;
+        box-shadow: 0 2px 12px rgba(255, 77, 148, 0.08);
+      }
+      .name-input::placeholder {
+        color: var(--pink-300);
+        font-weight: 500;
+      }
+      .name-input:focus {
+        border-color: var(--pink-500);
+        box-shadow:
+          0 0 0 4px rgba(255, 77, 148, 0.12),
+          0 2px 12px rgba(255, 77, 148, 0.15);
+      }
+      .name-input.shake {
+        animation: shakeInput 0.5s ease;
+        border-color: var(--pink-600);
+      }
+      @keyframes shakeInput {
+        0%,
+        100% {
+          transform: translateX(0);
+        }
+        20% {
+          transform: translateX(-8px);
+        }
+        40% {
+          transform: translateX(8px);
+        }
+        60% {
+          transform: translateX(-6px);
+        }
+        80% {
+          transform: translateX(6px);
+        }
+      }
+      .name-hint {
+        font-size: 12px;
+        color: var(--pink-500);
+        margin-top: 8px;
+        height: 16px;
+        opacity: 0;
+        transition: opacity 0.3s;
+        font-weight: 600;
+      }
+      .name-hint.show {
+        opacity: 1;
+      }
+      .card-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+        gap: 20px;
+        max-width: 960px;
+        width: 100%;
+        padding: 0 20px;
+        animation: fadeIn 1s ease 0.4s both;
+      }
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+      .msg-card {
+        background: white;
+        border-radius: 20px;
+        padding: 28px 24px;
+        text-align: center;
+        cursor: pointer;
+        border: 2px solid transparent;
+        box-shadow: var(--shadow-soft);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        overflow: hidden;
+      }
+      .msg-card::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(
+          135deg,
+          rgba(255, 179, 209, 0.1),
+          rgba(232, 213, 245, 0.1)
+        );
+        opacity: 0;
+        transition: opacity 0.3s;
+      }
+      .msg-card:hover {
+        transform: translateY(-4px);
+        border-color: var(--pink-300);
+        box-shadow: var(--shadow-glow);
+      }
+      .msg-card:hover::before {
+        opacity: 1;
+      }
+      .card-emoji {
+        font-size: 44px;
+        display: block;
+        margin-bottom: 14px;
+        transition: transform 0.3s;
+      }
+      .msg-card:hover .card-emoji {
+        transform: scale(1.15) rotate(-5deg);
+      }
+      .card-title {
+        font-family: "Caveat", cursive;
+        font-size: 22px;
+        font-weight: 700;
+        color: var(--text-dark);
+        line-height: 1.3;
+      }
+      .card-tag {
+        display: inline-block;
+        margin-top: 10px;
+        padding: 3px 12px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+      .tag-love {
+        background: var(--pink-200);
+        color: var(--pink-600);
+      }
+      .tag-sorry {
+        background: var(--lavender);
+        color: #6b3fa0;
+      }
+      .tag-flirty {
+        background: var(--peach);
+        color: #c45e2c;
+      }
+      .tag-funny {
+        background: var(--mint);
+        color: #2e7d52;
+      }
+      .tag-sweet {
+        background: #fce4ec;
+        color: #c62828;
+      }
+      .question-page {
+        display: none;
+        position: fixed;
+        inset: 0;
+        z-index: 10;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 30px;
+        text-align: center;
+        overflow: hidden;
+      }
+      .question-page.active {
+        display: flex;
+        animation: pageIn 0.5s ease;
+      }
+      @keyframes pageIn {
+        from {
+          opacity: 0;
+          transform: scale(0.95);
+        }
+        to {
+          opacity: 1;
+          transform: scale(1);
+        }
+      }
+      .q-bg {
+        position: absolute;
+        inset: 0;
+        z-index: -1;
+      }
+      .q-back-btn {
+        position: absolute;
+        top: 20px;
+        left: 20px;
+        background: rgba(255, 255, 255, 0.7);
+        border: none;
+        border-radius: 50%;
+        width: 44px;
+        height: 44px;
+        font-size: 20px;
+        cursor: pointer;
+        backdrop-filter: blur(10px);
+        transition: all 0.2s;
+        z-index: 5;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .q-back-btn:hover {
+        background: white;
+        transform: scale(1.1);
+      }
+      .question-page.receiver-mode .q-back-btn {
+        display: none;
+      }
+      .q-name-greeting {
+        font-family: "Sacramento", cursive;
+        font-size: clamp(28px, 6vw, 44px);
+        color: var(--pink-500);
+        margin-bottom: 4px;
+        opacity: 0.9;
+        animation: fadeInDown 0.5s ease 0.1s both;
+      }
+      .q-emoji {
+        font-size: clamp(60px, 15vw, 100px);
+        margin-bottom: 20px;
+        animation: bounceIn 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+      }
+      @keyframes bounceIn {
+        0% {
+          transform: scale(0);
+        }
+        60% {
+          transform: scale(1.15);
+        }
+        100% {
+          transform: scale(1);
+        }
+      }
+      .q-text {
+        font-family: "Caveat", cursive;
+        font-size: clamp(32px, 7vw, 56px);
+        font-weight: 700;
+        color: var(--text-dark);
+        max-width: 600px;
+        line-height: 1.2;
+        margin-bottom: 10px;
+        animation: fadeInDown 0.6s ease 0.2s both;
+      }
+      .q-subtext {
+        font-size: clamp(13px, 2vw, 16px);
+        color: var(--text-light);
+        margin-bottom: 36px;
+        font-weight: 500;
+        font-style: italic;
+        animation: fadeInDown 0.6s ease 0.3s both;
+      }
+      .btn-row {
+        display: flex;
+        gap: 20px;
+        align-items: center;
+        justify-content: center;
+        flex-wrap: wrap;
+        animation: fadeIn 0.6s ease 0.4s both;
+        min-height: 70px;
+        position: relative;
+      }
+      .btn-primary {
+        padding: 14px 48px;
+        border: none;
+        border-radius: 50px;
+        font-family: "Quicksand", sans-serif;
+        font-size: 18px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        letter-spacing: 0.5px;
+        position: relative;
+        overflow: hidden;
+        color: white;
+      }
+      .btn-primary::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(
+          135deg,
+          rgba(255, 255, 255, 0.3),
+          transparent
+        );
+        pointer-events: none;
+      }
+      .btn-primary:hover {
+        transform: scale(1.08);
+        box-shadow: 0 6px 25px rgba(255, 77, 148, 0.35);
+      }
+      .btn-primary:active {
+        transform: scale(1.02);
+      }
+      .btn-dodge {
+        padding: 14px 48px;
+        border: 2px solid var(--pink-300);
+        border-radius: 50px;
+        background: white;
+        font-family: "Quicksand", sans-serif;
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--text-medium);
+        cursor: pointer;
+        transition: all 0.15s ease;
+        user-select: none;
+        position: relative;
+      }
+      .yes-response {
+        display: none;
+        position: fixed;
+        inset: 0;
+        z-index: 20;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 30px;
+        text-align: center;
+        background:
+          radial-gradient(
+            ellipse at center,
+            rgba(255, 179, 209, 0.3) 0%,
+            transparent 70%
+          ),
+          var(--warm-white);
+      }
+      .yes-response.active {
+        display: flex;
+        animation: pageIn 0.5s ease;
+      }
+      .yes-emoji {
+        font-size: 80px;
+        animation: heartBeat 1s ease infinite;
+      }
+      @keyframes heartBeat {
+        0%,
+        100% {
+          transform: scale(1);
+        }
+        15% {
+          transform: scale(1.15);
+        }
+        30% {
+          transform: scale(1);
+        }
+        45% {
+          transform: scale(1.1);
+        }
+      }
+      .yes-text {
+        font-family: "Sacramento", cursive;
+        font-size: clamp(36px, 8vw, 64px);
+        color: var(--pink-500);
+        margin: 20px 0 10px;
+      }
+      .yes-sub {
+        font-size: 18px;
+        color: var(--text-medium);
+        font-weight: 500;
+      }
+      .yes-response .btn-back-home {
+        margin-top: 30px;
+        padding: 12px 32px;
+        border: 2px solid var(--pink-300);
+        border-radius: 50px;
+        background: white;
+        font-family: "Quicksand", sans-serif;
+        font-size: 15px;
+        font-weight: 600;
+        color: var(--text-medium);
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      .yes-response .btn-back-home:hover {
+        background: var(--pink-100);
+      }
+      .confetti-container {
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        z-index: 25;
+        overflow: hidden;
+      }
+      .confetti-piece {
+        position: absolute;
+        top: -20px;
+        width: 10px;
+        height: 10px;
+        border-radius: 2px;
+        animation: confettiFall linear forwards;
+      }
+      @keyframes confettiFall {
+        0% {
+          transform: translateY(0) rotate(0deg);
+          opacity: 1;
+        }
+        100% {
+          transform: translateY(100vh) rotate(720deg);
+          opacity: 0;
+        }
+      }
+      .chaos-msg {
+        position: absolute;
+        z-index: 15;
+        font-family: "Caveat", cursive;
+        font-size: 20px;
+        font-weight: 700;
+        color: var(--pink-500);
+        pointer-events: none;
+        max-width: 70vw;
+        text-align: center;
+        padding: 6px 14px;
+        background: rgba(255, 255, 255, 0.75);
+        border-radius: 20px;
+        backdrop-filter: blur(4px);
+        box-shadow: 0 2px 12px rgba(255, 77, 148, 0.15);
+        animation: popFade 3.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+      }
+      @keyframes popFade {
+        0% {
+          opacity: 0;
+          transform: scale(0.3);
+        }
+        8% {
+          opacity: 1;
+          transform: scale(1.05);
+        }
+        15% {
+          transform: scale(1);
+        }
+        70% {
+          opacity: 1;
+          transform: scale(1) translateY(-8px);
+        }
+        100% {
+          opacity: 0;
+          transform: scale(0.9) translateY(-30px);
+        }
+      }
+      .share-bar {
+        position: absolute;
+        bottom: 24px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: rgba(255, 255, 255, 0.85);
+        backdrop-filter: blur(12px);
+        border: 2px solid var(--pink-200);
+        border-radius: 16px;
+        padding: 10px 14px;
+        box-shadow: 0 4px 20px rgba(255, 77, 148, 0.1);
+        z-index: 12;
+        max-width: 92vw;
+        animation: fadeIn 0.6s ease 0.6s both;
+      }
+      .share-bar-label {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text-light);
+        white-space: nowrap;
+      }
+      .share-bar input {
+        width: 240px;
+        max-width: 45vw;
+        padding: 8px 12px;
+        border: 1.5px solid var(--pink-200);
+        border-radius: 10px;
+        font-family: "Quicksand", sans-serif;
+        font-size: 12px;
+        color: var(--text-medium);
+        background: var(--pink-100);
+        outline: none;
+        text-overflow: ellipsis;
+      }
+      .share-bar input:focus {
+        border-color: var(--pink-400);
+      }
+      .copy-btn {
+        background: var(--pink-500);
+        border: none;
+        border-radius: 10px;
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.25s;
+        flex-shrink: 0;
+        position: relative;
+      }
+      .copy-btn:hover {
+        background: var(--pink-600);
+        transform: scale(1.08);
+      }
+      .copy-btn:active {
+        transform: scale(0.95);
+      }
+      .copy-btn svg {
+        width: 18px;
+        height: 18px;
+        fill: none;
+        stroke: white;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        transition: all 0.25s;
+      }
+      .copy-btn.copied {
+        background: #27ae60;
+      }
+      .copy-btn.copied .icon-copy {
+        opacity: 0;
+        transform: scale(0.5);
+      }
+      .copy-btn .icon-check {
+        position: absolute;
+        opacity: 0;
+        transform: scale(0.5);
+        transition: all 0.25s;
+      }
+      .copy-btn.copied .icon-check {
+        opacity: 1;
+        transform: scale(1);
+      }
+      .question-page.receiver-mode .share-bar {
+        display: none;
+      }
+      .bell-btn {
+        background: #6c5ce7;
+      }
+      .bell-btn:hover {
+        background: #5a4bd1;
+      }
+      .bell-btn svg {
+        width: 18px;
+        height: 18px;
+        fill: none;
+        stroke: white;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      .copy-toast {
+        position: fixed;
+        bottom: 100px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: var(--text-dark);
+        color: white;
+        padding: 10px 24px;
+        border-radius: 50px;
+        font-size: 14px;
+        font-weight: 600;
+        z-index: 35;
+        animation: toastIn 2.2s ease forwards;
+        white-space: nowrap;
+      }
+      @keyframes toastIn {
+        0% {
+          opacity: 0;
+          transform: translateX(-50%) translateY(10px);
+        }
+        15%,
+        70% {
+          opacity: 1;
+          transform: translateX(-50%) translateY(0);
+        }
+        100% {
+          opacity: 0;
+          transform: translateX(-50%) translateY(-10px);
+        }
+      }
+      .footer {
+        text-align: center;
+        padding: 40px 20px 30px;
+        color: var(--text-light);
+        font-size: 13px;
+        position: relative;
+        z-index: 1;
+      }
+      .footer span {
+        color: var(--pink-400);
+      }
+      @media (max-width: 600px) {
+        .card-grid {
+          grid-template-columns: 1fr 1fr;
+          gap: 14px;
+        }
+        .msg-card {
+          padding: 20px 16px;
+        }
+        .card-emoji {
+          font-size: 34px;
+          margin-bottom: 10px;
+        }
+        .card-title {
+          font-size: 18px;
+        }
+        .name-input {
+          width: 240px;
+          font-size: 15px;
+          padding: 11px 18px;
+        }
+        .name-label {
+          font-size: 20px;
+        }
+        .question-page {
+          padding: 20px 16px;
+        }
+        .q-back-btn {
+          width: 38px;
+          height: 38px;
+          font-size: 18px;
+          top: 14px;
+          left: 14px;
+        }
+        .q-name-greeting {
+          font-size: clamp(24px, 5.5vw, 36px);
+          margin-bottom: 2px;
+        }
+        .q-emoji {
+          font-size: clamp(50px, 14vw, 80px);
+          margin-bottom: 14px;
+        }
+        .q-text {
+          font-size: clamp(26px, 6.5vw, 44px);
+          margin-bottom: 6px;
+          padding: 0 8px;
+        }
+        .q-subtext {
+          font-size: 13px;
+          margin-bottom: 24px;
+          padding: 0 12px;
+        }
+        .btn-row {
+          gap: 14px;
+          min-height: 56px;
+        }
+        .btn-primary {
+          padding: 12px 36px;
+          font-size: 16px;
+        }
+        .btn-dodge {
+          padding: 12px 36px;
+          font-size: 16px;
+        }
+        .chaos-msg {
+          font-size: 17px;
+          max-width: 80vw;
+          padding: 5px 12px;
+        }
+        .share-bar {
+          flex-wrap: wrap;
+          justify-content: center;
+          padding: 8px 10px;
+          bottom: 10px;
+          gap: 6px;
+          border-radius: 12px;
+          max-width: 95vw;
+        }
+        .share-bar input {
+          width: 160px;
+          max-width: 52vw;
+          font-size: 11px;
+          padding: 7px 10px;
+        }
+        .share-bar-label {
+          display: none;
+        }
+        .copy-btn {
+          width: 36px;
+          height: 36px;
+        }
+        .copy-btn svg {
+          width: 16px;
+          height: 16px;
+        }
+      }
+      @media (max-width: 380px) {
+        .card-grid {
+          grid-template-columns: 1fr;
+        }
+        .question-page {
+          padding: 16px 12px;
+        }
+        .q-emoji {
+          font-size: 50px;
+          margin-bottom: 10px;
+        }
+        .q-text {
+          font-size: 24px;
+        }
+        .btn-primary,
+        .btn-dodge {
+          padding: 10px 28px;
+          font-size: 15px;
+        }
+        .share-bar {
+          bottom: 6px;
+          padding: 6px 8px;
+        }
+        .share-bar input {
+          width: 140px;
+        }
+      }
+      @media (max-height: 700px) {
+        .q-emoji {
+          font-size: 50px;
+          margin-bottom: 10px;
+        }
+        .q-name-greeting {
+          font-size: 24px;
+        }
+        .q-subtext {
+          margin-bottom: 18px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="bg-hearts" id="bgHearts"></div>
+    <div class="sparkle-field" id="sparkleField"></div>
+    <div class="landing" id="landing">
+      <div class="landing-title">send something cute</div>
+      <div class="landing-sub">
+        pick a message · send the link · wait for a smile 💗
+      </div>
+      <div class="name-area">
+        <div class="name-label">✨ first, who's the lucky one? ✨</div>
+        <input
+          type="text"
+          class="name-input"
+          id="nameInput"
+          placeholder="her name here..."
+          maxlength="30"
+          autocomplete="off"
+          spellcheck="false"
+        />
+        <div class="name-hint" id="nameHint">
+          psst... enter her name first! 💕
+        </div>
+      </div>
+      <div class="card-grid" id="cardGrid"></div>
+      <div class="footer">
+        made with <span>♥</span> for people in love<br /><small
+          style="
+            opacity: 0.6;
+            font-size: 11px;
+            margin-top: 4px;
+            display: inline-block;
+          "
+          >© 2026 yugam1.github.io · all rights reserved</small
+        >
+      </div>
+    </div>
+    <div id="questionPages"></div>
+    <div class="yes-response" id="yesResponse">
+      <div class="yes-emoji" id="yesEmoji">💖</div>
+      <div class="yes-text" id="yesText">Yay!</div>
+      <div class="yes-sub" id="yesSub"></div>
+      <button class="btn-back-home" id="btnBackHome" onclick="goHome()">
+        ← send another
+      </button>
+    </div>
+    <div class="confetti-container" id="confettiContainer"></div>
+    <script>
+      // Copyright (c) 2026 Yugam Prasad — yugam1.github.io — All rights reserved.
+      const Q_CODES = {
+        a: "valentine",
+        b: "still-mad",
+        c: "kiss",
+        d: "date",
+        e: "forgive",
+        f: "cuddle",
+        g: "hoodie",
+        h: "fries",
+        i: "miss-me",
+        j: "puppy",
+        k: "best-thing",
+        l: "food-run",
+      };
+      const ID_TO_CODE = Object.fromEntries(
+        Object.entries(Q_CODES).map(([k, v]) => [v, k]),
+      );
+      const K = 13;
+      function encodeName(name) {
+        if (!name) return "";
+        let x = "";
+        for (let i = 0; i < name.length; i++)
+          x += String.fromCharCode(name.charCodeAt(i) ^ K);
+        return btoa(unescape(encodeURIComponent(x)))
+          .split("")
+          .reverse()
+          .join("")
+          .replace(/=/g, "~");
+      }
+      function decodeName(s) {
+        try {
+          let b = s.replace(/~/g, "=").split("").reverse().join("");
+          const x = decodeURIComponent(escape(atob(b)));
+          let n = "";
+          for (let i = 0; i < x.length; i++)
+            n += String.fromCharCode(x.charCodeAt(i) ^ K);
+          return n;
+        } catch {
+          return "";
+        }
+      }
+      function genTopic() {
+        const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+        let t = "";
+        for (let i = 0; i < 8; i++)
+          t += chars[Math.floor(Math.random() * chars.length)];
+        return "cute-" + t;
+      }
+      let currentTopic = "";
+      const ntfySent = {}; // track what we already sent per session
+      function ntfySend(topic, title, body, tags) {
+        if (!topic) return;
+        const key = topic + ":" + title;
+        if (ntfySent[key]) return; // don't spam
+        ntfySent[key] = true;
+        fetch("https://ntfy.sh/" + topic, {
+          method: "POST",
+          headers: { Title: title, Tags: tags || "heart" },
+          body: body,
+        }).catch(() => {}); // silent fail
+      }
+      const messages = [
+        {
+          id: "valentine",
+          emoji: "💝",
+          title: "Will you be my Valentine?",
+          sub: "say yes... please? 🥺",
+          tag: "love",
+          tagLabel: "love",
+          bg: "linear-gradient(135deg, #fff0f5, #ffe0ec, #ffd6e7)",
+          btnColor: "#ff4d94",
+          wantYes: true,
+          goodEmoji: "💖",
+          goodText: "I knew you'd say yes!",
+          goodSub: "best valentine ever 🥰",
+          dodgeMessages: [
+            "Are you sure?? 🥺",
+            "Think again!",
+            "Wrong button!",
+            "My heart is breaking 💔",
+            "Please reconsider!",
+            "I'll ask nicer... PLEASE?",
+            "Not an option babe",
+            "The button is lying to you",
+            "Try the other one 👉",
+          ],
+          dodgeLabels: [
+            "No?",
+            "Nope?",
+            "Really?",
+            "Hmm..",
+            "Still no?",
+            "😢",
+            "💔",
+            "🥺",
+            "Fine.",
+            "...",
+          ],
+        },
+        {
+          id: "still-mad",
+          emoji: "🥺",
+          title: "Are you still mad at me?",
+          sub: "i promise i'm sorry...",
+          tag: "sorry",
+          tagLabel: "sorry",
+          bg: "linear-gradient(135deg, #f3e8ff, #e8d5f5, #f0e0ff)",
+          btnColor: "#9b59b6",
+          wantYes: false,
+          goodEmoji: "🥹",
+          goodText: "Phew! Thank god!",
+          goodSub: "i promise to never mess up again 🤞",
+          dodgeMessages: [
+            "Nooo please! 🥺",
+            "I said I'm sorry!",
+            "Give me another chance!",
+            "I'll make it up to you!",
+            "Not the silent treatment 😭",
+            "I'll do ANYTHING",
+            "What can I do to fix this??",
+            "My heart can't take this 💔",
+            "I'll buy you ice cream??",
+          ],
+          dodgeLabels: [
+            "Yes?",
+            "Still?",
+            "Really?",
+            "😰",
+            "Sure??",
+            "Think...",
+            "Ugh 😭",
+            "Please no",
+            "💔",
+            "...",
+          ],
+        },
+        {
+          id: "kiss",
+          emoji: "💋",
+          title: "Can I get a kiss?",
+          sub: "just one... okay maybe two",
+          tag: "flirty",
+          tagLabel: "flirty",
+          bg: "linear-gradient(135deg, #ffe5d9, #ffd1c1, #ffe0d0)",
+          btnColor: "#e74c3c",
+          wantYes: true,
+          goodEmoji: "😘",
+          goodText: "Mwaaah!",
+          goodSub: "sending a million kisses 💋💋💋",
+          dodgeMessages: [
+            "Not even a small one?",
+            "A peck? 🥺",
+            "On the cheek??",
+            "Air kiss at least?",
+            "You're being cruel 😤",
+            "My lips are lonely",
+            "Fine I'll kiss the mirror",
+            "PLEASE",
+            "What about a forehead kiss?",
+          ],
+          dodgeLabels: [
+            "No?",
+            "Nope?",
+            "Really?",
+            "Hmm..",
+            "Still no?",
+            "😢",
+            "💔",
+            "🥺",
+            "Fine.",
+            "...",
+          ],
+        },
+        {
+          id: "date",
+          emoji: "🌹",
+          title: "Go on a date with me?",
+          sub: "i'll plan everything, just show up cute",
+          tag: "love",
+          tagLabel: "love",
+          bg: "linear-gradient(135deg, #fff0f5, #fce4ec, #ffeef5)",
+          btnColor: "#e91e63",
+          wantYes: true,
+          goodEmoji: "🥳",
+          goodText: "It's a date!",
+          goodSub: "wear something cute 💃",
+          dodgeMessages: [
+            "I'll pay for everything!",
+            "Free food though??",
+            "Even dessert! 🍰",
+            "Did I mention free food?",
+            "I made reservations 😭",
+            "Don't break my heart",
+            "I already picked an outfit",
+            "PLEASE I begged the waiter",
+            "What if I bring flowers? 🌷",
+          ],
+          dodgeLabels: [
+            "No?",
+            "Nope?",
+            "Really?",
+            "Hmm..",
+            "Still no?",
+            "😢",
+            "💔",
+            "🥺",
+            "Fine.",
+            "...",
+          ],
+        },
+        {
+          id: "forgive",
+          emoji: "🥹",
+          title: "Do you forgive me?",
+          sub: "i really really messed up...",
+          tag: "sorry",
+          tagLabel: "sorry",
+          bg: "linear-gradient(135deg, #e8d5f5, #f3e8ff, #ede0f7)",
+          btnColor: "#8e44ad",
+          wantYes: true,
+          goodEmoji: "🤗",
+          goodText: "Thank you!",
+          goodSub: "i promise to do better 🤞",
+          dodgeMessages: [
+            "I deserve that 😔",
+            "What if I grovel?",
+            "I'll buy you food?",
+            "How about chocolate? 🍫",
+            "I am on my KNEES",
+            "Give me one more chance!",
+            "I'll clean the whole house",
+            "I'll do the dishes for a WEEK",
+            "Please my heart can't take this",
+          ],
+          dodgeLabels: [
+            "No?",
+            "Nope?",
+            "Really?",
+            "Hmm..",
+            "Still no?",
+            "😢",
+            "💔",
+            "🥺",
+            "Fine.",
+            "...",
+          ],
+        },
+        {
+          id: "cuddle",
+          emoji: "🧸",
+          title: "Can we cuddle tonight?",
+          sub: "i'll be the big spoon or small spoon, your call",
+          tag: "sweet",
+          tagLabel: "sweet",
+          bg: "linear-gradient(135deg, #fce4ec, #fff0f5, #ffeaf2)",
+          btnColor: "#ff6b9d",
+          wantYes: true,
+          goodEmoji: "🤗",
+          goodText: "Come here youuu!",
+          goodSub: "bringing the blankets and snacks 🍿",
+          dodgeMessages: [
+            "But I'm cold 🥶",
+            "I'll bring snacks!",
+            "Netflix AND cuddles?",
+            "I promise no cold feet",
+            "What if I bring a blanket?",
+            "You're so mean 😤",
+            "I'll be the perfect spoon",
+            "Even 5 minutes??",
+            "My teddy bear said yes",
+          ],
+          dodgeLabels: [
+            "No?",
+            "Nope?",
+            "Really?",
+            "Hmm..",
+            "Still no?",
+            "😢",
+            "💔",
+            "🥺",
+            "Fine.",
+            "...",
+          ],
+        },
+        {
+          id: "hoodie",
+          emoji: "👕",
+          title: "Can I steal your hoodie?",
+          sub: "the one that smells like you...",
+          tag: "flirty",
+          tagLabel: "flirty",
+          bg: "linear-gradient(135deg, #ffe5d9, #fff0e8, #ffe8d5)",
+          btnColor: "#e67e22",
+          wantYes: true,
+          goodEmoji: "🥰",
+          goodText: "It's mine now!",
+          goodSub: "no take-backs ever 😤",
+          dodgeMessages: [
+            "But it's cozy!",
+            "I look cute in it!",
+            "You have like 50!",
+            "Sharing is caring 🥺",
+            "I'll trade you a kiss?",
+            "Too late I'm wearing it",
+            "Finders keepers!",
+            "It smells like you and I NEED that",
+            "What's yours is mine babe",
+          ],
+          dodgeLabels: [
+            "No?",
+            "Nope?",
+            "Really?",
+            "Hmm..",
+            "Still no?",
+            "😢",
+            "💔",
+            "🥺",
+            "Fine.",
+            "...",
+          ],
+        },
+        {
+          id: "fries",
+          emoji: "🍟",
+          title: "Will you share your fries?",
+          sub: "just a few... okay maybe half",
+          tag: "funny",
+          tagLabel: "funny",
+          bg: "linear-gradient(135deg, #fff8e1, #ffecb3, #fff3d0)",
+          btnColor: "#f39c12",
+          wantYes: true,
+          goodEmoji: "😋",
+          goodText: "You're the best!",
+          goodSub: "okay fine you can have some of mine too 🍟",
+          dodgeMessages: [
+            "Not even ONE fry??",
+            "The crispy ones? 🥺",
+            "I'll trade a nugget!",
+            "This is a dealbreaker",
+            "What about the burnt ones?",
+            "I thought you loved me",
+            "Fine I'll order my own... 😤",
+            "But sharing is ROMANTIC",
+            "I'm stealing one anyway",
+          ],
+          dodgeLabels: [
+            "No?",
+            "Nope?",
+            "Really?",
+            "Hmm..",
+            "Still no?",
+            "😢",
+            "💔",
+            "🥺",
+            "Fine.",
+            "...",
+          ],
+        },
+        {
+          id: "miss-me",
+          emoji: "💭",
+          title: "Do you miss me right now?",
+          sub: "because i definitely miss you...",
+          tag: "sweet",
+          tagLabel: "sweet",
+          bg: "linear-gradient(135deg, #e3f2fd, #e8eaf6, #ede7f6)",
+          btnColor: "#5c6bc0",
+          wantYes: true,
+          goodEmoji: "🥺💕",
+          goodText: "I miss you more!",
+          goodSub: "counting the minutes till I see you",
+          dodgeMessages: [
+            "LIAR",
+            "Your heart says otherwise",
+            "Not even a little?? 🥺",
+            "I miss YOU though",
+            "Think about it harder",
+            "Check your heart again",
+            "Impossible. Try again.",
+            "I know you do 😏",
+            "That's not what your eyes say",
+          ],
+          dodgeLabels: [
+            "No?",
+            "Nope?",
+            "Really?",
+            "Hmm..",
+            "Still no?",
+            "😢",
+            "💔",
+            "🥺",
+            "Fine.",
+            "...",
+          ],
+        },
+        {
+          id: "puppy",
+          emoji: "🐶",
+          title: "Can we get a puppy together?",
+          sub: "look at this face... how can you say no",
+          tag: "funny",
+          tagLabel: "funny",
+          bg: "linear-gradient(135deg, #d5f5e3, #e8f5e9, #dcedc8)",
+          btnColor: "#27ae60",
+          wantYes: true,
+          goodEmoji: "🐕",
+          goodText: "We're puppy parents!",
+          goodSub: "time to pick names!! 🎉",
+          dodgeMessages: [
+            "But PUPPIES!",
+            "Look at those eyes 🥺",
+            "A small one??",
+            "What about a cat then?",
+            "A hamster? A fish?? ANYTHING?",
+            "I already named it!",
+            "It'll love you SO much",
+            "It can sleep in MY side",
+            "Wrong answer, try again 🐾",
+          ],
+          dodgeLabels: [
+            "No?",
+            "Nope?",
+            "Really?",
+            "Hmm..",
+            "Still no?",
+            "😢",
+            "💔",
+            "🥺",
+            "Fine.",
+            "...",
+          ],
+        },
+        {
+          id: "best-thing",
+          emoji: "⭐",
+          title: "Am I the best thing in your life?",
+          sub: "be honest... but also say yes",
+          tag: "flirty",
+          tagLabel: "flirty",
+          bg: "linear-gradient(135deg, #fff8e1, #fff3cd, #ffeaa7)",
+          btnColor: "#f1c40f",
+          wantYes: true,
+          goodEmoji: "🌟",
+          goodText: "Obviously!",
+          goodSub: "and you're the best thing in mine ✨",
+          dodgeMessages: [
+            "EXCUSE ME?!",
+            "I'm offended 😤",
+            "Take that back!",
+            "Not even top 3?? 🥺",
+            "I'm calling my mom",
+            "Wow just wow",
+            "I need a moment...",
+            "That physically hurt me",
+            "One more chance to answer correctly",
+          ],
+          dodgeLabels: [
+            "No?",
+            "Nope?",
+            "Really?",
+            "Hmm..",
+            "Still no?",
+            "😢",
+            "💔",
+            "🥺",
+            "Fine.",
+            "...",
+          ],
+        },
+        {
+          id: "food-run",
+          emoji: "🌮",
+          title: "Late night food run?",
+          sub: "i'm hungry and you're cute, let's go",
+          tag: "funny",
+          tagLabel: "funny",
+          bg: "linear-gradient(135deg, #ffe0b2, #ffcc80, #ffe0cc)",
+          btnColor: "#e65100",
+          wantYes: true,
+          goodEmoji: "🚗💨",
+          goodText: "Let's gooo!",
+          goodSub: "shotgun picks the music 🎵",
+          dodgeMessages: [
+            "But TACOS!",
+            "I'll drive!",
+            "I'll buy! 💰",
+            "Not even for ice cream?? 🍦",
+            "It's a bonding experience!",
+            "We can get drive-thru!",
+            "I'll eat your leftovers too",
+            "Food > sleep, always",
+            "You KNOW you're hungry",
+          ],
+          dodgeLabels: [
+            "No?",
+            "Nope?",
+            "Really?",
+            "Hmm..",
+            "Still no?",
+            "😢",
+            "💔",
+            "🥺",
+            "Fine.",
+            "...",
+          ],
+        },
+      ];
+      let currentMsg = null,
+        currentName = "",
+        isReceiverMode = false;
+      let dodgeCount = {};
+      const dodgePools = {};
+      messages.forEach((m) => {
+        dodgePools[m.id] = [...m.dodgeMessages];
+      });
+      const grid = document.getElementById("cardGrid");
+      const qPages = document.getElementById("questionPages");
+      const copySVG = `<svg class="icon-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg><svg class="icon-check" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+      const bellSVG = `<svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>`;
+      messages.forEach((m) => {
+        const card = document.createElement("div");
+        card.className = "msg-card";
+        card.innerHTML = `<span class="card-emoji">${m.emoji}</span><div class="card-title">${m.title}</div><span class="card-tag tag-${m.tag}">${m.tagLabel}</span>`;
+        card.addEventListener("click", () => tryOpen(m.id));
+        grid.appendChild(card);
+        const page = document.createElement("div");
+        page.className = "question-page";
+        page.id = `page-${m.id}`;
+        let btnHTML;
+        if (m.wantYes !== false) {
+          btnHTML = `
+<button class="btn-primary" style="background:${m.btnColor}" onclick="handleGood('${m.id}')">Yes 💕</button><button class="btn-dodge" id="dodge-${m.id}" onmouseenter="doDodge('${m.id}')" onclick="doDodge('${m.id}')">No</button>`;
+        } else {
+          btnHTML = `
+<button class="btn-dodge" id="dodge-${m.id}" onmouseenter="doDodge('${m.id}')" onclick="doDodge('${m.id}')">Yes</button><button class="btn-primary" style="background:${m.btnColor}" onclick="handleGood('${m.id}')">No 💕</button>`;
+        }
+        page.innerHTML = `
+<div class="q-bg" style="background:${m.bg}"></div><button class="q-back-btn" onclick="goHome()">←</button><div class="q-name-greeting" id="greet-${m.id}"></div><div class="q-emoji">${m.emoji}</div><div class="q-text">${m.title}</div><div class="q-subtext">${m.sub}</div><div class="btn-row" id="btnRow-${m.id}">${btnHTML}</div><div class="share-bar" id="shareBar-${m.id}"><span class="share-bar-label">send it →</span><input type="text" id="shareIn-${m.id}" readonly><button class="copy-btn" id="copyBtn-${m.id}" onclick="copyLink('${m.id}')">${copySVG}</button><button class="copy-btn bell-btn" id="bellBtn-${m.id}" onclick="subscribeTopic('${m.id}')" title="Get notified when they respond">${bellSVG}</button></div>`;
+        qPages.appendChild(page);
+      });
+      function tryOpen(id) {
+        const inp = document.getElementById("nameInput");
+        const name = inp.value.trim();
+        if (!name) {
+          inp.classList.add("shake");
+          document.getElementById("nameHint").classList.add("show");
+          inp.focus();
+          setTimeout(() => inp.classList.remove("shake"), 500);
+          return;
+        }
+        currentName = name;
+        openQ(id, name, false);
+        if (typeof gtag === "function")
+          gtag("event", "question_selected", { question: id });
+      }
+      function openQ(id, name, receiver) {
+        currentMsg = id;
+        dodgeCount[id] = 0;
+        const m = messages.find((x) => x.id === id);
+        dodgePools[id] = [...m.dodgeMessages];
+        isReceiverMode = receiver;
+        document.getElementById("landing").style.display = "none";
+        const page = document.getElementById(`page-${id}`);
+        page.classList.add("active");
+        if (receiver) page.classList.add("receiver-mode");
+        else page.classList.remove("receiver-mode");
+        document.getElementById(`greet-${id}`).textContent = name
+          ? `Hey ${name} 💕`
+          : "";
+        if (!receiver) {
+          currentTopic = genTopic();
+        }
+        const code = ID_TO_CODE[id] || "a";
+        const hashed = encodeName(name || "");
+        const url =
+          location.origin +
+          location.pathname +
+          "#" +
+          code +
+          "." +
+          hashed +
+          "." +
+          currentTopic;
+        const inp = document.getElementById(`shareIn-${id}`);
+        if (inp) inp.value = url;
+        const dodge = document.getElementById(`dodge-${id}`);
+        dodge.style.cssText = "";
+        dodge.textContent = m.wantYes !== false ? "No" : "Yes";
+      }
+      function goHome() {
+        document
+          .querySelectorAll(".question-page")
+          .forEach((p) => p.classList.remove("active", "receiver-mode"));
+        document.getElementById("yesResponse").classList.remove("active");
+        document.getElementById("landing").style.display = "";
+        document.getElementById("confettiContainer").innerHTML = "";
+        document.getElementById("btnBackHome").style.display = "";
+        currentMsg = null;
+        isReceiverMode = false;
+      }
+      function handleGood(id) {
+        const m = messages.find((x) => x.id === id);
+        document.getElementById(`page-${id}`).classList.remove("active");
+        document.getElementById("yesEmoji").textContent = m.goodEmoji;
+        document.getElementById("yesText").textContent = m.goodText;
+        document.getElementById("yesSub").textContent = m.goodSub;
+        if (isReceiverMode)
+          document.getElementById("btnBackHome").style.display = "none";
+        document.getElementById("yesResponse").classList.add("active");
+        launchConfetti();
+        const wanted = m.wantYes !== false ? "YES" : "NO";
+        ntfySend(
+          currentTopic,
+          "💖 " + wanted + "!",
+          (currentName || "They") +
+            " said " +
+            wanted +
+            ' to: "' +
+            m.title +
+            '"',
+          "heart,tada",
+        );
+        if (typeof gtag === "function")
+          gtag("event", "good_answer", {
+            question: id,
+            answer: m.wantYes !== false ? "yes" : "no",
+          });
+      }
+      function doDodge(id) {
+        const m = messages.find((x) => x.id === id);
+        if (typeof gtag === "function" && (dodgeCount[id] || 0) === 0)
+          gtag("event", "dodge_attempt", { question: id });
+        const btn = document.getElementById(`dodge-${id}`);
+        const page = document.getElementById(`page-${id}`);
+        const r = page.getBoundingClientRect();
+        const pw = r.width,
+          ph = r.height;
+        const btnW = 130,
+          btnH = 50;
+        const padX = 15,
+          padTop = 70,
+          padBot = 100; // avoid back btn & share bar
+        const x = padX + Math.random() * Math.max(0, pw - btnW - padX * 2);
+        const y =
+          padTop + Math.random() * Math.max(0, ph - btnH - padTop - padBot);
+        btn.style.position = "fixed";
+        btn.style.left = x + "px";
+        btn.style.top = y + "px";
+        btn.style.zIndex = "12";
+        btn.style.transition = "all 0.15s ease";
+        dodgeCount[id] = (dodgeCount[id] || 0) + 1;
+        btn.style.transform = `scale(${Math.max(0.4, 1 - dodgeCount[id] * 0.06)})`;
+        btn.style.opacity = Math.max(0.3, 1 - dodgeCount[id] * 0.07);
+        const dc = dodgeCount[id];
+        if ([3, 5, 8].includes(dc)) {
+          const unwanted = m.wantYes !== false ? "No" : "Yes";
+          ntfySend(
+            currentTopic,
+            "😂 Dodge x" + dc,
+            (currentName || "They") +
+              ' tried to hit "' +
+              unwanted +
+              '" ' +
+              dc +
+              ' times on: "' +
+              m.title +
+              '"',
+            "laughing",
+          );
+        }
+        const pool = dodgePools[id];
+        if (pool.length) {
+          const i = Math.floor(Math.random() * pool.length);
+          const txt = pool.splice(i, 1)[0];
+          const el = document.createElement("div");
+          el.className = "chaos-msg";
+          el.textContent = txt;
+          const pw = page.clientWidth,
+            ph = page.clientHeight;
+          const safeX = Math.max(
+            20,
+            Math.min(pw - 200, Math.random() * (pw - 100)),
+          );
+          const safeY = Math.max(
+            60,
+            Math.min(ph - 120, 80 + Math.random() * (ph - 240)),
+          );
+          el.style.left = safeX + "px";
+          el.style.top = safeY + "px";
+          page.appendChild(el);
+          setTimeout(() => el.remove(), 3800);
+        }
+        const labels = m.dodgeLabels;
+        btn.textContent = labels[Math.min(dodgeCount[id], labels.length - 1)];
+      }
+      function launchConfetti() {
+        const c = document.getElementById("confettiContainer");
+        c.innerHTML = "";
+        const cols = [
+          "#ff4d94",
+          "#ff80b5",
+          "#ffb3d1",
+          "#e8d5f5",
+          "#ffe5d9",
+          "#ffd6e7",
+          "#f39c12",
+          "#e74c3c",
+          "#9b59b6",
+          "#3498db",
+        ];
+        for (let i = 0; i < 80; i++) {
+          const p = document.createElement("div");
+          p.className = "confetti-piece";
+          p.style.left = Math.random() * 100 + "%";
+          p.style.background = cols[Math.floor(Math.random() * cols.length)];
+          p.style.animationDuration = Math.random() * 2 + 1.5 + "s";
+          p.style.animationDelay = Math.random() * 0.8 + "s";
+          p.style.width = Math.random() * 8 + 6 + "px";
+          p.style.height = Math.random() * 8 + 6 + "px";
+          p.style.borderRadius = Math.random() > 0.5 ? "50%" : "2px";
+          c.appendChild(p);
+        }
+      }
+      function copyLink(id) {
+        const inp = document.getElementById(`shareIn-${id}`);
+        const btn = document.getElementById(`copyBtn-${id}`);
+        navigator.clipboard.writeText(inp.value).then(() => {
+          btn.classList.add("copied");
+          if (typeof gtag === "function")
+            gtag("event", "link_copied", { question: id });
+          const t = document.createElement("div");
+          t.className = "copy-toast";
+          t.textContent = "Copied! Now send it to bae 💌";
+          document.body.appendChild(t);
+          setTimeout(() => t.remove(), 2400);
+          setTimeout(() => btn.classList.remove("copied"), 2000);
+        });
+      }
+      function subscribeTopic(id) {
+        if (!currentTopic) return;
+        window.open("https://ntfy.sh/" + currentTopic, "_blank");
+        const t = document.createElement("div");
+        t.className = "copy-toast";
+        t.textContent = "🔔 Subscribe there to get notified!";
+        document.body.appendChild(t);
+        setTimeout(() => t.remove(), 2800);
+      }
+      function checkHash() {
+        const h = location.hash.slice(1);
+        if (!h || !h.includes(".")) return;
+        const parts = h.split(".");
+        if (parts.length < 2) return;
+        const code = parts[0];
+        const qId = Q_CODES[code];
+        if (!qId || !messages.find((m) => m.id === qId)) return;
+        const name = decodeName(parts[1] || "");
+        currentTopic = parts[2] || "";
+        currentName = name;
+        openQ(qId, name, true);
+        const m = messages.find((x) => x.id === qId);
+        ntfySend(
+          currentTopic,
+          "👀 Link Opened!",
+          (name || "Someone") + ' just opened: "' + m.title + '"',
+          "eyes",
+        );
+        if (typeof gtag === "function")
+          gtag("event", "link_opened", { question: qId, has_name: !!name });
+      }
+      window.addEventListener("load", checkHash);
+      const hearts = ["💕", "💗", "💖", "💓", "💝", "🩷", "♡", "❤️‍🔥", "💘"];
+      const bh = document.getElementById("bgHearts");
+      for (let i = 0; i < 20; i++) {
+        const h = document.createElement("div");
+        h.className = "heart";
+        h.textContent = hearts[Math.floor(Math.random() * hearts.length)];
+        h.style.left = Math.random() * 100 + "%";
+        h.style.animationDuration = Math.random() * 8 + 6 + "s";
+        h.style.animationDelay = Math.random() * 10 + "s";
+        h.style.fontSize = Math.random() * 16 + 14 + "px";
+        bh.appendChild(h);
+      }
+      const sf = document.getElementById("sparkleField");
+      for (let i = 0; i < 30; i++) {
+        const s = document.createElement("div");
+        s.className = "sparkle";
+        s.style.left = Math.random() * 100 + "%";
+        s.style.top = Math.random() * 100 + "%";
+        s.style.animationDelay = Math.random() * 5 + "s";
+        s.style.background = [
+          "#ff4d94",
+          "#9b59b6",
+          "#e74c3c",
+          "#f39c12",
+          "#ff80b5",
+        ][Math.floor(Math.random() * 5)];
+        sf.appendChild(s);
+      }
+      document
+        .getElementById("nameInput")
+        .addEventListener("input", function () {
+          if (this.value.trim())
+            document.getElementById("nameHint").classList.remove("show");
+        });
+    </script>
+  </body>
 </html>
