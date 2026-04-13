@@ -5,6 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>💌 Send Something Cute</title>
 <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&family=Sacramento&family=Caveat:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-NHZ2WTB36C"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-NHZ2WTB36C');
+</script>
 <style>
   :root {
     --pink-100: #fff0f5;
@@ -240,12 +247,13 @@
   .chaos-msg {
     position: fixed; font-family: 'Caveat', cursive; font-size: 20px; font-weight: 700;
     color: var(--pink-500); pointer-events: none; z-index: 15;
-    animation: popFade 1.5s ease forwards; white-space: nowrap;
+    animation: popFade 3.5s ease forwards; white-space: nowrap;
   }
   @keyframes popFade {
     0%   { opacity: 0; transform: scale(0.5) translateY(0); }
-    20%  { opacity: 1; transform: scale(1.1) translateY(-10px); }
-    100% { opacity: 0; transform: scale(0.8) translateY(-60px); }
+    10%  { opacity: 1; transform: scale(1.1) translateY(-10px); }
+    75%  { opacity: 1; transform: scale(1) translateY(-15px); }
+    100% { opacity: 0; transform: scale(0.8) translateY(-50px); }
   }
 
   /* ── Share Bar ── */
@@ -340,22 +348,32 @@
 
 <script>
 // ═══════════════════════════════════════
-//  ENCODE / DECODE
+//  QUESTION CODES  (single letter → question id)
 // ═══════════════════════════════════════
-const K = 13, PFX = 'cx_';
-function encode(obj) {
-  const j = JSON.stringify(obj); let x = '';
-  for (let i = 0; i < j.length; i++) x += String.fromCharCode(j.charCodeAt(i) ^ K);
-  return PFX + btoa(unescape(encodeURIComponent(x))).split('').reverse().join('').replace(/=/g, '~');
+const Q_CODES = {
+  a:'valentine', b:'still-mad', c:'kiss', d:'date', e:'forgive', f:'cuddle',
+  g:'hoodie', h:'fries', i:'miss-me', j:'puppy', k:'best-thing', l:'food-run'
+};
+const ID_TO_CODE = Object.fromEntries(Object.entries(Q_CODES).map(([k,v])=>[v,k]));
+
+// ═══════════════════════════════════════
+//  ENCODE / DECODE  (name only — XOR + base64 + reverse)
+//  URL format:  #a.xR4kZm~nBq   (letter.encodedName)
+// ═══════════════════════════════════════
+const K = 13;
+function encodeName(name) {
+  if (!name) return '';
+  let x = '';
+  for (let i = 0; i < name.length; i++) x += String.fromCharCode(name.charCodeAt(i) ^ K);
+  return btoa(unescape(encodeURIComponent(x))).split('').reverse().join('').replace(/=/g, '~');
 }
-function decode(s) {
+function decodeName(s) {
   try {
-    if (!s.startsWith(PFX)) return null;
-    let b = s.slice(PFX.length).replace(/~/g, '=').split('').reverse().join('');
-    const x = decodeURIComponent(escape(atob(b))); let j = '';
-    for (let i = 0; i < x.length; i++) j += String.fromCharCode(x.charCodeAt(i) ^ K);
-    return JSON.parse(j);
-  } catch { return null; }
+    let b = s.replace(/~/g, '=').split('').reverse().join('');
+    const x = decodeURIComponent(escape(atob(b))); let n = '';
+    for (let i = 0; i < x.length; i++) n += String.fromCharCode(x.charCodeAt(i) ^ K);
+    return n;
+  } catch { return ''; }
 }
 
 // ═══════════════════════════════════════
@@ -587,6 +605,7 @@ function tryOpen(id) {
   }
   currentName = name;
   openQ(id, name, false);
+  if (typeof gtag === 'function') gtag('event', 'question_selected', { question: id });
 }
 
 function openQ(id, name, receiver) {
@@ -604,8 +623,9 @@ function openQ(id, name, receiver) {
 
   document.getElementById(`greet-${id}`).textContent = name ? `Hey ${name} 💕` : '';
 
-  const payload = encode({ q: id, n: name || '' });
-  const url = location.origin + location.pathname + '#' + payload;
+  const code = ID_TO_CODE[id] || 'a';
+  const hashed = encodeName(name || '');
+  const url = location.origin + location.pathname + '#' + code + '.' + hashed;
   const inp = document.getElementById(`shareIn-${id}`);
   if (inp) inp.value = url;
 
@@ -637,6 +657,7 @@ function handleGood(id) {
   if (isReceiverMode) document.getElementById('btnBackHome').style.display = 'none';
   document.getElementById('yesResponse').classList.add('active');
   launchConfetti();
+  if (typeof gtag === 'function') gtag('event', 'good_answer', { question: id, answer: m.wantYes !== false ? 'yes' : 'no' });
 }
 
 // ═══════════════════════════════════════
@@ -644,6 +665,7 @@ function handleGood(id) {
 // ═══════════════════════════════════════
 function doDodge(id) {
   const m = messages.find(x => x.id === id);
+  if (typeof gtag === 'function' && (dodgeCount[id] || 0) === 0) gtag('event', 'dodge_attempt', { question: id });
   const btn = document.getElementById(`dodge-${id}`);
   const page = document.getElementById(`page-${id}`);
   const r = page.getBoundingClientRect();
@@ -672,7 +694,7 @@ function doDodge(id) {
     el.style.left = (Math.random() * 60 + 20) + '%';
     el.style.top = (Math.random() * 50 + 15) + '%';
     page.appendChild(el);
-    setTimeout(() => el.remove(), 1600);
+    setTimeout(() => el.remove(), 3700);
   }
 
   // Cycle dodge button label
@@ -708,6 +730,7 @@ function copyLink(id) {
   const btn = document.getElementById(`copyBtn-${id}`);
   navigator.clipboard.writeText(inp.value).then(() => {
     btn.classList.add('copied');
+    if (typeof gtag === 'function') gtag('event', 'link_copied', { question: id });
     const t = document.createElement('div');
     t.className = 'copy-toast';
     t.textContent = 'Copied! Now send it to bae 💌';
@@ -722,12 +745,15 @@ function copyLink(id) {
 // ═══════════════════════════════════════
 function checkHash() {
   const h = location.hash.slice(1);
-  if (!h) return;
-  const d = decode(h);
-  if (d && d.q && messages.find(m => m.id === d.q)) {
-    currentName = d.n || '';
-    openQ(d.q, d.n || '', true);
-  }
+  if (!h || !h.includes('.')) return;
+  const [code, ...rest] = h.split('.');
+  const qId = Q_CODES[code];
+  if (!qId || !messages.find(m => m.id === qId)) return;
+  const name = decodeName(rest.join('.'));
+  currentName = name;
+  openQ(qId, name, true);
+  // GA event: link opened
+  if (typeof gtag === 'function') gtag('event', 'link_opened', { question: qId, has_name: !!name });
 }
 window.addEventListener('load', checkHash);
 
