@@ -140,7 +140,7 @@ export const RESUME_DATA: ResumeData = {
       desc: "Fun dart scoring app with meme feedback — throws darts, roasts you for missing!",
       tech: ["HTML", "Vanilla JS", "CSS Animations", "Giphy"],
       status: "Built",
-      link: "/memedart.html",
+      link: "/Memedart/index.html",
     },
     {
       name: "Karaoke App",
@@ -161,7 +161,14 @@ export const RESUME_DATA: ResumeData = {
       desc: "Cute interactive yes/no message cards with runaway buttons — for when you messed up or just want to be adorable",
       tech: ["HTML", "Vanilla JS", "CSS Animations"],
       status: "Built",
-      link: "/DontOpenThis.html",
+      link: "/DontOpenThis/index.html",
+    },
+    {
+      name: "Party Arena 🎯",
+      desc: "P2P multiplayer party game platform — WebRTC rooms, zero backend, lazy-loaded game modules, TTS announcer",
+      tech: ["WebRTC", "PeerJS", "ES Modules", "Web Speech API", "Vanilla JS"],
+      status: "Built",
+      link: "/party-arena/index.html",
     },
   ],
   skills: [
