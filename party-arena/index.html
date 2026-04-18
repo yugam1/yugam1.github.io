@@ -911,7 +911,8 @@
             "Take turns answering deep, spicy, and surprising questions. Get to know each other for real.",
           minPlayers: 2,
           maxPlayers: 12,
-          module: "./games/deeper-talk.js",
+          supportsLocal: true,
+          src: "./games/deeper-talk.js",
         },
         {
           id: "chaos-deck",
@@ -921,7 +922,8 @@
             "Draw cards, follow wild prompts, stack rules, and survive the chaos. A party card game that escalates fast.",
           minPlayers: 2,
           maxPlayers: 12,
-          module: "./games/chaos-deck.js",
+          supportsLocal: true,
+          src: "./games/chaos-deck.js",
         },
         {
           id: "avalon",
@@ -931,7 +933,8 @@
             "Social deduction board game — loyal servants vs hidden minions. Deduce, deceive, and vote your way to victory.",
           minPlayers: 5,
           maxPlayers: 10,
-          module: "./games/avalon.js",
+          supportsLocal: false,
+          src: "./games/avalon.js",
         },
         {
           id: "ultimate-ttt",
@@ -941,7 +944,8 @@
             "Tic-tac-toe inside tic-tac-toe. Your move decides where your opponent plays next. Win 3 small boards in a row to win the mega board.",
           minPlayers: 2,
           maxPlayers: 2,
-          module: "./games/ultimate-ttt.js",
+          supportsLocal: true,
+          src: "./games/ultimate-ttt.js",
         },
         // Add more games here — they'll auto-appear in the lobby
       ];
@@ -1561,10 +1565,10 @@
   `;
 
         try {
-          const module = await import(reg.module);
+          const mod = await import(reg.src);
           const api = createGameAPI();
           container.innerHTML = "";
-          state.currentGame = module.default.create(container, api);
+          state.currentGame = mod.default.create(container, api);
         } catch (err) {
           console.error("[GameLoader] Failed:", err);
           container.innerHTML = `
@@ -1675,23 +1679,37 @@
       function renderGameGrid() {
         const grid = $("#game-grid");
         const count = state.players.length;
+        const available = GAME_REGISTRY.filter(
+          (g) => !state.isLocal || g.supportsLocal !== false,
+        );
 
-        grid.innerHTML = GAME_REGISTRY.map((g) => {
-          const ok = count >= g.minPlayers;
-          return `
-      <div class="game-card ${state.selectedGame === g.id ? "selected" : ""} ${!ok ? "dimmed" : ""}"
-           data-game-id="${g.id}" ${!state.isHost ? 'style="pointer-events:none"' : ""}>
+        grid.innerHTML = available
+          .map((g) => {
+            const ok = count >= g.minPlayers;
+            const noLocal = state.isLocal && g.supportsLocal === false;
+            return `
+      <div class="game-card ${state.selectedGame === g.id ? "selected" : ""} ${!ok || noLocal ? "dimmed" : ""}"
+           data-game-id="${g.id}" ${!state.isHost || noLocal ? 'style="pointer-events:none"' : ""}>
         <span class="emoji">${g.emoji}</span>
         <h3>${g.name}</h3>
         <p>${g.description}</p>
-        <div class="meta">${g.minPlayers}–${g.maxPlayers} players ${!ok ? "• Need " + g.minPlayers + "+" : ""}</div>
+        <div class="meta">
+          ${g.minPlayers}–${g.maxPlayers} players
+          ${!ok ? "• Need " + g.minPlayers + "+" : ""}
+          ${g.supportsLocal === false ? '• <span style="color:var(--info);">Online only</span>' : ""}
+        </div>
       </div>
     `;
-        }).join("");
+          })
+          .join("");
 
         if (state.isHost) {
           grid.querySelectorAll(".game-card").forEach((card) => {
             card.addEventListener("click", () => {
+              const reg = GAME_REGISTRY.find(
+                (g) => g.id === card.dataset.gameId,
+              );
+              if (state.isLocal && reg?.supportsLocal === false) return;
               state.selectedGame = card.dataset.gameId;
               net.send({ type: "game-selected", gameId: state.selectedGame });
               renderGameGrid();
