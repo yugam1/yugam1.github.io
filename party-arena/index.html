@@ -1,0 +1,1903 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, user-scalable=no"
+    />
+    <title>Party Arena</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&family=Righteous&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      :root {
+        --bg-deep: #0a0e1a;
+        --bg-surface: #111827;
+        --bg-card: rgba(255, 255, 255, 0.04);
+        --bg-glass: rgba(255, 255, 255, 0.06);
+        --border-subtle: rgba(255, 255, 255, 0.08);
+        --border-glow: rgba(251, 191, 36, 0.3);
+        --text-primary: #f1f5f9;
+        --text-secondary: #94a3b8;
+        --text-muted: #64748b;
+        --accent: #fbbf24;
+        --accent-soft: rgba(251, 191, 36, 0.15);
+        --accent-hot: #f59e0b;
+        --success: #34d399;
+        --danger: #f87171;
+        --info: #60a5fa;
+        --radius: 16px;
+        --radius-sm: 10px;
+        --radius-pill: 50px;
+        --shadow-glow: 0 0 30px rgba(251, 191, 36, 0.08);
+        --font-body: "Quicksand", sans-serif;
+        --font-display: "Righteous", cursive;
+        --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+
+      html,
+      body {
+        height: 100%;
+        width: 100%;
+        font-family: var(--font-body);
+        background: var(--bg-deep);
+        color: var(--text-primary);
+        overflow: hidden;
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      body {
+        display: flex;
+        flex-direction: column;
+        background-image:
+          radial-gradient(
+            ellipse at 20% 0%,
+            rgba(251, 191, 36, 0.06) 0%,
+            transparent 50%
+          ),
+          radial-gradient(
+            ellipse at 80% 100%,
+            rgba(99, 102, 241, 0.06) 0%,
+            transparent 50%
+          );
+      }
+
+      /* ─── Utility ─── */
+      .hidden {
+        display: none !important;
+      }
+      .fade-in {
+        animation: fadeIn 0.4s ease both;
+      }
+      .slide-up {
+        animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+      @keyframes slideUp {
+        from {
+          opacity: 0;
+          transform: translateY(24px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      @keyframes pulse-soft {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.6;
+        }
+      }
+      @keyframes float {
+        0%,
+        100% {
+          transform: translateY(0);
+        }
+        50% {
+          transform: translateY(-6px);
+        }
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      /* ─── Screen Container ─── */
+      .screen {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 20px;
+        overflow-y: auto;
+        transition:
+          opacity 0.35s,
+          transform 0.35s;
+      }
+      .screen.out {
+        opacity: 0;
+        transform: translateY(-20px);
+        pointer-events: none;
+      }
+
+      /* ─── Logo / Header ─── */
+      .logo {
+        font-family: var(--font-display);
+        font-size: clamp(2rem, 6vw, 3.2rem);
+        color: var(--accent);
+        text-shadow: 0 0 40px rgba(251, 191, 36, 0.3);
+        letter-spacing: 2px;
+        margin: 12vh 0 8px;
+      }
+      .logo-sub {
+        color: var(--text-secondary);
+        font-size: 0.95rem;
+        font-weight: 500;
+        margin-bottom: 40px;
+        letter-spacing: 0.5px;
+      }
+
+      /* ─── Cards ─── */
+      .card {
+        background: var(--bg-glass);
+        border: 1px solid var(--border-subtle);
+        border-radius: var(--radius);
+        padding: 24px;
+        width: 100%;
+        max-width: 420px;
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+      }
+      .card + .card {
+        margin-top: 14px;
+      }
+      .card-title {
+        font-family: var(--font-display);
+        font-size: 1.15rem;
+        margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .card-title .emoji {
+        font-size: 1.4rem;
+      }
+
+      /* ─── Inputs ─── */
+      input[type="text"] {
+        width: 100%;
+        background: rgba(0, 0, 0, 0.3);
+        border: 1.5px solid var(--border-subtle);
+        border-radius: var(--radius-sm);
+        padding: 14px 16px;
+        color: var(--text-primary);
+        font-family: var(--font-body);
+        font-size: 1rem;
+        font-weight: 600;
+        outline: none;
+        transition: border-color var(--transition);
+      }
+      input[type="text"]:focus {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px var(--accent-soft);
+      }
+      input[type="text"]::placeholder {
+        color: var(--text-muted);
+        font-weight: 400;
+      }
+      .input-row {
+        display: flex;
+        gap: 10px;
+        margin-top: 12px;
+      }
+      .input-row input {
+        flex: 1;
+      }
+
+      /* ─── Buttons ─── */
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 14px 28px;
+        border: none;
+        border-radius: var(--radius-sm);
+        font-family: var(--font-body);
+        font-weight: 700;
+        font-size: 0.95rem;
+        cursor: pointer;
+        transition: all var(--transition);
+        white-space: nowrap;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+      .btn:active {
+        transform: scale(0.96);
+      }
+      .btn:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+        transform: none;
+      }
+      .btn-primary {
+        background: linear-gradient(135deg, var(--accent), var(--accent-hot));
+        color: #0a0e1a;
+        box-shadow: 0 4px 20px rgba(251, 191, 36, 0.25);
+      }
+      .btn-primary:hover:not(:disabled) {
+        box-shadow: 0 6px 28px rgba(251, 191, 36, 0.35);
+        transform: translateY(-1px);
+      }
+      .btn-secondary {
+        background: var(--bg-glass);
+        color: var(--text-primary);
+        border: 1.5px solid var(--border-subtle);
+      }
+      .btn-secondary:hover:not(:disabled) {
+        border-color: var(--accent);
+        background: var(--accent-soft);
+      }
+      .btn-danger {
+        background: rgba(248, 113, 113, 0.15);
+        color: var(--danger);
+        border: 1.5px solid rgba(248, 113, 113, 0.2);
+      }
+      .btn-sm {
+        padding: 10px 18px;
+        font-size: 0.85rem;
+      }
+      .btn-block {
+        width: 100%;
+        margin-top: 12px;
+      }
+      .btn-icon {
+        width: 44px;
+        height: 44px;
+        padding: 0;
+        border-radius: 50%;
+        font-size: 1.2rem;
+      }
+
+      /* ─── Name Input Screen ─── */
+      .name-input-wrap {
+        width: 100%;
+        max-width: 420px;
+        margin-bottom: 20px;
+      }
+      .name-input-wrap input {
+        text-align: center;
+        font-size: 1.1rem;
+        letter-spacing: 1px;
+      }
+
+      /* ─── Room Code ─── */
+      .room-code {
+        font-family: var(--font-display);
+        font-size: clamp(2.5rem, 10vw, 4rem);
+        color: var(--accent);
+        letter-spacing: 8px;
+        text-shadow: 0 0 30px rgba(251, 191, 36, 0.4);
+        cursor: pointer;
+        transition: transform 0.2s;
+        user-select: all;
+      }
+      .room-code:hover {
+        transform: scale(1.04);
+      }
+      .room-code-label {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        margin-bottom: 6px;
+      }
+      .copied-toast {
+        position: fixed;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: var(--success);
+        color: #000;
+        padding: 10px 24px;
+        border-radius: var(--radius-pill);
+        font-weight: 700;
+        font-size: 0.85rem;
+        z-index: 999;
+        animation:
+          slideUp 0.3s ease,
+          fadeOut 0.3s 1.5s ease both;
+      }
+      @keyframes fadeOut {
+        to {
+          opacity: 0;
+          transform: translateY(-10px);
+        }
+      }
+
+      /* ─── Player List ─── */
+      .player-list {
+        list-style: none;
+        width: 100%;
+        max-width: 420px;
+        margin: 16px 0;
+      }
+      .player-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 16px;
+        border-radius: var(--radius-sm);
+        background: var(--bg-card);
+        margin-bottom: 8px;
+        animation: slideUp 0.4s ease both;
+      }
+      .player-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+        font-weight: 700;
+        flex-shrink: 0;
+      }
+      .player-name {
+        font-weight: 600;
+        flex: 1;
+      }
+      .player-badge {
+        font-size: 0.7rem;
+        padding: 3px 10px;
+        border-radius: var(--radius-pill);
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
+      .badge-host {
+        background: var(--accent-soft);
+        color: var(--accent);
+      }
+      .badge-you {
+        background: rgba(96, 165, 250, 0.15);
+        color: var(--info);
+      }
+      .btn-kick {
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        border-radius: 50%;
+        background: rgba(248, 113, 113, 0.1);
+        border: 1.5px solid rgba(248, 113, 113, 0.15);
+        color: var(--danger);
+        font-size: 0.85rem;
+        cursor: pointer;
+        transition: all var(--transition);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        opacity: 0.6;
+      }
+      .btn-kick:hover {
+        opacity: 1;
+        background: rgba(248, 113, 113, 0.2);
+        border-color: var(--danger);
+        transform: scale(1.1);
+      }
+
+      /* ─── Kick Confirm Modal ─── */
+      .kick-modal-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.6);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        animation: fadeIn 0.2s ease;
+        backdrop-filter: blur(4px);
+      }
+      .kick-modal {
+        background: var(--bg-surface);
+        border: 1px solid var(--border-subtle);
+        border-radius: var(--radius);
+        padding: 28px;
+        max-width: 340px;
+        width: 90%;
+        text-align: center;
+        animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+      .kick-modal h3 {
+        font-family: var(--font-display);
+        margin-bottom: 8px;
+        font-size: 1.1rem;
+      }
+      .kick-modal p {
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+        margin-bottom: 20px;
+      }
+      .kick-modal-btns {
+        display: flex;
+        gap: 10px;
+      }
+      .kick-modal-btns .btn {
+        flex: 1;
+      }
+
+      /* ─── Kicked Banner ─── */
+      .kicked-banner {
+        background: rgba(248, 113, 113, 0.12);
+        border: 1px solid rgba(248, 113, 113, 0.2);
+        border-radius: var(--radius-sm);
+        padding: 14px 18px;
+        margin-bottom: 16px;
+        text-align: center;
+        color: var(--danger);
+        font-weight: 600;
+        font-size: 0.9rem;
+        animation: slideUp 0.4s ease;
+        max-width: 420px;
+        width: 100%;
+      }
+
+      /* ─── Game Picker ─── */
+      .game-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 12px;
+        width: 100%;
+        max-width: 420px;
+        margin: 16px 0;
+      }
+      .game-card {
+        background: var(--bg-glass);
+        border: 2px solid var(--border-subtle);
+        border-radius: var(--radius);
+        padding: 20px;
+        cursor: pointer;
+        transition: all var(--transition);
+        text-align: left;
+      }
+      .game-card:hover,
+      .game-card.selected {
+        border-color: var(--accent);
+        background: var(--accent-soft);
+        box-shadow: var(--shadow-glow);
+      }
+      .game-card .emoji {
+        font-size: 2rem;
+        margin-bottom: 8px;
+        display: block;
+      }
+      .game-card h3 {
+        font-family: var(--font-display);
+        font-size: 1.1rem;
+        margin-bottom: 4px;
+      }
+      .game-card p {
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+        line-height: 1.4;
+      }
+      .game-card .meta {
+        margin-top: 8px;
+        font-size: 0.75rem;
+        color: var(--text-muted);
+      }
+
+      /* ─── Lobby Header ─── */
+      .lobby-header {
+        text-align: center;
+        width: 100%;
+        max-width: 420px;
+        padding: 20px 0;
+      }
+      .lobby-header h2 {
+        font-family: var(--font-display);
+        font-size: 1.4rem;
+        margin-bottom: 12px;
+      }
+
+      /* ─── Section Titles ─── */
+      .section-title {
+        font-family: var(--font-display);
+        font-size: 1rem;
+        color: var(--text-secondary);
+        text-align: left;
+        width: 100%;
+        max-width: 420px;
+        margin: 20px 0 6px;
+        letter-spacing: 1px;
+      }
+
+      /* ─── Game Container ─── */
+      #game-container {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+      }
+
+      /* ─── Game Top Bar ─── */
+      .game-topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 16px;
+        background: rgba(0, 0, 0, 0.3);
+        border-bottom: 1px solid var(--border-subtle);
+        flex-shrink: 0;
+        gap: 8px;
+      }
+      .game-topbar h3 {
+        font-family: var(--font-display);
+        font-size: 1rem;
+        color: var(--accent);
+        flex: 1;
+      }
+      .game-topbar .player-count {
+        font-size: 0.8rem;
+        color: var(--text-secondary);
+      }
+
+      /* ─── Speaker Toggle ─── */
+      .speaker-toggle {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 16px;
+        background: var(--bg-card);
+        border: 1.5px solid var(--border-subtle);
+        border-radius: var(--radius-sm);
+        cursor: pointer;
+        transition: all var(--transition);
+        user-select: none;
+        max-width: 420px;
+        width: 100%;
+        margin: 8px 0;
+      }
+      .speaker-toggle:hover {
+        border-color: var(--accent);
+      }
+      .speaker-toggle.active {
+        border-color: var(--accent);
+        background: var(--accent-soft);
+      }
+      .speaker-toggle .speaker-icon {
+        font-size: 1.3rem;
+        flex-shrink: 0;
+      }
+      .speaker-toggle .speaker-info {
+        flex: 1;
+      }
+      .speaker-toggle .speaker-label {
+        font-weight: 700;
+        font-size: 0.9rem;
+        color: var(--text-primary);
+      }
+      .speaker-toggle .speaker-desc {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        margin-top: 2px;
+      }
+      .speaker-toggle .speaker-switch {
+        width: 44px;
+        height: 24px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        position: relative;
+        transition: background 0.2s;
+        flex-shrink: 0;
+      }
+      .speaker-toggle.active .speaker-switch {
+        background: var(--accent);
+      }
+      .speaker-toggle .speaker-switch::after {
+        content: "";
+        width: 18px;
+        height: 18px;
+        background: white;
+        border-radius: 50%;
+        position: absolute;
+        top: 3px;
+        left: 3px;
+        transition: transform 0.2s;
+      }
+      .speaker-toggle.active .speaker-switch::after {
+        transform: translateX(20px);
+      }
+
+      .speaker-btn-mini {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: var(--bg-glass);
+        border: 1.5px solid var(--border-subtle);
+        color: var(--text-secondary);
+        font-size: 1.1rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s;
+        flex-shrink: 0;
+      }
+      .speaker-btn-mini:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+      .speaker-btn-mini.active {
+        background: var(--accent-soft);
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+
+      .voice-select {
+        margin-top: 8px;
+        width: 100%;
+        background: rgba(0, 0, 0, 0.3);
+        border: 1px solid var(--border-subtle);
+        color: var(--text-primary);
+        padding: 8px 12px;
+        border-radius: 8px;
+        font-family: var(--font-body);
+        font-size: 0.8rem;
+      }
+      .voice-select option {
+        background: var(--bg-surface);
+      }
+
+      /* ─── Loading ─── */
+      .loader {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 16px;
+        flex: 1;
+      }
+      .spinner {
+        width: 40px;
+        height: 40px;
+        border: 3px solid var(--border-subtle);
+        border-top-color: var(--accent);
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+      }
+      .loader p {
+        color: var(--text-secondary);
+        font-weight: 500;
+      }
+
+      /* ─── Status Bar ─── */
+      .status-bar {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        padding: 10px 16px;
+        text-align: center;
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        background: rgba(10, 14, 26, 0.9);
+        border-top: 1px solid var(--border-subtle);
+        z-index: 90;
+      }
+      .status-dot {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        margin-right: 6px;
+        vertical-align: middle;
+      }
+      .status-dot.connected {
+        background: var(--success);
+        box-shadow: 0 0 8px var(--success);
+      }
+      .status-dot.connecting {
+        background: var(--accent);
+        animation: pulse-soft 1.5s infinite;
+      }
+      .status-dot.disconnected {
+        background: var(--danger);
+      }
+
+      /* ─── Local Mode Badge ─── */
+      .mode-badge {
+        display: inline-block;
+        font-size: 0.7rem;
+        padding: 3px 10px;
+        border-radius: var(--radius-pill);
+        background: rgba(99, 102, 241, 0.15);
+        color: #818cf8;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-left: 8px;
+      }
+
+      /* ─── Responsive ─── */
+      @media (min-width: 640px) {
+        .game-grid {
+          grid-template-columns: 1fr 1fr;
+        }
+        .screen {
+          padding: 24px;
+        }
+      }
+      @media (max-height: 600px) {
+        .logo {
+          margin-top: 4vh;
+          font-size: 2rem;
+        }
+        .logo-sub {
+          margin-bottom: 20px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- ═══════════════ SCREEN: HOME ═══════════════ -->
+    <div id="screen-home" class="screen">
+      <h1 class="logo">PARTY ARENA</h1>
+      <p class="logo-sub">No servers. No downloads. Just vibes.</p>
+
+      <div class="name-input-wrap">
+        <input
+          type="text"
+          id="player-name"
+          placeholder="Your Name"
+          maxlength="20"
+          autocomplete="off"
+          spellcheck="false"
+        />
+      </div>
+
+      <div class="card slide-up" style="animation-delay: 0.1s">
+        <div class="card-title"><span class="emoji">🎯</span> Create Room</div>
+        <button class="btn btn-primary btn-block" id="btn-create" disabled>
+          Create New Room
+        </button>
+        <div style="text-align: center; margin-top: 8px">
+          <button
+            class="btn btn-secondary btn-sm"
+            id="btn-local"
+            disabled
+            style="font-size: 0.75rem"
+          >
+            ⚡ Local / Offline Mode
+          </button>
+        </div>
+      </div>
+
+      <div class="card slide-up" style="animation-delay: 0.2s">
+        <div class="card-title"><span class="emoji">🚪</span> Join Room</div>
+        <div class="input-row">
+          <input
+            type="text"
+            id="room-code-input"
+            placeholder="Room Code"
+            maxlength="4"
+            style="
+              text-transform: uppercase;
+              text-align: center;
+              letter-spacing: 6px;
+              font-family: var(--font-display);
+              font-size: 1.3rem;
+            "
+          />
+          <button class="btn btn-primary" id="btn-join" disabled>Join</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════ SCREEN: LOBBY ═══════════════ -->
+    <div id="screen-lobby" class="screen hidden">
+      <div class="lobby-header">
+        <h2>Room Lobby</h2>
+        <div class="room-code-label">TAP CODE TO COPY</div>
+        <div class="room-code" id="lobby-room-code" title="Click to copy"></div>
+      </div>
+
+      <div class="section-title">Players</div>
+      <ul class="player-list" id="player-list"></ul>
+
+      <div class="section-title" id="game-pick-title">Pick a Game</div>
+      <div class="game-grid" id="game-grid"></div>
+
+      <div class="speaker-toggle" id="speaker-toggle" style="max-width: 420px">
+        <span class="speaker-icon">🔇</span>
+        <div class="speaker-info">
+          <div class="speaker-label">Announcer Voice</div>
+          <div class="speaker-desc">
+            Read questions & instructions aloud from this device
+          </div>
+        </div>
+        <div class="speaker-switch"></div>
+      </div>
+      <select
+        class="voice-select hidden"
+        id="voice-select"
+        style="max-width: 420px"
+      ></select>
+
+      <button
+        class="btn btn-primary btn-block"
+        id="btn-start-game"
+        style="max-width: 420px"
+        disabled
+      >
+        Start Game
+      </button>
+      <button
+        class="btn btn-danger btn-sm"
+        id="btn-leave"
+        style="margin-top: 12px"
+      >
+        Leave Room
+      </button>
+    </div>
+
+    <!-- ═══════════════ SCREEN: GAME ═══════════════ -->
+    <div id="screen-game" class="screen hidden" style="padding: 0">
+      <div class="game-topbar">
+        <h3 id="game-title">Game</h3>
+        <span class="player-count" id="game-player-count"></span>
+        <button
+          class="speaker-btn-mini"
+          id="speaker-btn-game"
+          title="Toggle announcer"
+        >
+          🔇
+        </button>
+        <button class="btn btn-secondary btn-sm" id="btn-back-lobby">
+          ✕ Leave
+        </button>
+      </div>
+      <div
+        id="game-container"
+        style="flex: 1; position: relative; overflow: hidden"
+      ></div>
+    </div>
+
+    <!-- ═══════════════ STATUS BAR ═══════════════ -->
+    <div class="status-bar" id="status-bar">
+      <span class="status-dot disconnected" id="status-dot"></span>
+      <span id="status-text">Not connected</span>
+    </div>
+
+    <!-- ═══════════════ PeerJS CDN ═══════════════ -->
+    <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+
+    <script type="module">
+      // ════════════════════════════════════════════════
+      //  GAME REGISTRY — add new games here
+      // ════════════════════════════════════════════════
+      const GAME_REGISTRY = [
+        {
+          id: "deeper-talk",
+          name: "Deeper Talk",
+          emoji: "💬",
+          description:
+            "Take turns answering deep, spicy, and surprising questions. Get to know each other for real.",
+          minPlayers: 2,
+          maxPlayers: 12,
+          module: "./games/deeper-talk.js",
+        },
+        {
+          id: "chaos-deck",
+          name: "Chaos Deck",
+          emoji: "🃏",
+          description:
+            "Draw cards, follow wild prompts, stack rules, and survive the chaos. A party card game that escalates fast.",
+          minPlayers: 2,
+          maxPlayers: 12,
+          module: "./games/chaos-deck.js",
+        },
+        {
+          id: "avalon",
+          name: "Avalon",
+          emoji: "🏰",
+          description:
+            "Social deduction board game — loyal servants vs hidden minions. Deduce, deceive, and vote your way to victory.",
+          minPlayers: 5,
+          maxPlayers: 10,
+          module: "./games/avalon.js",
+        },
+        {
+          id: "ultimate-ttt",
+          name: "Ultimate Tic-Tac-Toe",
+          emoji: "⬜",
+          description:
+            "Tic-tac-toe inside tic-tac-toe. Your move decides where your opponent plays next. Win 3 small boards in a row to win the mega board.",
+          minPlayers: 2,
+          maxPlayers: 2,
+          module: "./games/ultimate-ttt.js",
+        },
+        // Add more games here — they'll auto-appear in the lobby
+      ];
+
+      // ════════════════════════════════════════════════
+      //  STATE
+      // ════════════════════════════════════════════════
+      const state = {
+        myName: "",
+        myId: "",
+        roomCode: "",
+        isHost: false,
+        isLocal: false,
+        players: [], // [{ id, name, isHost }]
+        selectedGame: null,
+        peer: null,
+        connections: {}, // peerId -> DataConnection
+        currentGame: null,
+        listeners: {},
+        speakerOn: false,
+        selectedVoice: null,
+      };
+
+      // ════════════════════════════════════════════════
+      //  UTILITIES
+      // ════════════════════════════════════════════════
+      const $ = (s) => document.querySelector(s);
+      const $$ = (s) => document.querySelectorAll(s);
+
+      function genCode() {
+        const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ";
+        let c = "";
+        for (let i = 0; i < 4; i++)
+          c += chars[Math.floor(Math.random() * chars.length)];
+        return c;
+      }
+
+      function genId() {
+        return Math.random().toString(36).substring(2, 10);
+      }
+
+      const PLAYER_COLORS = [
+        "#fbbf24",
+        "#34d399",
+        "#60a5fa",
+        "#f87171",
+        "#a78bfa",
+        "#fb923c",
+        "#2dd4bf",
+        "#e879f9",
+        "#facc15",
+        "#38bdf8",
+        "#f472b6",
+        "#4ade80",
+      ];
+
+      function playerColor(index) {
+        return PLAYER_COLORS[index % PLAYER_COLORS.length];
+      }
+
+      function showScreen(id) {
+        $$(".screen").forEach((s) => {
+          if (s.id === id) {
+            s.classList.remove("hidden", "out");
+            s.classList.add("fade-in");
+          } else {
+            s.classList.add("out");
+            setTimeout(() => {
+              s.classList.add("hidden");
+              s.classList.remove("out");
+            }, 350);
+          }
+        });
+      }
+
+      function setStatus(type, text) {
+        const dot = $("#status-dot");
+        dot.className = "status-dot " + type;
+        $("#status-text").textContent = text;
+      }
+
+      function toast(msg) {
+        const el = document.createElement("div");
+        el.className = "copied-toast";
+        el.textContent = msg;
+        document.body.appendChild(el);
+        setTimeout(() => el.remove(), 2000);
+      }
+
+      // ════════════════════════════════════════════════
+      //  TEXT-TO-SPEECH ENGINE
+      // ════════════════════════════════════════════════
+      const tts = {
+        supported: "speechSynthesis" in window,
+        voices: [],
+        initialized: false,
+
+        init() {
+          if (!tts.supported || tts.initialized) return;
+          tts.initialized = true;
+
+          const loadVoices = () => {
+            tts.voices = speechSynthesis
+              .getVoices()
+              .filter((v) => v.lang.startsWith("en"));
+            // Also include non-English for multilingual groups
+            const allVoices = speechSynthesis.getVoices();
+            if (tts.voices.length === 0) tts.voices = allVoices;
+            tts.populateSelect();
+          };
+
+          loadVoices();
+          // Chrome fires this async
+          speechSynthesis.onvoiceschanged = loadVoices;
+        },
+
+        populateSelect() {
+          const sel = document.querySelector("#voice-select");
+          if (!sel) return;
+          sel.innerHTML = tts.voices
+            .map(
+              (v, i) => `
+      <option value="${i}" ${v.default ? "selected" : ""}>
+        ${v.name} (${v.lang})
+      </option>
+    `,
+            )
+            .join("");
+
+          // Restore saved preference
+          const saved = localStorage.getItem("pa-voice");
+          if (saved) {
+            const idx = tts.voices.findIndex((v) => v.name === saved);
+            if (idx >= 0) sel.value = idx;
+          }
+
+          sel.addEventListener("change", () => {
+            state.selectedVoice = tts.voices[sel.value] || null;
+            if (state.selectedVoice) {
+              localStorage.setItem("pa-voice", state.selectedVoice.name);
+            }
+            // Preview
+            tts.speak("Voice selected", true);
+          });
+
+          state.selectedVoice = tts.voices[sel.value] || tts.voices[0] || null;
+        },
+
+        speak(text, force = false) {
+          if (!tts.supported) return;
+          if (!state.speakerOn && !force) return;
+
+          // Cancel any ongoing speech
+          speechSynthesis.cancel();
+
+          const utter = new SpeechSynthesisUtterance(text);
+          utter.rate = 0.95;
+          utter.pitch = 1.0;
+          utter.volume = 1.0;
+
+          if (state.selectedVoice) {
+            utter.voice = state.selectedVoice;
+          }
+
+          // iOS Safari fix: must resume in user gesture context
+          speechSynthesis.speak(utter);
+        },
+
+        stop() {
+          if (tts.supported) speechSynthesis.cancel();
+        },
+
+        toggle() {
+          state.speakerOn = !state.speakerOn;
+          localStorage.setItem("pa-speaker", state.speakerOn ? "1" : "0");
+          tts.updateUI();
+
+          if (state.speakerOn) {
+            tts.init();
+            // Warm up with a short utterance (needed on mobile)
+            tts.speak("Announcer on", true);
+          } else {
+            tts.stop();
+          }
+        },
+
+        updateUI() {
+          const lobbyToggle = $("#speaker-toggle");
+          const gameBtn = $("#speaker-btn-game");
+          const voiceSel = $("#voice-select");
+
+          if (lobbyToggle) {
+            lobbyToggle.classList.toggle("active", state.speakerOn);
+            lobbyToggle.querySelector(".speaker-icon").textContent =
+              state.speakerOn ? "🔊" : "🔇";
+          }
+          if (gameBtn) {
+            gameBtn.classList.toggle("active", state.speakerOn);
+            gameBtn.textContent = state.speakerOn ? "🔊" : "🔇";
+          }
+          if (voiceSel) {
+            voiceSel.classList.toggle("hidden", !state.speakerOn);
+          }
+        },
+      };
+
+      // Restore speaker preference
+      state.speakerOn = localStorage.getItem("pa-speaker") === "1";
+
+      // ════════════════════════════════════════════════
+      //  PEER / NETWORK MANAGER
+      // ════════════════════════════════════════════════
+      const net = {
+        init(roomCode, isHost) {
+          return new Promise((resolve, reject) => {
+            const peerId = isHost
+              ? `partyarena-${roomCode}`
+              : `partyarena-${genId()}`;
+            state.myId = peerId;
+
+            const peer = new Peer(peerId, {
+              debug: 0,
+              config: {
+                iceServers: [
+                  { urls: "stun:stun.l.google.com:19302" },
+                  { urls: "stun:stun1.l.google.com:19302" },
+                ],
+              },
+            });
+            state.peer = peer;
+
+            peer.on("open", (id) => {
+              console.log("[Net] Peer open:", id);
+              setStatus("connected", isHost ? "Hosting room" : "Connected");
+              resolve(id);
+            });
+
+            peer.on("error", (err) => {
+              console.error("[Net] Peer error:", err);
+              if (err.type === "unavailable-id") {
+                setStatus("disconnected", "Room code taken — try again");
+                reject(err);
+              } else if (err.type === "peer-unavailable") {
+                setStatus("disconnected", "Room not found");
+                reject(err);
+              } else {
+                setStatus("disconnected", `Error: ${err.type}`);
+              }
+            });
+
+            peer.on("disconnected", () =>
+              setStatus("connecting", "Reconnecting..."),
+            );
+
+            if (isHost) {
+              peer.on("connection", (conn) => net.handleConnection(conn));
+            }
+          });
+        },
+
+        connectTo(hostCode) {
+          return new Promise((resolve, reject) => {
+            const conn = state.peer.connect(`partyarena-${hostCode}`, {
+              reliable: true,
+              metadata: { name: state.myName },
+            });
+
+            conn.on("open", () => {
+              state.connections[conn.peer] = conn;
+              net.setupConn(conn);
+              resolve(conn);
+            });
+
+            conn.on("error", reject);
+
+            setTimeout(() => reject(new Error("Connection timeout")), 10000);
+          });
+        },
+
+        handleConnection(conn) {
+          conn.on("open", () => {
+            state.connections[conn.peer] = conn;
+            net.setupConn(conn);
+
+            // Add player
+            const player = {
+              id: conn.peer,
+              name: conn.metadata?.name || "Player",
+              isHost: false,
+            };
+            state.players.push(player);
+            renderPlayerList();
+
+            // Send full state to new player
+            conn.send({
+              type: "room-sync",
+              players: state.players,
+              selectedGame: state.selectedGame,
+            });
+
+            // Notify others
+            net.broadcast(
+              {
+                type: "player-joined",
+                player,
+              },
+              conn.peer,
+            );
+          });
+        },
+
+        setupConn(conn) {
+          conn.on("data", (data) => net.onMessage(data, conn.peer));
+          conn.on("close", () => {
+            delete state.connections[conn.peer];
+            state.players = state.players.filter((p) => p.id !== conn.peer);
+            renderPlayerList();
+            net.broadcast({ type: "player-left", playerId: conn.peer });
+            fireGameEvent("player-left", { playerId: conn.peer });
+          });
+        },
+
+        onMessage(data, fromPeer) {
+          switch (data.type) {
+            case "room-sync":
+              state.players = data.players;
+              if (data.selectedGame) state.selectedGame = data.selectedGame;
+              renderPlayerList();
+              renderGameGrid();
+              break;
+
+            case "player-joined":
+              if (!state.players.find((p) => p.id === data.player.id)) {
+                state.players.push(data.player);
+              }
+              renderPlayerList();
+              break;
+
+            case "player-left":
+              state.players = state.players.filter(
+                (p) => p.id !== data.playerId,
+              );
+              renderPlayerList();
+              fireGameEvent("player-left", { playerId: data.playerId });
+              break;
+
+            case "player-kicked":
+              // Am I the one being kicked?
+              if (data.playerId === state.myId) {
+                net.destroy();
+                state.players = [];
+                state.selectedGame = null;
+                state.currentGame = null;
+                clearGameListeners();
+                setStatus("disconnected", "You were removed from the room");
+                showScreen("screen-home");
+                showKickedBanner();
+              } else {
+                state.players = state.players.filter(
+                  (p) => p.id !== data.playerId,
+                );
+                renderPlayerList();
+                fireGameEvent("player-left", { playerId: data.playerId });
+              }
+              break;
+
+            case "game-selected":
+              state.selectedGame = data.gameId;
+              renderGameGrid();
+              break;
+
+            case "game-start":
+              state.selectedGame = data.gameId;
+              loadAndStartGame(data.gameId);
+              break;
+
+            case "game-end":
+              backToLobby();
+              break;
+
+            case "game-action":
+              fireGameEvent(data.action, data.payload, fromPeer);
+              break;
+
+            default:
+              // Forward to game listeners
+              fireGameEvent(data.type, data, fromPeer);
+          }
+
+          // Host relays to everyone else
+          if (state.isHost && data.type !== "room-sync") {
+            net.broadcast(data, fromPeer);
+          }
+        },
+
+        broadcast(data, excludePeer) {
+          Object.entries(state.connections).forEach(([peerId, conn]) => {
+            if (peerId !== excludePeer && conn.open) {
+              try {
+                conn.send(data);
+              } catch (e) {
+                console.warn("[Net] Send fail:", e);
+              }
+            }
+          });
+        },
+
+        send(data) {
+          if (state.isLocal) {
+            // Local mode: simulate receiving own message
+            setTimeout(() => net.onMessage(data, state.myId), 10);
+            return;
+          }
+          if (state.isHost) {
+            net.broadcast(data);
+          } else {
+            // Send to host
+            const hostConn = Object.values(state.connections)[0];
+            if (hostConn?.open) hostConn.send(data);
+          }
+        },
+
+        kickPlayer(playerId) {
+          if (!state.isHost) return;
+
+          // Notify everyone (including the kicked player) before closing
+          const kickMsg = { type: "player-kicked", playerId };
+          net.broadcast(kickMsg);
+
+          // Close connection to kicked player
+          const conn = state.connections[playerId];
+          if (conn) {
+            setTimeout(() => {
+              conn.close();
+              delete state.connections[playerId];
+            }, 200);
+          }
+
+          // Remove from local state
+          state.players = state.players.filter((p) => p.id !== playerId);
+          renderPlayerList();
+          fireGameEvent("player-left", { playerId });
+        },
+
+        sendTo(peerId, data) {
+          if (!state.isHost) return;
+          const conn = state.connections[peerId];
+          if (conn?.open) {
+            try {
+              conn.send(data);
+            } catch (e) {
+              console.warn("[Net] SendTo fail:", e);
+            }
+          }
+        },
+
+        destroy() {
+          Object.values(state.connections).forEach((c) => c.close());
+          state.connections = {};
+          if (state.peer) {
+            state.peer.destroy();
+            state.peer = null;
+          }
+        },
+      };
+
+      // ════════════════════════════════════════════════
+      //  GAME EVENT SYSTEM
+      // ════════════════════════════════════════════════
+      function onGameEvent(event, cb) {
+        if (!state.listeners[event]) state.listeners[event] = [];
+        state.listeners[event].push(cb);
+      }
+
+      function offGameEvent(event, cb) {
+        if (!state.listeners[event]) return;
+        state.listeners[event] = state.listeners[event].filter(
+          (fn) => fn !== cb,
+        );
+      }
+
+      function fireGameEvent(event, payload, from) {
+        (state.listeners[event] || []).forEach((fn) => fn(payload, from));
+      }
+
+      function clearGameListeners() {
+        state.listeners = {};
+      }
+
+      // ════════════════════════════════════════════════
+      //  GAME API — provided to each game module
+      // ════════════════════════════════════════════════
+      function createGameAPI() {
+        return {
+          getPlayers: () => [...state.players],
+          getMe: () => ({
+            id: state.myId,
+            name: state.myName,
+            isHost: state.isHost,
+          }),
+          isHost: () => state.isHost,
+          isLocal: () => state.isLocal,
+
+          send(action, payload) {
+            const msg = {
+              type: "game-action",
+              action,
+              payload,
+              from: state.myId,
+            };
+            net.send(msg);
+          },
+
+          broadcast(action, payload) {
+            const msg = {
+              type: "game-action",
+              action,
+              payload,
+              from: state.myId,
+            };
+            // Broadcast (host only makes sense, but guests will relay through host)
+            net.send(msg);
+          },
+
+          on(event, cb) {
+            onGameEvent(event, cb);
+          },
+          off(event, cb) {
+            offGameEvent(event, cb);
+          },
+
+          // Send privately to one player (host only)
+          sendTo(playerId, action, payload) {
+            if (!state.isHost) return;
+            const msg = {
+              type: "game-action",
+              action,
+              payload,
+              from: state.myId,
+            };
+            net.sendTo(playerId, msg);
+          },
+
+          endGame() {
+            net.send({ type: "game-end" });
+            backToLobby();
+          },
+
+          // Host: kick a player from the room
+          kickPlayer(playerId) {
+            if (!state.isHost && !state.isLocal) return;
+            if (state.isLocal) {
+              state.players = state.players.filter((p) => p.id !== playerId);
+              renderPlayerList();
+            } else {
+              net.kickPlayer(playerId);
+            }
+          },
+
+          // For local mode: add/manage local players
+          addLocalPlayer(name) {
+            const p = { id: `local-${genId()}`, name, isHost: false };
+            state.players.push(p);
+            renderPlayerList();
+            return p;
+          },
+
+          // Text-to-Speech — reads aloud from host device speaker
+          speak(text) {
+            tts.speak(text);
+          },
+          stopSpeaking() {
+            tts.stop();
+          },
+          isSpeakerOn() {
+            return state.speakerOn;
+          },
+
+          cssVars: {
+            accent: "#fbbf24",
+            accentSoft: "rgba(251,191,36,0.15)",
+            bg: "#0a0e1a",
+            bgCard: "rgba(255,255,255,0.04)",
+            bgGlass: "rgba(255,255,255,0.06)",
+            text: "#f1f5f9",
+            textSec: "#94a3b8",
+            textMuted: "#64748b",
+            success: "#34d399",
+            danger: "#f87171",
+            info: "#60a5fa",
+            radius: "16px",
+            radiusSm: "10px",
+            radiusPill: "50px",
+            fontBody: "'Quicksand', sans-serif",
+            fontDisplay: "'Righteous', cursive",
+          },
+        };
+      }
+
+      // ════════════════════════════════════════════════
+      //  GAME LOADER (dynamic ES module import)
+      // ════════════════════════════════════════════════
+      async function loadAndStartGame(gameId) {
+        const reg = GAME_REGISTRY.find((g) => g.id === gameId);
+        if (!reg) return;
+
+        showScreen("screen-game");
+        $("#game-title").textContent = `${reg.emoji} ${reg.name}`;
+        $("#game-player-count").textContent = `${state.players.length} players`;
+
+        const container = $("#game-container");
+        container.innerHTML = `
+    <div class="loader">
+      <div class="spinner"></div>
+      <p>Loading ${reg.name}...</p>
+    </div>
+  `;
+
+        try {
+          const module = await import(reg.module);
+          const api = createGameAPI();
+          container.innerHTML = "";
+          state.currentGame = module.default.create(container, api);
+        } catch (err) {
+          console.error("[GameLoader] Failed:", err);
+          container.innerHTML = `
+      <div class="loader">
+        <p style="color:var(--danger);">Failed to load game</p>
+        <p style="font-size:0.8rem;color:var(--text-muted);">${err.message}</p>
+        <button class="btn btn-secondary btn-sm" onclick="backToLobby()">Back to Lobby</button>
+      </div>
+    `;
+        }
+      }
+
+      function backToLobby() {
+        if (state.currentGame?.destroy) state.currentGame.destroy();
+        state.currentGame = null;
+        clearGameListeners();
+        $("#game-container").innerHTML = "";
+        showScreen("screen-lobby");
+      }
+      window.backToLobby = backToLobby;
+
+      // ════════════════════════════════════════════════
+      //  UI RENDERING
+      // ════════════════════════════════════════════════
+      function renderPlayerList() {
+        const list = $("#player-list");
+        list.innerHTML = state.players
+          .map((p, i) => {
+            const isMe = p.id === state.myId;
+            const canKick = state.isHost && !isMe && !p.isHost;
+            return `
+    <li class="player-item" style="animation-delay:${i * 0.05}s">
+      <div class="player-avatar" style="background:${playerColor(i)}20; color:${playerColor(i)};">
+        ${p.name.charAt(0).toUpperCase()}
+      </div>
+      <span class="player-name">${escHtml(p.name)}</span>
+      ${p.isHost ? '<span class="player-badge badge-host">Host</span>' : ""}
+      ${isMe ? '<span class="player-badge badge-you">You</span>' : ""}
+      ${canKick ? `<button class="btn-kick" data-kick-id="${p.id}" data-kick-name="${escHtml(p.name)}" title="Remove player">✕</button>` : ""}
+    </li>
+  `;
+          })
+          .join("");
+
+        // Attach kick handlers
+        list.querySelectorAll(".btn-kick").forEach((btn) => {
+          btn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            showKickConfirm(btn.dataset.kickId, btn.dataset.kickName);
+          });
+        });
+
+        const count = state.players.length;
+        const sel = state.selectedGame
+          ? GAME_REGISTRY.find((g) => g.id === state.selectedGame)
+          : null;
+        const minOk = !sel || count >= sel.minPlayers;
+        $("#btn-start-game").disabled =
+          !state.isHost || !state.selectedGame || !minOk;
+      }
+
+      function showKickConfirm(playerId, playerName) {
+        const overlay = document.createElement("div");
+        overlay.className = "kick-modal-overlay";
+        overlay.innerHTML = `
+    <div class="kick-modal">
+      <h3>Remove Player</h3>
+      <p>Kick <strong>${playerName}</strong> from the room?</p>
+      <div class="kick-modal-btns">
+        <button class="btn btn-secondary btn-sm" id="kick-cancel">Cancel</button>
+        <button class="btn btn-danger btn-sm" id="kick-confirm">Kick</button>
+      </div>
+    </div>
+  `;
+        document.body.appendChild(overlay);
+
+        overlay
+          .querySelector("#kick-cancel")
+          .addEventListener("click", () => overlay.remove());
+        overlay.addEventListener("click", (e) => {
+          if (e.target === overlay) overlay.remove();
+        });
+
+        overlay.querySelector("#kick-confirm").addEventListener("click", () => {
+          if (state.isLocal) {
+            // Local mode: just remove from player list
+            state.players = state.players.filter((p) => p.id !== playerId);
+            renderPlayerList();
+          } else {
+            net.kickPlayer(playerId);
+          }
+          overlay.remove();
+          toast(`${playerName} removed`);
+        });
+      }
+
+      function showKickedBanner() {
+        // Remove any existing banner
+        document.querySelector(".kicked-banner")?.remove();
+        const banner = document.createElement("div");
+        banner.className = "kicked-banner";
+        banner.textContent = "You were removed from the room by the host";
+        const home = $("#screen-home");
+        home.insertBefore(banner, home.querySelector(".name-input-wrap"));
+        setTimeout(() => banner.remove(), 5000);
+      }
+
+      function renderGameGrid() {
+        const grid = $("#game-grid");
+        const count = state.players.length;
+
+        grid.innerHTML = GAME_REGISTRY.map((g) => {
+          const ok = count >= g.minPlayers;
+          return `
+      <div class="game-card ${state.selectedGame === g.id ? "selected" : ""} ${!ok ? "dimmed" : ""}"
+           data-game-id="${g.id}" ${!state.isHost ? 'style="pointer-events:none"' : ""}>
+        <span class="emoji">${g.emoji}</span>
+        <h3>${g.name}</h3>
+        <p>${g.description}</p>
+        <div class="meta">${g.minPlayers}–${g.maxPlayers} players ${!ok ? "• Need " + g.minPlayers + "+" : ""}</div>
+      </div>
+    `;
+        }).join("");
+
+        if (state.isHost) {
+          grid.querySelectorAll(".game-card").forEach((card) => {
+            card.addEventListener("click", () => {
+              state.selectedGame = card.dataset.gameId;
+              net.send({ type: "game-selected", gameId: state.selectedGame });
+              renderGameGrid();
+              renderPlayerList();
+            });
+          });
+        }
+
+        if (!state.isHost) {
+          $("#game-pick-title").textContent = "Game Selection (Host picks)";
+        } else {
+          $("#game-pick-title").textContent = "Pick a Game";
+        }
+      }
+
+      function escHtml(s) {
+        const d = document.createElement("div");
+        d.textContent = s;
+        return d.innerHTML;
+      }
+
+      // ════════════════════════════════════════════════
+      //  EVENT HANDLERS
+      // ════════════════════════════════════════════════
+      const nameInput = $("#player-name");
+      const codeInput = $("#room-code-input");
+
+      // Load saved name
+      const savedName = localStorage.getItem("pa-name");
+      if (savedName) nameInput.value = savedName;
+      updateBtnStates();
+
+      nameInput.addEventListener("input", updateBtnStates);
+      codeInput.addEventListener("input", () => {
+        codeInput.value = codeInput.value.toUpperCase().replace(/[^A-Z]/g, "");
+        updateBtnStates();
+      });
+
+      function updateBtnStates() {
+        const hasName = nameInput.value.trim().length > 0;
+        const hasCode = codeInput.value.trim().length === 4;
+        $("#btn-create").disabled = !hasName;
+        $("#btn-local").disabled = !hasName;
+        $("#btn-join").disabled = !hasName || !hasCode;
+      }
+
+      // CREATE ROOM
+      $("#btn-create").addEventListener("click", async () => {
+        const name = nameInput.value.trim();
+        if (!name) return;
+
+        state.myName = name;
+        state.isHost = true;
+        state.isLocal = false;
+        state.roomCode = genCode();
+        localStorage.setItem("pa-name", name);
+
+        setStatus("connecting", "Creating room...");
+
+        try {
+          await net.init(state.roomCode, true);
+          state.myId = state.peer.id;
+          state.players = [{ id: state.myId, name, isHost: true }];
+
+          $("#lobby-room-code").textContent = state.roomCode;
+          renderPlayerList();
+          renderGameGrid();
+          showScreen("screen-lobby");
+        } catch (e) {
+          // Try a different code
+          state.roomCode = genCode();
+          try {
+            await net.init(state.roomCode, true);
+            state.myId = state.peer.id;
+            state.players = [{ id: state.myId, name, isHost: true }];
+            $("#lobby-room-code").textContent = state.roomCode;
+            renderPlayerList();
+            renderGameGrid();
+            showScreen("screen-lobby");
+          } catch (e2) {
+            setStatus("disconnected", "Failed to create room");
+          }
+        }
+      });
+
+      // LOCAL MODE
+      $("#btn-local").addEventListener("click", () => {
+        const name = nameInput.value.trim();
+        if (!name) return;
+
+        state.myName = name;
+        state.myId = `local-host-${genId()}`;
+        state.isHost = true;
+        state.isLocal = true;
+        state.roomCode = "LOCAL";
+        localStorage.setItem("pa-name", name);
+
+        state.players = [{ id: state.myId, name, isHost: true }];
+        setStatus("connected", "Local mode");
+
+        const codeLine = $("#lobby-room-code");
+        codeLine.textContent = "LOCAL";
+        codeLine.insertAdjacentHTML(
+          "afterend",
+          '<span class="mode-badge" id="local-badge">Offline Mode</span>',
+        );
+
+        renderPlayerList();
+        renderGameGrid();
+        showScreen("screen-lobby");
+      });
+
+      // JOIN ROOM
+      $("#btn-join").addEventListener("click", async () => {
+        const name = nameInput.value.trim();
+        const code = codeInput.value.trim().toUpperCase();
+        if (!name || code.length !== 4) return;
+
+        state.myName = name;
+        state.isHost = false;
+        state.isLocal = false;
+        state.roomCode = code;
+        localStorage.setItem("pa-name", name);
+
+        setStatus("connecting", "Joining room...");
+
+        try {
+          await net.init(code, false);
+          await net.connectTo(code);
+          state.myId = state.peer.id;
+
+          // We'll get room-sync from host with player list
+          if (!state.players.find((p) => p.id === state.myId)) {
+            state.players.push({ id: state.myId, name, isHost: false });
+          }
+
+          $("#lobby-room-code").textContent = code;
+          renderPlayerList();
+          renderGameGrid();
+          showScreen("screen-lobby");
+          setStatus("connected", "Connected to room");
+        } catch (e) {
+          setStatus("disconnected", "Could not join room");
+        }
+      });
+
+      // COPY ROOM CODE
+      $("#lobby-room-code").addEventListener("click", () => {
+        const code = state.roomCode;
+        if (code === "LOCAL") return;
+        navigator.clipboard
+          ?.writeText(code)
+          .then(() => toast("Code copied!"))
+          .catch(() => {});
+      });
+
+      // START GAME (host only)
+      $("#btn-start-game").addEventListener("click", () => {
+        if (!state.isHost || !state.selectedGame) return;
+        net.send({ type: "game-start", gameId: state.selectedGame });
+        loadAndStartGame(state.selectedGame);
+      });
+
+      // LEAVE ROOM
+      $("#btn-leave").addEventListener("click", () => {
+        net.destroy();
+        state.players = [];
+        state.selectedGame = null;
+        state.currentGame = null;
+        clearGameListeners();
+        setStatus("disconnected", "Not connected");
+        document.getElementById("local-badge")?.remove();
+        showScreen("screen-home");
+      });
+
+      // BACK TO LOBBY (from game)
+      $("#btn-back-lobby").addEventListener("click", () => {
+        tts.stop();
+        backToLobby();
+        net.send({ type: "game-end" });
+      });
+
+      // SPEAKER TOGGLE (lobby)
+      $("#speaker-toggle").addEventListener("click", () => {
+        tts.toggle();
+      });
+
+      // SPEAKER TOGGLE (in-game mini button)
+      $("#speaker-btn-game").addEventListener("click", () => {
+        tts.toggle();
+      });
+
+      // Init TTS UI on load (restore saved state)
+      tts.init();
+      tts.updateUI();
+
+      // Auto-focus
+      nameInput.focus();
+
+      // Handle Enter keys
+      nameInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") $("#btn-create").click();
+      });
+      codeInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") $("#btn-join").click();
+      });
+    </script>
+  </body>
+</html>
