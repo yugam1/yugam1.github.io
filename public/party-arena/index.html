@@ -1625,7 +1625,7 @@
         const sel = state.selectedGame
           ? GAME_REGISTRY.find((g) => g.id === state.selectedGame)
           : null;
-        const minOk = !sel || count >= sel.minPlayers;
+        const minOk = !sel || count >= sel.minPlayers || (state.isLocal && sel.supportsLocal !== false);
         $("#btn-start-game").disabled =
           !state.isHost || !state.selectedGame || !minOk;
       }

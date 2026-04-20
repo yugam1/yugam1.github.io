@@ -1,595 +1,380 @@
-// ════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════
 //  ULTIMATE TIC-TAC-TOE — Party Arena Game Module
-//  2 players, networked or local pass-and-play
-// ════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════
 
-const LINES = [
-  [0, 1, 2],
-  [3, 4, 5],
-  [6, 7, 8], // rows
-  [0, 3, 6],
-  [1, 4, 7],
-  [2, 5, 8], // cols
-  [0, 4, 8],
-  [2, 4, 6], // diags
+const WINNING_LINES = [
+  [0, 1, 2], [3, 4, 5], [6, 7, 8],
+  [0, 3, 6], [1, 4, 7], [2, 5, 8],
+  [0, 4, 8], [2, 4, 6],
 ];
 
-function checkWin(cells) {
-  for (const [a, b, c] of LINES) {
-    if (cells[a] && cells[a] === cells[b] && cells[a] === cells[c])
-      return cells[a];
+function checkWinner(board) {
+  for (const [a, b, c] of WINNING_LINES) {
+    if (board[a] && board[a] === board[b] && board[a] === board[c]) return board[a];
   }
   return null;
 }
 
-function isFull(cells) {
-  return cells.every((c) => c !== null);
-}
-
-function freshState() {
-  return {
-    boards: Array.from({ length: 9 }, () => Array(9).fill(null)),
-    boardWinners: Array(9).fill(null), // 'X', 'O', 'D' (draw), or null
-    currentPlayer: "X",
-    activeBoard: null, // null = free choice
-    winner: null, // 'X', 'O', 'D', or null
-    playerMap: {}, // peerId -> 'X' | 'O'
-    moveHistory: [],
-  };
+function isFull(board) {
+  return board.every(c => c !== null);
 }
 
 export default {
   create(container, api) {
     const players = api.getPlayers();
     const me = api.getMe();
-    const isHost = api.isHost();
     const isLocal = api.isLocal();
+    const isHost = api.isHost();
+    const v = api.cssVars;
 
-    let gs = freshState();
-    let localTurn = "X"; // for local mode, tracks whose physical turn it is
-    let pendingMove = null; // { boardIdx, cellIdx } — tap-to-select, tap-again-to-confirm
+    // ── Player assignment ──
+    // Host = X, Guest = O. In local mode, both play on same device.
+    let myMark = null;
+    let opponentName = '';
 
-    // ── Assign players ──
-    if (isHost) {
-      if (players.length >= 2) {
-        gs.playerMap[players[0].id] = "X";
-        gs.playerMap[players[1].id] = "O";
-      }
-      broadcastState();
+    if (isLocal) {
+      myMark = null; // both marks played locally
+    } else {
+      myMark = isHost ? 'X' : 'O';
+      const opponent = players.find(p => p.id !== me.id);
+      opponentName = opponent ? opponent.name : 'Opponent';
     }
 
-    // ── My symbol ──
-    function mySymbol() {
-      if (isLocal) return localTurn;
-      return gs.playerMap[me.id] || null;
+    // ── Game state ──
+    let boards = Array.from({ length: 9 }, () => Array(9).fill(null));
+    let meta = Array(9).fill(null); // winner per sub-board ('X','O','D',null)
+    let turn = 'X';
+    let activeBoard = null; // which sub-board is forced, or null = free
+    let moveCount = 0;
+    let history = [];
+    let gameOver = false;
+    let globalWinner = null;
+
+    // ── Derived helpers ──
+    function getPlayableBoards() {
+      if (gameOver) return new Set();
+      if (activeBoard !== null && meta[activeBoard] === null) return new Set([activeBoard]);
+      const s = new Set();
+      for (let i = 0; i < 9; i++) if (meta[i] === null) s.add(i);
+      return s;
     }
 
-    function playerName(symbol) {
-      if (isLocal) return `Player ${symbol}`;
-      const pid = Object.entries(gs.playerMap).find(
-        ([, s]) => s === symbol,
-      )?.[0];
-      const p = players.find((pl) => pl.id === pid);
-      return p ? p.name : symbol;
+    function canIPlay() {
+      if (isLocal) return true;
+      return turn === myMark;
     }
 
-    function isMyTurn() {
-      if (gs.winner) return false;
-      if (isLocal) return true; // always your turn in local
-      return mySymbol() === gs.currentPlayer;
-    }
-
-    // ── Network ──
-    function broadcastState() {
-      api.send("uttt-sync", gs);
-    }
-
-    api.on("uttt-sync", (payload) => {
-      if (!isHost) {
-        gs = payload;
-        pendingMove = null;
-        render();
-      }
-    });
-
-    api.on("uttt-move", (payload) => {
-      if (isHost) {
-        const { boardIdx, cellIdx, from } = payload;
-        const symbol = gs.playerMap[from];
-        if (symbol && symbol === gs.currentPlayer) {
-          applyMove(boardIdx, cellIdx);
-        }
-      }
-    });
-
-    // ── Game Logic ──
-    function applyMove(boardIdx, cellIdx) {
-      // Validate
-      if (gs.winner) return false;
-      if (gs.boardWinners[boardIdx]) return false;
-      if (gs.boards[boardIdx][cellIdx] !== null) return false;
-      if (gs.activeBoard !== null && gs.activeBoard !== boardIdx) return false;
-
-      // Place
-      gs.boards[boardIdx][cellIdx] = gs.currentPlayer;
-      gs.moveHistory.push({ boardIdx, cellIdx, player: gs.currentPlayer });
-
-      // Check small board win
-      const smallWin = checkWin(gs.boards[boardIdx]);
-      if (smallWin) {
-        gs.boardWinners[boardIdx] = smallWin;
-      } else if (isFull(gs.boards[boardIdx])) {
-        gs.boardWinners[boardIdx] = "D";
-      }
-
-      // Check overall win
-      const bigWin = checkWin(
-        gs.boardWinners.map((w) => (w === "D" ? null : w)),
-      );
-      if (bigWin) {
-        gs.winner = bigWin;
-      } else if (gs.boardWinners.every((w) => w !== null)) {
-        gs.winner = "D";
-      }
-
-      // Determine next active board
-      const nextBoard = cellIdx;
-      if (gs.boardWinners[nextBoard] || isFull(gs.boards[nextBoard])) {
-        gs.activeBoard = null; // free choice
-      } else {
-        gs.activeBoard = nextBoard;
-      }
-
-      // Switch turn
-      gs.currentPlayer = gs.currentPlayer === "X" ? "O" : "X";
-
-      if (isHost) broadcastState();
-      render();
-
-      // Announce
-      if (gs.winner) {
-        const w =
-          gs.winner === "D" ? "It's a draw!" : `${playerName(gs.winner)} wins!`;
-        api.speak(w);
-      }
-
-      return true;
-    }
-
-    function handleCellClick(boardIdx, cellIdx) {
-      if (!isMyTurn()) return;
-
-      // Tap-to-select, tap-again-to-confirm
-      if (
-        pendingMove &&
-        pendingMove.boardIdx === boardIdx &&
-        pendingMove.cellIdx === cellIdx
-      ) {
-        // Second tap on same cell — confirm the move
-        pendingMove = null;
-        commitMove(boardIdx, cellIdx);
-      } else {
-        // First tap or different cell — select it
-        pendingMove = { boardIdx, cellIdx };
-        render();
-      }
-    }
-
-    function commitMove(boardIdx, cellIdx) {
-      if (isLocal) {
-        if (applyMove(boardIdx, cellIdx)) {
-          localTurn = localTurn === "X" ? "O" : "X";
-          render();
-        }
-        return;
-      }
-
-      // Networked: send move to host
-      if (isHost) {
-        applyMove(boardIdx, cellIdx);
-      } else {
-        api.send("uttt-move", { boardIdx, cellIdx, from: me.id });
-      }
-    }
-
-    function resetGame() {
-      const oldMap = { ...gs.playerMap };
-      gs = freshState();
-      gs.playerMap = oldMap;
-      localTurn = "X";
-      pendingMove = null;
-      if (isHost) broadcastState();
-      render();
-      api.speak("New game! X goes first.");
-    }
-
-    api.on("uttt-reset", () => {
-      const oldMap = { ...gs.playerMap };
-      gs = freshState();
-      gs.playerMap = oldMap;
-      localTurn = "X";
-      pendingMove = null;
-      render();
-    });
-
-    // ── Rendering ──
+    // ── Render ──
     function render() {
-      const isSpectator = !isLocal && !mySymbol();
-      const myTurn = isMyTurn();
-      const turnSymbol = gs.currentPlayer;
-      const turnName = playerName(turnSymbol);
+      const playable = getPlayableBoards();
+      const gw = checkWinner(meta);
+      const isDraw = !gw && meta.every(v => v !== null);
+      gameOver = !!gw || isDraw;
+      globalWinner = gw;
+
+      // Status line
+      let statusHtml = '';
+      if (gameOver) {
+        const color = gw === 'X' ? '#F43F5E' : gw === 'O' ? '#3B82F6' : v.textSec;
+        const text = gw ? `${gw} wins!` : "It's a draw!";
+        statusHtml = `<span style="font-weight:800;font-size:18px;color:${color}">${text}</span>`;
+        if (gw) api.speak(`${gw} wins the game!`);
+      } else {
+        const markSvg = turn === 'X' ? xSvg(16) : oSvg(16);
+        const hint = activeBoard !== null ? `Board ${activeBoard + 1}` : 'Free choice';
+        const myTurn = canIPlay();
+        const turnLabel = isLocal ? `${turn}'s turn` : (myTurn ? 'Your turn' : `${opponentName}'s turn`);
+        statusHtml = `
+          <span style="opacity:0.5">${turnLabel}</span>
+          ${markSvg}
+          <span style="opacity:0.4;font-size:12px">${hint}</span>
+        `;
+      }
+
+      // Build grid
+      let gridHtml = '';
+      for (let mi = 0; mi < 9; mi++) {
+        const isActive = playable.has(mi);
+        const decided = meta[mi] && meta[mi] !== 'D';
+        const drawn = meta[mi] === 'D';
+
+        let bg = 'rgba(255,255,255,0.03)';
+        let border = '2px solid rgba(255,255,255,0.08)';
+        let shadow = 'none';
+
+        if (meta[mi] === 'X') { bg = 'rgba(244,63,94,0.10)'; border = '2px solid rgba(244,63,94,0.25)'; }
+        else if (meta[mi] === 'O') { bg = 'rgba(59,130,246,0.10)'; border = '2px solid rgba(59,130,246,0.25)'; }
+        else if (drawn) { bg = 'rgba(120,120,120,0.06)'; border = '2px solid rgba(120,120,120,0.12)'; }
+        else if (isActive && !gameOver && canIPlay()) {
+          bg = 'rgba(250,204,21,0.08)'; border = '2px solid rgba(250,204,21,0.5)';
+          shadow = '0 0 14px rgba(250,204,21,0.12)';
+        }
+
+        let cellsHtml = '';
+        for (let ci = 0; ci < 9; ci++) {
+          const cell = boards[mi][ci];
+          const canClick = isActive && cell === null && !gameOver && !meta[mi] && canIPlay();
+          const cellBg = canClick ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.015)';
+          const opacity = (decided || drawn) ? 0.3 : 1;
+          const cursor = canClick ? 'pointer' : 'default';
+          const mark = cell === 'X' ? xSvg(16) : cell === 'O' ? oSvg(16) : '';
+
+          cellsHtml += `
+            <button class="uttt-cell" data-macro="${mi}" data-cell="${ci}"
+              style="width:100%;aspect-ratio:1;display:flex;align-items:center;justify-content:center;
+              background:${cellBg};border:1px solid rgba(255,255,255,0.05);border-radius:3px;
+              cursor:${cursor};padding:0;transition:background 0.12s;opacity:${opacity};">
+              ${mark}
+            </button>
+          `;
+        }
+
+        // Big stamp overlay
+        let stampHtml = '';
+        if (decided) {
+          const stampBg = meta[mi] === 'X' ? 'rgba(244,63,94,0.08)' : 'rgba(59,130,246,0.08)';
+          const stampMark = meta[mi] === 'X' ? xSvg(48) : oSvg(48);
+          stampHtml = `
+            <div style="position:absolute;inset:0;z-index:3;display:flex;align-items:center;
+              justify-content:center;pointer-events:none;border-radius:8px;background:${stampBg}">
+              ${stampMark}
+            </div>
+          `;
+        }
+
+        gridHtml += `
+          <div style="position:relative;display:grid;grid-template-columns:repeat(3,1fr);
+            gap:2px;border-radius:8px;padding:3px;background:${bg};border:${border};
+            box-shadow:${shadow};transition:all 0.2s ease;">
+            ${stampHtml}
+            ${cellsHtml}
+          </div>
+        `;
+      }
 
       container.innerHTML = `
-        <style>
-          .uttt-wrap {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100%;
-            padding: 12px;
-            gap: 10px;
-            font-family: 'Quicksand', sans-serif;
-            user-select: none;
-            -webkit-user-select: none;
-          }
+        <div style="min-height:100%;display:flex;flex-direction:column;align-items:center;
+          justify-content:center;padding:20px 8px;font-family:'Quicksand',sans-serif;color:#e2e8f0;">
 
-          .uttt-status {
-            text-align: center;
-            min-height: 48px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-          }
-          .uttt-turn {
-            font-family: 'Righteous', cursive;
-            font-size: 1.15rem;
-            color: #f1f5f9;
-          }
-          .uttt-turn .sym-x { color: #fbbf24; }
-          .uttt-turn .sym-o { color: #60a5fa; }
-          .uttt-hint {
-            font-size: 0.75rem;
-            color: #64748b;
-            margin-top: 2px;
-          }
+          <h2 style="font-family:'Righteous',cursive;font-size:clamp(15px,3.5vw,22px);font-weight:800;
+            letter-spacing:-0.5px;margin:0 0 6px;
+            background:linear-gradient(135deg,#F43F5E,#A855F7,#3B82F6);
+            -webkit-background-clip:text;-webkit-text-fill-color:transparent;">
+            ULTIMATE TIC-TAC-TOE
+          </h2>
 
-          .uttt-mega {
-            display: grid;
-            grid-template: repeat(3, 1fr) / repeat(3, 1fr);
-            gap: 6px;
-            width: min(88vw, 88vh - 120px, 420px);
-            height: min(88vw, 88vh - 120px, 420px);
-            aspect-ratio: 1;
-          }
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;font-size:14px;">
+            ${statusHtml}
+          </div>
 
-          .uttt-board {
-            display: grid;
-            grid-template: repeat(3, 1fr) / repeat(3, 1fr);
-            gap: 2px;
-            border-radius: 8px;
-            padding: 3px;
-            position: relative;
-            background: rgba(255,255,255,0.03);
-            border: 2px solid rgba(255,255,255,0.06);
-            transition: border-color 0.25s, background 0.25s, box-shadow 0.25s;
-          }
-          .uttt-board.active-board {
-            border-color: rgba(251,191,36,0.5);
-            background: rgba(251,191,36,0.06);
-            box-shadow: 0 0 18px rgba(251,191,36,0.1);
-          }
-          .uttt-board.won-x { border-color: rgba(251,191,36,0.4); background: rgba(251,191,36,0.08); }
-          .uttt-board.won-o { border-color: rgba(96,165,250,0.4); background: rgba(96,165,250,0.08); }
-          .uttt-board.won-d { border-color: rgba(100,116,139,0.3); background: rgba(100,116,139,0.06); }
+          <div id="uttt-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;
+            width:min(88vw,420px);aspect-ratio:1;padding:3px;">
+            ${gridHtml}
+          </div>
 
-          .uttt-overlay {
-            position: absolute;
-            inset: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-family: 'Righteous', cursive;
-            font-size: clamp(1.8rem, 6vw, 3rem);
-            border-radius: 6px;
-            z-index: 2;
-            pointer-events: none;
-            animation: uttt-pop 0.35s cubic-bezier(0.16,1,0.3,1);
-          }
-          .uttt-overlay.ov-x { color: #fbbf24; background: rgba(251,191,36,0.12); }
-          .uttt-overlay.ov-o { color: #60a5fa; background: rgba(96,165,250,0.12); }
-          .uttt-overlay.ov-d { color: #64748b; background: rgba(100,116,139,0.1); font-size: clamp(0.7rem,2vw,1rem); }
+          <div style="display:flex;gap:10px;margin-top:16px;">
+            <button id="uttt-undo" style="padding:8px 18px;border-radius:6px;
+              border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.05);
+              color:#e2e8f0;font-family:'Quicksand',sans-serif;font-size:13px;font-weight:600;
+              cursor:${history.length ? 'pointer' : 'not-allowed'};
+              opacity:${history.length ? 1 : 0.35};transition:all 0.15s;">
+              Undo
+            </button>
+            <button id="uttt-reset" style="padding:8px 18px;border-radius:6px;
+              border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.05);
+              color:#e2e8f0;font-family:'Quicksand',sans-serif;font-size:13px;font-weight:600;
+              cursor:pointer;transition:all 0.15s;">
+              New Game
+            </button>
+            <button id="uttt-leave" style="padding:8px 18px;border-radius:6px;
+              border:1px solid rgba(248,113,113,0.2);background:rgba(248,113,113,0.1);
+              color:#f87171;font-family:'Quicksand',sans-serif;font-size:13px;font-weight:600;
+              cursor:pointer;transition:all 0.15s;">
+              Leave
+            </button>
+          </div>
 
-          @keyframes uttt-pop {
-            0% { transform: scale(0.3); opacity: 0; }
-            100% { transform: scale(1); opacity: 1; }
-          }
+          ${!isLocal ? `
+          <div style="margin-top:12px;font-size:12px;opacity:0.4;">
+            You are <strong style="color:${myMark === 'X' ? '#F43F5E' : '#3B82F6'}">${myMark}</strong>
+            ${myMark === 'X' ? '(goes first)' : ''}
+          </div>` : ''}
 
-          .uttt-cell {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: rgba(0,0,0,0.25);
-            border-radius: 4px;
-            cursor: pointer;
-            font-family: 'Righteous', cursive;
-            font-size: clamp(0.9rem, 3.2vw, 1.5rem);
-            transition: background 0.15s;
-            position: relative;
-            z-index: 1;
-            aspect-ratio: 1;
-            line-height: 1;
-          }
-          .uttt-cell:hover:not(.taken):not(.dead) {
-            background: rgba(255,255,255,0.08);
-          }
-          .uttt-cell.taken, .uttt-cell.dead {
-            cursor: default;
-          }
-          .uttt-cell .cx { color: #fbbf24; }
-          .uttt-cell .co { color: #60a5fa; }
-
-          .uttt-cell.last-move {
-            box-shadow: inset 0 0 0 2px rgba(52,211,153,0.6);
-          }
-
-          .uttt-cell.pending {
-            background: rgba(52,211,153,0.18);
-            box-shadow: inset 0 0 0 2px rgba(52,211,153,0.7);
-            animation: uttt-pulse 1s ease infinite;
-          }
-          @keyframes uttt-pulse {
-            0%, 100% { box-shadow: inset 0 0 0 2px rgba(52,211,153,0.7); }
-            50% { box-shadow: inset 0 0 0 2px rgba(52,211,153,0.3); }
-          }
-          .uttt-confirm-hint {
-            font-size: 0.72rem;
-            color: #34d399;
-            margin-top: 2px;
-            animation: fadeIn 0.2s ease;
-          }
-          @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
-          .uttt-winner-banner {
-            text-align: center;
-            animation: uttt-pop 0.5s cubic-bezier(0.16,1,0.3,1);
-          }
-          .uttt-winner-banner h2 {
-            font-family: 'Righteous', cursive;
-            font-size: 1.6rem;
-            margin-bottom: 4px;
-          }
-          .uttt-winner-banner p {
-            color: #94a3b8;
-            font-size: 0.85rem;
-            margin-bottom: 12px;
-          }
-          .uttt-btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-            padding: 10px 24px;
-            border: none;
-            border-radius: 10px;
-            font-family: 'Quicksand', sans-serif;
-            font-weight: 700;
-            font-size: 0.9rem;
-            cursor: pointer;
-            transition: all 0.2s;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-          }
-          .uttt-btn:active { transform: scale(0.96); }
-          .uttt-btn-primary {
-            background: linear-gradient(135deg, #fbbf24, #f59e0b);
-            color: #0a0e1a;
-            box-shadow: 0 4px 16px rgba(251,191,36,0.25);
-          }
-          .uttt-btn-secondary {
-            background: rgba(255,255,255,0.06);
-            color: #f1f5f9;
-            border: 1.5px solid rgba(255,255,255,0.08);
-            margin-left: 8px;
-          }
-
-          .uttt-info-row {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-            font-size: 0.8rem;
-            color: #94a3b8;
-          }
-          .uttt-info-row .player-tag {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-weight: 700;
-            font-size: 0.8rem;
-          }
-          .uttt-info-row .tag-x {
-            background: rgba(251,191,36,0.12);
-            color: #fbbf24;
-            border: 1px solid rgba(251,191,36,0.2);
-          }
-          .uttt-info-row .tag-o {
-            background: rgba(96,165,250,0.12);
-            color: #60a5fa;
-            border: 1px solid rgba(96,165,250,0.2);
-          }
-          .uttt-info-row .tag-active {
-            box-shadow: 0 0 10px rgba(251,191,36,0.2);
-          }
-        </style>
-
-        <div class="uttt-wrap">
-          ${renderStatus()}
-          ${renderInfoRow()}
-          ${renderMegaBoard()}
-          ${gs.winner ? renderWinnerControls() : ""}
+          <details style="margin-top:18px;max-width:420px;font-size:12px;opacity:0.45;cursor:pointer;">
+            <summary style="font-weight:600">How to play</summary>
+            <p style="margin-top:8px;line-height:1.7;padding:0 4px;">
+              The board has 9 small tic-tac-toe grids in a 3×3 pattern.
+              Where you play in a small grid determines which grid your opponent must play in next
+              (matching position on the big board). Win a small grid and it counts as your mark on
+              the big board. Get 3 in a row on the big board to win.
+              Sent to an already-decided grid? You get free choice.
+              The yellow glow shows where you must play.
+            </p>
+          </details>
         </div>
       `;
 
-      // Wire click handlers
-      container.querySelectorAll(".uttt-cell[data-b][data-c]").forEach((el) => {
-        el.addEventListener("click", () => {
-          const bi = parseInt(el.dataset.b);
-          const ci = parseInt(el.dataset.c);
-          handleCellClick(bi, ci);
+      // ── Attach event listeners ──
+      container.querySelectorAll('.uttt-cell').forEach(btn => {
+        const mi = parseInt(btn.dataset.macro);
+        const ci = parseInt(btn.dataset.cell);
+        btn.addEventListener('click', () => handleClick(mi, ci));
+
+        // Hover effects
+        btn.addEventListener('mouseenter', () => {
+          const isClickable = playable.has(mi) && boards[mi][ci] === null && !gameOver && !meta[mi] && canIPlay();
+          if (isClickable) btn.style.background = 'rgba(255,255,255,0.13)';
+        });
+        btn.addEventListener('mouseleave', () => {
+          const isClickable = playable.has(mi) && boards[mi][ci] === null && !gameOver && !meta[mi] && canIPlay();
+          if (isClickable) btn.style.background = 'rgba(255,255,255,0.06)';
         });
       });
 
-      // Wire reset
-      container.querySelector("#uttt-reset")?.addEventListener("click", () => {
-        if (isHost || isLocal) {
-          api.send("uttt-reset", {});
-          resetGame();
+      const undoBtn = container.querySelector('#uttt-undo');
+      if (undoBtn) undoBtn.addEventListener('click', undo);
+
+      const resetBtn = container.querySelector('#uttt-reset');
+      if (resetBtn) resetBtn.addEventListener('click', resetGame);
+
+      const leaveBtn = container.querySelector('#uttt-leave');
+      if (leaveBtn) leaveBtn.addEventListener('click', () => api.endGame());
+    }
+
+    // ── SVG helpers ──
+    function xSvg(sz) {
+      const s = sz * 0.35;
+      const c = sz / 2;
+      const sw = sz > 30 ? 6 : 2.5;
+      return `<svg width="${sz}" height="${sz}" viewBox="0 0 ${sz} ${sz}">
+        <line x1="${c - s}" y1="${c - s}" x2="${c + s}" y2="${c + s}" stroke="#F43F5E" stroke-width="${sw}" stroke-linecap="round"/>
+        <line x1="${c + s}" y1="${c - s}" x2="${c - s}" y2="${c + s}" stroke="#F43F5E" stroke-width="${sw}" stroke-linecap="round"/>
+      </svg>`;
+    }
+
+    function oSvg(sz) {
+      const c = sz / 2;
+      const sw = sz > 30 ? 6 : 2.5;
+      return `<svg width="${sz}" height="${sz}" viewBox="0 0 ${sz} ${sz}">
+        <circle cx="${c}" cy="${c}" r="${sz * 0.32}" fill="none" stroke="#3B82F6" stroke-width="${sw}"/>
+      </svg>`;
+    }
+
+    // ── Move logic ──
+    function applyMove(mi, ci, mark) {
+      history.push({
+        boards: boards.map(b => [...b]),
+        meta: [...meta],
+        turn,
+        activeBoard,
+        moveCount,
+      });
+
+      boards[mi][ci] = mark;
+
+      if (!meta[mi]) {
+        const w = checkWinner(boards[mi]);
+        if (w) meta[mi] = w;
+        else if (isFull(boards[mi])) meta[mi] = 'D';
+      }
+
+      let nextActive = ci;
+      if (meta[nextActive] !== null) nextActive = null;
+
+      turn = turn === 'X' ? 'O' : 'X';
+      activeBoard = nextActive;
+      moveCount++;
+
+      render();
+    }
+
+    function handleClick(mi, ci) {
+      if (gameOver) return;
+      if (!canIPlay()) return;
+
+      const playable = getPlayableBoards();
+      if (!playable.has(mi)) return;
+      if (boards[mi][ci] !== null) return;
+
+      if (isLocal) {
+        // Local pass-and-play: apply directly
+        applyMove(mi, ci, turn);
+      } else {
+        // Online: send move to opponent
+        api.send('uttt-move', { mi, ci, mark: turn });
+        applyMove(mi, ci, turn);
+      }
+    }
+
+    function undo() {
+      if (history.length === 0) return;
+      // In online mode, only allow undo if it's a local-only game or both agree
+      // For simplicity: only allow undo in local mode
+      if (!isLocal) return;
+
+      const prev = history.pop();
+      boards = prev.boards;
+      meta = prev.meta;
+      turn = prev.turn;
+      activeBoard = prev.activeBoard;
+      moveCount = prev.moveCount;
+      gameOver = false;
+      globalWinner = null;
+      render();
+    }
+
+    function resetGame() {
+      boards = Array.from({ length: 9 }, () => Array(9).fill(null));
+      meta = Array(9).fill(null);
+      turn = 'X';
+      activeBoard = null;
+      moveCount = 0;
+      history = [];
+      gameOver = false;
+      globalWinner = null;
+
+      if (!isLocal) {
+        api.send('uttt-reset', {});
+      }
+      render();
+    }
+
+    // ── Network events (online mode) ──
+    if (!isLocal) {
+      api.on('uttt-move', (payload) => {
+        const { mi, ci, mark } = payload;
+        // Only apply if it's actually the opponent's move
+        if (boards[mi][ci] === null) {
+          applyMove(mi, ci, mark);
         }
       });
-    }
 
-    function renderStatus() {
-      if (gs.winner) {
-        if (gs.winner === "D") {
-          return `<div class="uttt-status"><div class="uttt-turn">It's a Draw!</div></div>`;
-        }
-        const name = playerName(gs.winner);
-        const cls = gs.winner === "X" ? "sym-x" : "sym-o";
-        return `<div class="uttt-status"><div class="uttt-turn"><span class="${cls}">${name}</span> wins! 🎉</div></div>`;
-      }
+      api.on('uttt-reset', () => {
+        boards = Array.from({ length: 9 }, () => Array(9).fill(null));
+        meta = Array(9).fill(null);
+        turn = 'X';
+        activeBoard = null;
+        moveCount = 0;
+        history = [];
+        gameOver = false;
+        globalWinner = null;
+        render();
+      });
 
-      const cls = gs.currentPlayer === "X" ? "sym-x" : "sym-o";
-      const name = playerName(gs.currentPlayer);
-      const myTurn = isMyTurn();
-      let hint;
-      if (pendingMove && myTurn) {
-        hint = `<span class="uttt-confirm-hint">Tap again to confirm</span>`;
-      } else if (myTurn) {
-        hint =
-          gs.activeBoard !== null
-            ? `Play in highlighted board`
-            : `Play in any open board`;
-      } else {
-        hint = `Waiting...`;
-      }
-
-      return `
-        <div class="uttt-status">
-          <div class="uttt-turn"><span class="${cls}">${name}</span>'s turn</div>
-          <div class="uttt-hint">${hint}</div>
-        </div>
-      `;
-    }
-
-    function renderInfoRow() {
-      const xName = playerName("X");
-      const oName = playerName("O");
-      const xActive =
-        gs.currentPlayer === "X" && !gs.winner ? "tag-active" : "";
-      const oActive =
-        gs.currentPlayer === "O" && !gs.winner ? "tag-active" : "";
-      return `
-        <div class="uttt-info-row">
-          <span class="player-tag tag-x ${xActive}">✕ ${esc(xName)}</span>
-          <span style="color:#334155;">vs</span>
-          <span class="player-tag tag-o ${oActive}">○ ${esc(oName)}</span>
-        </div>
-      `;
-    }
-
-    function renderMegaBoard() {
-      const lastMove =
-        gs.moveHistory.length > 0
-          ? gs.moveHistory[gs.moveHistory.length - 1]
-          : null;
-
-      let html = '<div class="uttt-mega">';
-      for (let bi = 0; bi < 9; bi++) {
-        const bw = gs.boardWinners[bi];
-        const isActive =
-          !gs.winner &&
-          !bw &&
-          (gs.activeBoard === null || gs.activeBoard === bi);
-        let cls = "uttt-board";
-        if (isActive && isMyTurn()) cls += " active-board";
-        if (bw === "X") cls += " won-x";
-        else if (bw === "O") cls += " won-o";
-        else if (bw === "D") cls += " won-d";
-
-        html += `<div class="${cls}">`;
-
-        // Overlay for won/drawn boards
-        if (bw) {
-          if (bw === "D") {
-            html += `<div class="uttt-overlay ov-d">DRAW</div>`;
-          } else {
-            html += `<div class="uttt-overlay ov-${bw.toLowerCase()}">${bw === "X" ? "✕" : "○"}</div>`;
-          }
-        }
-
-        for (let ci = 0; ci < 9; ci++) {
-          const v = gs.boards[bi][ci];
-          const taken = v !== null;
-          const dead = !!bw || (!isActive && !gs.winner);
-          const isLast =
-            lastMove && lastMove.boardIdx === bi && lastMove.cellIdx === ci;
-          const isPending =
-            pendingMove &&
-            pendingMove.boardIdx === bi &&
-            pendingMove.cellIdx === ci;
-          let ccls = "uttt-cell";
-          if (taken) ccls += " taken";
-          if (dead && !taken) ccls += " dead";
-          if (isLast && !isPending) ccls += " last-move";
-          if (isPending) ccls += " pending";
-
-          const canClick = !taken && !dead && isMyTurn();
-          html += `<div class="${ccls}" ${canClick ? `data-b="${bi}" data-c="${ci}"` : ""}>`;
-          if (v === "X") html += '<span class="cx">✕</span>';
-          else if (v === "O") html += '<span class="co">○</span>';
-          html += "</div>";
-        }
-
-        html += "</div>";
-      }
-      html += "</div>";
-      return html;
-    }
-
-    function renderWinnerControls() {
-      const canReset = isHost || isLocal;
-      return `
-        <div class="uttt-winner-banner">
-          ${canReset ? '<button class="uttt-btn uttt-btn-primary" id="uttt-reset">Play Again</button>' : "<p>Waiting for host to restart...</p>"}
-          <button class="uttt-btn uttt-btn-secondary" onclick="window.backToLobby && backToLobby()">Back to Lobby</button>
-        </div>
-      `;
-    }
-
-    function esc(s) {
-      const d = document.createElement("div");
-      d.textContent = s;
-      return d.innerHTML;
+      api.on('player-left', () => {
+        // Opponent disconnected
+        gameOver = true;
+        render();
+      });
     }
 
     // ── Initial render ──
     render();
 
-    if (isHost) {
-      api.speak(
-        `Ultimate Tic Tac Toe! ${playerName("X")} is X, ${playerName("O")} is O. X goes first.`,
-      );
-    }
-
+    // ── Destroy ──
     return {
       destroy() {
-        api.off("uttt-sync", () => {});
-        api.off("uttt-move", () => {});
-        api.off("uttt-reset", () => {});
-        container.innerHTML = "";
+        container.innerHTML = '';
       },
     };
   },
