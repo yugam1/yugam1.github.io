@@ -1,0 +1,3036 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>MAANG Tracker · 16 Weeks · Self-Paced</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script src="https://cdn.jsdelivr.net/npm/lz-string@1.5.0/libs/lz-string.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,700;9..144,900&family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #0d0c0a;
+    --ink-2: #15140f;
+    --ink-3: #1f1d16;
+    --ink-focus: #221d12;
+    --paper: #ece6d6;
+    --paper-dim: #b8b1a0;
+    --paper-faint: #6b6555;
+    --rule: #2a2820;
+    --amber: #d4a056;
+    --amber-dim: #8a6a3a;
+    --amber-bright: #e8b56b;
+    --rust: #c75a3c;
+    --moss: #7a9162;
+    --violet: #b88dc7;
+    --teal: #5db8c7;
+    --teal-dim: #2a5560;
+    --olive: #b8a85d;
+    --olive-dim: #5d5230;
+    --serif: 'Fraunces', Georgia, serif;
+    --sans: 'Geist', -apple-system, sans-serif;
+    --mono: 'Geist Mono', 'SF Mono', monospace;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    background: var(--ink);
+    color: var(--paper);
+    font-family: var(--sans);
+    font-weight: 400;
+    line-height: 1.55;
+    min-height: 100vh;
+    font-feature-settings: "ss01", "cv11";
+  }
+
+  ::selection { background: var(--amber); color: var(--ink); }
+
+  .container { max-width: 1180px; margin: 0 auto; padding: 36px 32px 80px; }
+
+  /* ─── Masthead (compact) ─── */
+  .masthead {
+    border-bottom: 1px solid var(--rule);
+    padding-bottom: 28px;
+    margin-bottom: 36px;
+  }
+
+  .top-meta {
+    display: flex;
+    justify-content: space-between;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--paper-faint);
+    margin-bottom: 18px;
+  }
+  .top-meta .vol::before { content: "■  "; color: var(--amber); }
+
+  .title {
+    font-family: var(--serif);
+    font-weight: 300;
+    font-size: clamp(38px, 6.5vw, 76px);
+    line-height: 0.96;
+    letter-spacing: -0.02em;
+    margin-bottom: 10px;
+    font-variation-settings: "opsz" 144;
+  }
+  .title em { font-style: italic; font-weight: 400; color: var(--amber); }
+
+  .subtitle {
+    font-family: var(--serif);
+    font-style: italic;
+    font-weight: 300;
+    font-size: clamp(15px, 1.7vw, 19px);
+    color: var(--paper-dim);
+    max-width: 660px;
+  }
+
+  /* ─── FOCUS CARD ─── */
+  .focus {
+    margin: 36px 0 48px;
+    background: var(--ink-focus);
+    border: 1px solid var(--amber-dim);
+    box-shadow: 0 0 0 1px rgba(212, 160, 86, 0.08), 0 20px 60px rgba(0,0,0,0.4);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .focus::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--amber), transparent);
+  }
+
+  .focus-inner { padding: 28px 32px 24px; }
+
+  .focus-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 18px;
+    flex-wrap: wrap;
+  }
+
+  .focus-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--amber);
+  }
+
+  .focus-label::before { content: "→ "; color: var(--paper-faint); margin-right: 2px; }
+
+  .focus-day-num {
+    font-family: var(--serif);
+    font-size: clamp(28px, 4vw, 40px);
+    font-weight: 400;
+    color: var(--paper);
+    letter-spacing: -0.01em;
+    line-height: 1;
+  }
+
+  .focus-day-theme {
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: clamp(16px, 2vw, 20px);
+    color: var(--amber-bright);
+    margin-top: 4px;
+  }
+
+  .focus-budget {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--paper-faint);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    text-align: right;
+  }
+
+  .focus-budget strong {
+    color: var(--paper);
+    font-size: 18px;
+    font-family: var(--serif);
+    font-weight: 400;
+    display: block;
+    letter-spacing: 0;
+    text-transform: none;
+  }
+
+  .focus-tasks { list-style: none; }
+
+  .focus-tasks li {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    padding: 10px 0;
+    border-top: 1px solid rgba(212, 160, 86, 0.1);
+    font-size: 15px;
+    line-height: 1.5;
+  }
+  .focus-tasks li:first-child { border-top: none; }
+
+  .focus-tasks li.checked { opacity: 0.42; text-decoration: line-through; text-decoration-color: var(--paper-faint); }
+
+  .focus-tasks .task-body { flex: 1; }
+
+  .focus-tasks .task-meta {
+    display: flex;
+    gap: 8px;
+    align-items: baseline;
+    flex-wrap: wrap;
+  }
+
+  .focus-empty {
+    padding: 20px 0;
+    font-family: var(--serif);
+    font-style: italic;
+    color: var(--paper-dim);
+    text-align: center;
+  }
+
+  .focus-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 18px;
+    padding-top: 16px;
+    border-top: 1px dashed var(--rule);
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.1em;
+    color: var(--paper-faint);
+  }
+  .focus-footer strong { color: var(--amber); font-weight: 500; }
+
+  /* ─── Stats strip ─── */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 1px;
+    background: var(--rule);
+    border: 1px solid var(--rule);
+    margin-bottom: 20px;
+  }
+  .stat {
+    background: var(--ink);
+    padding: 14px 18px;
+  }
+  .stat .label {
+    font-family: var(--mono);
+    font-size: 9.5px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--paper-faint);
+    margin-bottom: 6px;
+  }
+  .stat .value {
+    font-family: var(--serif);
+    font-size: 22px;
+    font-weight: 400;
+    line-height: 1;
+    color: var(--paper);
+  }
+  .stat .value.accent { color: var(--amber); }
+  .stat .sub {
+    font-family: var(--mono);
+    font-size: 9.5px;
+    color: var(--paper-faint);
+    margin-top: 4px;
+    letter-spacing: 0.05em;
+  }
+
+  .progress-strip {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin: 14px 0 6px;
+  }
+  .progress-strip .label {
+    font-family: var(--mono);
+    font-size: 9.5px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--paper-faint);
+    white-space: nowrap;
+  }
+  .progress-track {
+    flex: 1; height: 2px; background: var(--rule); position: relative; overflow: hidden;
+  }
+  .progress-fill {
+    position: absolute; inset: 0 100% 0 0;
+    background: var(--amber);
+    transition: right 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .progress-pct {
+    font-family: var(--mono); font-size: 12px; color: var(--amber);
+    font-weight: 500; min-width: 50px; text-align: right;
+  }
+
+  .tag-stats {
+    display: flex; gap: 12px; flex-wrap: wrap;
+    font-family: var(--mono); font-size: 10px; color: var(--paper-faint);
+    letter-spacing: 0.1em; margin-top: 8px;
+  }
+  .tag-stat { display: flex; align-items: center; gap: 6px; }
+  .tag-stat .dot { width: 7px; height: 7px; border-radius: 50%; }
+  .tag-stat.dsa .dot { background: var(--amber); }
+  .tag-stat.sd .dot { background: var(--moss); }
+  .tag-stat.lld .dot { background: var(--violet); }
+  .tag-stat.beh .dot { background: var(--rust); }
+  .tag-stat.ai .dot { background: var(--teal); }
+  .tag-stat.build .dot { background: var(--olive); }
+  .tag-stat.mock .dot { background: var(--amber); border: 1px solid var(--paper); }
+  .tag-stat.log .dot { background: var(--paper-dim); }
+
+  /* ─── Brief ─── */
+  .brief {
+    margin: 56px 0;
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 56px;
+  }
+  @media (max-width: 760px) { .brief { grid-template-columns: 1fr; gap: 24px; } }
+
+  .brief-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--amber);
+  }
+  .brief-label::before { content: "§  "; color: var(--paper-faint); }
+
+  .brief h2 {
+    font-family: var(--serif);
+    font-weight: 300;
+    font-size: 30px;
+    line-height: 1.15;
+    letter-spacing: -0.01em;
+    margin-top: 10px;
+  }
+
+  .brief-body { font-size: 15px; line-height: 1.7; color: var(--paper); }
+  .brief-body p { margin-bottom: 14px; }
+  .brief-body strong { color: var(--amber); font-weight: 500; }
+
+  details.dropdown {
+    border-top: 1px solid var(--rule);
+    border-bottom: 1px solid var(--rule);
+    padding: 18px 0;
+    margin: 18px 0;
+  }
+  details.dropdown summary {
+    cursor: pointer;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--paper-dim);
+    list-style: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  details.dropdown summary::-webkit-details-marker { display: none; }
+  details.dropdown summary::after {
+    content: "+";
+    font-family: var(--serif);
+    font-size: 22px;
+    color: var(--amber);
+    transition: transform 0.3s;
+  }
+  details.dropdown[open] summary::after { transform: rotate(45deg); }
+  details.dropdown summary:hover { color: var(--paper); }
+  .dropdown-body { padding-top: 16px; font-size: 14.5px; line-height: 1.7; }
+  .dropdown-body ul { padding-left: 20px; margin-top: 8px; }
+  .dropdown-body li { margin-bottom: 6px; color: var(--paper-dim); }
+  .dropdown-body li strong { color: var(--paper); font-weight: 500; }
+  .dropdown-body a { color: var(--amber); text-decoration: none; border-bottom: 1px solid var(--amber-dim); }
+  .dropdown-body a:hover { border-bottom-color: var(--amber); }
+
+  /* ─── Modules ─── */
+  .module { margin: 70px 0; scroll-margin-top: 20px; }
+
+  .module-header {
+    border-top: 2px solid var(--paper);
+    padding-top: 22px;
+    margin-bottom: 32px;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: baseline;
+    gap: 28px;
+  }
+
+  .module-num {
+    font-family: var(--serif);
+    font-size: 84px;
+    line-height: 0.85;
+    font-weight: 300;
+    color: var(--amber);
+    font-variation-settings: "opsz" 144;
+  }
+
+  .module-titlebox h3 {
+    font-family: var(--serif);
+    font-weight: 400;
+    font-size: 32px;
+    line-height: 1.05;
+    letter-spacing: -0.01em;
+    margin-bottom: 8px;
+  }
+
+  .module-titlebox .module-meta {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--paper-faint);
+  }
+
+  .module-tagline {
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 16px;
+    color: var(--paper-dim);
+    text-align: right;
+    max-width: 260px;
+  }
+
+  @media (max-width: 760px) {
+    .module-header { grid-template-columns: 1fr; gap: 8px; }
+    .module-num { font-size: 56px; }
+    .module-tagline { text-align: left; }
+  }
+
+  .week-strip {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--amber-dim);
+    padding: 16px 22px 8px;
+    grid-column: 1 / -1;
+    border-top: 1px dashed var(--rule);
+  }
+  .week-strip:first-child { border-top: none; padding-top: 0; }
+
+  /* ─── Day cards ─── */
+  .days {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
+    gap: 1px;
+    background: var(--rule);
+    border: 1px solid var(--rule);
+  }
+
+  .day {
+    background: var(--ink);
+    padding: 20px 22px 16px;
+    transition: background 0.2s;
+    position: relative;
+  }
+
+  .day.today {
+    background: var(--ink-3);
+    box-shadow: inset 3px 0 0 var(--amber);
+  }
+
+  .day.today::after {
+    content: "FOCUS";
+    position: absolute;
+    top: 18px;
+    right: 18px;
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    color: var(--amber);
+    background: rgba(212, 160, 86, 0.12);
+    padding: 3px 6px;
+    border: 1px solid var(--amber-dim);
+  }
+
+  .day.done { background: var(--ink-2); }
+  .day.done .day-num { color: var(--moss); }
+  .day.done .day-num::after { content: " ✓"; color: var(--moss); }
+
+  .day-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 4px;
+  }
+
+  .day-num {
+    font-family: var(--serif);
+    font-size: 22px;
+    font-weight: 500;
+    color: var(--paper);
+    letter-spacing: -0.01em;
+  }
+  .day-num .small {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    color: var(--paper-faint);
+    margin-left: 8px;
+    font-weight: 400;
+  }
+
+  .day-theme {
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 14px;
+    color: var(--amber);
+    margin-bottom: 12px;
+    line-height: 1.3;
+  }
+
+  .day-budget {
+    font-family: var(--mono);
+    font-size: 9.5px;
+    letter-spacing: 0.15em;
+    color: var(--paper-faint);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .tasks { list-style: none; }
+
+  .tasks > li {
+    padding: 5px 0;
+  }
+
+  .task-row {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    font-size: 13.5px;
+    line-height: 1.45;
+    cursor: pointer;
+    color: var(--paper);
+  }
+
+  .task-row:hover { color: var(--amber); }
+
+  .tasks input[type="checkbox"] {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 14px; height: 14px;
+    border: 1px solid var(--paper-faint);
+    background: transparent;
+    cursor: pointer;
+    flex-shrink: 0;
+    margin-top: 3px;
+    position: relative;
+    transition: all 0.15s;
+  }
+  .tasks input[type="checkbox"]:hover { border-color: var(--amber); }
+  .tasks input[type="checkbox"]:checked { background: var(--amber); border-color: var(--amber); }
+  .tasks input[type="checkbox"]:checked::after {
+    content: "";
+    position: absolute;
+    left: 3px; top: 0px;
+    width: 5px; height: 9px;
+    border: solid var(--ink);
+    border-width: 0 1.5px 1.5px 0;
+    transform: rotate(45deg);
+  }
+
+  .tasks li.checked .task-row {
+    color: var(--paper-faint);
+    text-decoration: line-through;
+    text-decoration-color: var(--paper-faint);
+  }
+  .tasks li.checked .task-links a { opacity: 0.4; }
+
+  .day-tag {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 8.5px;
+    letter-spacing: 0.15em;
+    padding: 1px 5px;
+    margin-right: 2px;
+    text-transform: uppercase;
+    border: 1px solid var(--rule);
+    color: var(--paper-faint);
+    flex-shrink: 0;
+    margin-top: 3px;
+  }
+  .day-tag.dsa   { color: var(--amber); border-color: var(--amber-dim); }
+  .day-tag.sd    { color: var(--moss); border-color: #4a5238; }
+  .day-tag.lld   { color: var(--violet); border-color: #4d3658; }
+  .day-tag.beh   { color: var(--rust); border-color: #5a2b1f; }
+  .day-tag.log   { color: var(--paper-dim); }
+  .day-tag.mock  { color: var(--amber); border-color: var(--amber); background: rgba(212, 160, 86, 0.08); }
+  .day-tag.ai    { color: var(--teal); border-color: var(--teal-dim); }
+  .day-tag.build { color: var(--olive); border-color: var(--olive-dim); background: rgba(184, 168, 93, 0.06); }
+
+  /* Link chips */
+  .task-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 10px;
+    margin: 5px 0 0 26px;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    line-height: 1.5;
+  }
+  .task-links a {
+    color: var(--paper-faint);
+    text-decoration: none;
+    border-bottom: 1px solid var(--rule);
+    transition: all 0.15s;
+    padding-bottom: 1px;
+    white-space: nowrap;
+  }
+  .task-links a:hover {
+    color: var(--amber);
+    border-bottom-color: var(--amber);
+  }
+  .task-links a::after {
+    content: " ↗";
+    font-size: 9px;
+    opacity: 0.6;
+    margin-left: 1px;
+  }
+
+  /* Focus card uses larger links */
+  .focus-tasks .task-links {
+    font-size: 12px;
+    margin-left: 28px;
+  }
+
+  .day-notes {
+    margin-top: 12px;
+    width: 100%;
+    background: transparent;
+    border: none;
+    border-top: 1px dashed var(--rule);
+    color: var(--paper-dim);
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 12.5px;
+    padding: 10px 0 0;
+    resize: vertical;
+    min-height: 24px;
+    font-feature-settings: "ss01";
+  }
+  .day-notes:focus { outline: none; color: var(--paper); }
+  .day-notes::placeholder { color: var(--paper-faint); opacity: 0.5; }
+
+  /* ─── Controls (sticky nav) ─── */
+  .controls {
+    position: sticky;
+    top: 0;
+    background: rgba(13, 12, 10, 0.92);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--rule);
+    padding: 12px 32px;
+    z-index: 100;
+    margin: 0 -32px 0;
+    display: flex;
+    gap: 20px;
+    align-items: center;
+    flex-wrap: wrap;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.1em;
+  }
+  .controls .nav { display: flex; gap: 16px; }
+  .controls .nav a {
+    color: var(--paper-dim);
+    text-decoration: none;
+    text-transform: uppercase;
+    transition: color 0.15s;
+    border-bottom: 1px solid transparent;
+    padding-bottom: 2px;
+  }
+  .controls .nav a:hover { color: var(--amber); border-bottom-color: var(--amber); }
+  .controls .right { margin-left: auto; display: flex; gap: 14px; align-items: center; }
+  .controls button {
+    background: transparent;
+    border: 1px solid var(--rule);
+    color: var(--paper-dim);
+    padding: 6px 12px;
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .controls button:hover { color: var(--amber); border-color: var(--amber); }
+
+  .footer {
+    margin-top: 80px;
+    padding-top: 28px;
+    border-top: 1px solid var(--rule);
+    text-align: center;
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 15px;
+    color: var(--paper-dim);
+  }
+  .footer .signature {
+    font-family: var(--mono);
+    font-style: normal;
+    font-size: 10px;
+    color: var(--paper-faint);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-top: 16px;
+  }
+
+  /* ─── Sync modal ─── */
+  .sync-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.75);
+    display: none;
+    align-items: center; justify-content: center;
+    z-index: 1000;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    padding: 20px;
+  }
+  .sync-overlay.open { display: flex; }
+  .sync-modal {
+    background: var(--ink-3);
+    border: 1px solid var(--amber-dim);
+    box-shadow: 0 30px 80px rgba(0,0,0,0.6), inset 0 1px 0 rgba(212,160,86,0.1);
+    max-width: 560px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    padding: 32px 32px 28px;
+    position: relative;
+  }
+  .sync-modal h3 {
+    font-family: var(--serif);
+    font-weight: 400;
+    font-size: 28px;
+    line-height: 1.1;
+    margin-bottom: 6px;
+    color: var(--paper);
+    letter-spacing: -0.01em;
+  }
+  .sync-sub {
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 14px;
+    color: var(--paper-dim);
+    margin-bottom: 24px;
+  }
+  .sync-close {
+    position: absolute;
+    top: 16px; right: 16px;
+    background: none; border: none;
+    color: var(--paper-faint);
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    cursor: pointer;
+    padding: 6px 10px;
+    text-transform: uppercase;
+  }
+  .sync-close:hover { color: var(--amber); }
+  .sync-tabs {
+    display: flex; gap: 0;
+    border-bottom: 1px solid var(--rule);
+    margin-bottom: 22px;
+  }
+  .sync-tab {
+    background: none; border: none;
+    color: var(--paper-faint);
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    padding: 10px 16px;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    transition: color 0.15s;
+  }
+  .sync-tab:hover { color: var(--paper); }
+  .sync-tab.active { color: var(--amber); border-bottom-color: var(--amber); }
+  .sync-content { display: none; }
+  .sync-content.active { display: block; }
+  .qr-wrap {
+    background: var(--paper);
+    padding: 14px;
+    margin: 0 auto 14px;
+    width: fit-content;
+    max-width: 100%;
+    min-height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .qr-wrap img, .qr-wrap canvas, .qr-wrap table {
+    display: block;
+    max-width: 100%;
+    height: auto;
+    border: none;
+  }
+  .qr-wrap td { padding: 0 !important; border: 0 !important; }
+  .qr-fallback {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--paper-faint);
+    padding: 24px;
+    text-align: center;
+    line-height: 1.5;
+  }
+  .sync-code-box {
+    background: var(--ink);
+    border: 1px solid var(--rule);
+    padding: 12px 14px;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--paper-dim);
+    word-break: break-all;
+    max-height: 110px;
+    overflow-y: auto;
+    margin: 6px 0 10px;
+    line-height: 1.5;
+    user-select: all;
+  }
+  .sync-textarea {
+    width: 100%;
+    background: var(--ink);
+    border: 1px solid var(--rule);
+    padding: 12px 14px;
+    color: var(--paper);
+    font-family: var(--mono);
+    font-size: 11px;
+    line-height: 1.5;
+    resize: vertical;
+    min-height: 120px;
+    margin-bottom: 12px;
+    font-feature-settings: normal;
+  }
+  .sync-textarea:focus {
+    outline: none;
+    border-color: var(--amber-dim);
+    color: var(--paper);
+  }
+  .sync-textarea::placeholder { color: var(--paper-faint); opacity: 0.6; }
+  .sync-btn {
+    background: var(--amber);
+    color: var(--ink);
+    border: none;
+    padding: 10px 20px;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    font-weight: 500;
+    cursor: pointer;
+    transition: opacity 0.15s, transform 0.05s;
+    margin-right: 8px;
+  }
+  .sync-btn:hover { opacity: 0.88; }
+  .sync-btn:active { transform: translateY(1px); }
+  .sync-btn.secondary {
+    background: transparent;
+    border: 1px solid var(--paper-faint);
+    color: var(--paper);
+  }
+  .sync-btn.secondary:hover { border-color: var(--amber); color: var(--amber); }
+  .sync-msg {
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 13px;
+    color: var(--paper-dim);
+    margin-top: 14px;
+    min-height: 20px;
+  }
+  .sync-msg.success { color: var(--moss); }
+  .sync-msg.error { color: var(--rust); }
+  .sync-info {
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 12.5px;
+    color: var(--paper-dim);
+    line-height: 1.65;
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px dashed var(--rule);
+  }
+  .sync-info strong {
+    color: var(--paper);
+    font-style: normal;
+    font-family: var(--sans);
+    font-weight: 500;
+  }
+  .sync-info code {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--amber);
+    background: var(--ink);
+    padding: 1px 5px;
+    border: 1px solid var(--rule);
+  }
+  .sync-helper {
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 13px;
+    color: var(--paper-dim);
+    margin-bottom: 14px;
+    line-height: 1.5;
+  }
+
+  /* Sync status dot in controls bar */
+  .sync-dot {
+    display: none;
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--paper-faint);
+    margin-right: 2px;
+    transition: background 0.3s, box-shadow 0.3s;
+  }
+  .sync-dot.synced { background: var(--moss); box-shadow: 0 0 6px rgba(122,145,98,0.5); }
+  .sync-dot.syncing { background: var(--amber); box-shadow: 0 0 6px rgba(212,160,86,0.6); animation: pulse 1.2s infinite ease-in-out; }
+  .sync-dot.error { background: var(--rust); box-shadow: 0 0 6px rgba(199,90,60,0.5); }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  /* Cloud sync form fields */
+  .sync-field { margin-bottom: 16px; }
+  .sync-field label {
+    display: block;
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--paper-faint);
+    margin-bottom: 6px;
+  }
+  .sync-input {
+    width: 100%;
+    background: var(--ink);
+    border: 1px solid var(--rule);
+    padding: 10px 12px;
+    color: var(--paper);
+    font-family: var(--mono);
+    font-size: 12px;
+    line-height: 1.4;
+  }
+  .sync-input:focus {
+    outline: none;
+    border-color: var(--amber-dim);
+  }
+  .sync-input::placeholder { color: var(--paper-faint); opacity: 0.55; }
+  .sync-link {
+    display: inline-block;
+    margin-top: 6px;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: var(--amber);
+    text-decoration: none;
+    border-bottom: 1px solid var(--amber-dim);
+    padding-bottom: 1px;
+  }
+  .sync-link:hover { border-bottom-color: var(--amber); }
+
+  /* Cloud sync connected state */
+  .sync-status-card {
+    background: var(--ink);
+    border: 1px solid var(--rule);
+    padding: 16px 18px;
+    margin-bottom: 16px;
+  }
+  .sync-status-label {
+    font-family: var(--mono);
+    font-size: 9.5px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--paper-faint);
+    margin-bottom: 6px;
+  }
+  .sync-status-value {
+    font-family: var(--serif);
+    font-size: 20px;
+    color: var(--paper);
+    font-weight: 400;
+    line-height: 1.1;
+  }
+  .sync-status-value.synced { color: var(--moss); }
+  .sync-status-value.syncing { color: var(--amber); }
+  .sync-status-value.error { color: var(--rust); }
+  .sync-status-detail {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: var(--paper-faint);
+    margin-top: 6px;
+    letter-spacing: 0.05em;
+  }
+  .sync-gist-info {
+    background: var(--ink);
+    border: 1px solid var(--rule);
+    padding: 14px 18px;
+    margin-bottom: 18px;
+    font-size: 13px;
+  }
+  .sync-gist-info code {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--amber);
+    background: var(--ink-3);
+    padding: 2px 6px;
+    border: 1px solid var(--rule);
+    user-select: all;
+    word-break: break-all;
+  }
+  .sync-gist-info a {
+    display: inline-block;
+    margin-top: 8px;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: var(--amber);
+    text-decoration: none;
+    border-bottom: 1px solid var(--amber-dim);
+  }
+  .sync-gist-info p { margin-top: 10px; }
+
+  /* Sync code reveal block */
+  .sync-code-reveal-hidden {
+    background: var(--ink-3);
+    border: 1px dashed var(--rule);
+    padding: 22px 14px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--paper-faint);
+    text-align: center;
+    cursor: pointer;
+    letter-spacing: 0.1em;
+    transition: all 0.15s;
+  }
+  .sync-code-reveal-hidden:hover {
+    border-color: var(--amber-dim);
+    color: var(--amber);
+  }
+  .sync-code-revealed {
+    background: var(--ink);
+    border: 1px solid var(--amber-dim);
+    padding: 12px 14px;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: var(--amber);
+    word-break: break-all;
+    line-height: 1.5;
+    user-select: all;
+    cursor: text;
+    max-height: 110px;
+    overflow-y: auto;
+  }
+</style>
+</head>
+<body>
+
+<div class="controls">
+  <div class="nav">
+    <a href="#focus">↑ Focus</a>
+    <a href="#module-1">I.</a>
+    <a href="#module-2">II.</a>
+    <a href="#module-3">III.</a>
+    <a href="#module-4">IV.</a>
+  </div>
+  <div class="right">
+    <span id="syncDot" class="sync-dot" title="Not connected"></span>
+    <button id="syncBtn">Sync</button>
+    <button id="jumpFocus">Today</button>
+    <button id="resetAll">Reset</button>
+  </div>
+</div>
+
+<div class="container">
+
+  <header class="masthead">
+    <div class="top-meta">
+      <span class="vol">VOL. III · SELF-PACED · LIVE TRACKER</span>
+      <span id="paceLabel">— · — · —</span>
+    </div>
+    <h1 class="title">The <em>MAANG</em> Tracker.</h1>
+    <p class="subtitle">A 16-week, breadth-first prep plan that re-orients to wherever you left off. No fixed calendar. Today's tasks are whatever's next.</p>
+  </header>
+
+  <!-- ─── FOCUS CARD ─── -->
+  <section id="focus" class="focus">
+    <div class="focus-inner" id="focusInner"></div>
+  </section>
+
+  <!-- ─── STATS ─── -->
+  <section class="stats" id="stats"></section>
+  <div class="progress-strip">
+    <span class="label">Plan</span>
+    <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+    <span class="progress-pct" id="progressPct">0%</span>
+  </div>
+  <div class="tag-stats" id="tagStats"></div>
+
+  <!-- ─── BRIEF ─── -->
+  <section class="brief">
+    <div>
+      <div class="brief-label">Editor's Brief</div>
+      <h2>Self-paced. Linked. Live.</h2>
+    </div>
+    <div class="brief-body">
+      <p><strong>How this works:</strong> No fixed start date. The Focus card always shows the next day with unfinished tasks. Click a task's link to open the resource directly. Check the box when done. When all today's boxes are checked, the card advances. Miss a week? Open it back up — it picks up where you left off.</p>
+
+      <p><strong>Weights:</strong> System Design ≈ 30%, DSA ≈ 35%, AI/GenAI systems ≈ 15%, LLD + Behavioral ≈ 12%, Mocks + Logistics ≈ 8%. Target ~20 hours a week, but life happens — the tracker doesn't judge.</p>
+
+      <details class="dropdown">
+        <summary>On AI in 2026 interviews — what changed</summary>
+        <div class="dropdown-body">
+          <ul>
+            <li><strong>AI-allowed coding is no longer fringe.</strong> Google is piloting it. Meta and Shopify run it for some roles. ~62% of companies still ban it. Prep for both: whiteboard from scratch <em>and</em> AI-collaborative direction.</li>
+            <li><strong>"AI fluency" is being assessed.</strong> Your Cursor/Claude workflow at NPM is interview material now — document it consciously through Modules 1–2.</li>
+            <li><strong>GenAI system design rounds are mainstream for senior backend IC</strong>, not just ML. RAG, vector DBs, LLM serving economics, eval, guardrails. Module 1 Week 5 covers fundamentals; Module 2 goes deep; Module 3 has you build a working RAG system.</li>
+            <li><strong>Your edge:</strong> trace context propagation, structured logging, Kafka hardening — all transfer 1:1 to "I can ship reliable AI systems too". The RAG build in Module 3 makes this concrete.</li>
+          </ul>
+        </div>
+      </details>
+
+      <details class="dropdown">
+        <summary>The four modules</summary>
+        <div class="dropdown-body">
+          <ul>
+            <li><strong>I. Survey (Days 1–35):</strong> Every pattern once at moderate depth. Resume → v3, story bank → 12, AI primer in Week 5, soft-launch apps in Week 4.</li>
+            <li><strong>II. Depth (Days 36–63):</strong> Hard DP, advanced graphs, full system designs, LLD intensive, GenAI deep, mocks begin.</li>
+            <li><strong>III. Build + Apply (Days 64–84):</strong> Two GitHub projects — distributed rate limiter, mini RAG system. Real applications to MAANG. Mock cadence ramps.</li>
+            <li><strong>IV. Execute (Days 85–112):</strong> Onsites, negotiation, decision. Maintenance only on prep.</li>
+          </ul>
+        </div>
+      </details>
+
+      <details class="dropdown">
+        <summary>Key resources (all linked into the daily tasks below)</summary>
+        <div class="dropdown-body">
+          <ul>
+            <li><strong>DSA:</strong> <a href="https://neetcode.io/practice" target="_blank">NeetCode</a> · <a href="https://leetcode.com/" target="_blank">LeetCode</a></li>
+            <li><strong>System Design:</strong> <a href="https://www.hellointerview.com/learn/system-design/in-a-hurry/introduction" target="_blank">Hello Interview · System Design in a Hurry</a></li>
+            <li><strong>LLD:</strong> <a href="https://refactoring.guru/design-patterns" target="_blank">Refactoring Guru</a> · <a href="https://github.com/tssovi/grokking-the-object-oriented-design-interview" target="_blank">Grokking OOD</a></li>
+            <li><strong>AI / GenAI:</strong> <a href="https://www.pinecone.io/learn/" target="_blank">Pinecone Learn</a> · <a href="https://www.sbert.net/" target="_blank">Sentence Transformers</a> · <a href="https://github.com/explodinggradients/ragas" target="_blank">RAGAS</a></li>
+            <li><strong>Mocks:</strong> <a href="https://www.pramp.com/" target="_blank">Pramp (free)</a> · <a href="https://www.interviewing.io/" target="_blank">Interviewing.io (paid)</a></li>
+            <li><strong>Negotiation:</strong> <a href="https://haseebq.com/my-ten-rules-for-negotiating-a-job-offer/" target="_blank">Haseeb · 10 Rules Part 1</a> · <a href="https://haseebq.com/how-not-to-bomb-your-offer-negotiation/" target="_blank">Part 2</a> · <a href="https://www.levels.fyi/" target="_blank">Levels.fyi</a></li>
+            <li><strong>Distributed systems classics:</strong> <a href="https://raft.github.io/" target="_blank">Raft</a></li>
+          </ul>
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <main id="moduleRoot"></main>
+
+  <footer class="footer">
+    "The tracker waits for you. Show up when you can, where you can."
+    <div class="signature">— END OF DOCUMENT · YP / 2026</div>
+  </footer>
+
+</div>
+
+<!-- ─── Sync Modal ─── -->
+<div class="sync-overlay" id="syncOverlay">
+  <div class="sync-modal">
+    <button class="sync-close" onclick="closeSync()">esc ✕</button>
+    <h3>Sync across devices</h3>
+    <p class="sync-sub">Point-in-time snapshot. No backend, no account, no paid service. Open source all the way down.</p>
+
+    <div class="sync-tabs">
+      <button class="sync-tab active" data-tab="export">↗ Quick</button>
+      <button class="sync-tab" data-tab="import">↙ Load</button>
+      <button class="sync-tab" data-tab="cloud">⟳ Continuous</button>
+    </div>
+
+    <div class="sync-content active" data-content="export">
+      <p class="sync-helper">Scan the QR with your other device's camera (it'll show the text), or tap "Copy code" and send it to yourself by any channel.</p>
+      <div class="qr-wrap" id="qrWrap"></div>
+      <div class="sync-code-box" id="exportCode">—</div>
+      <button class="sync-btn" id="copyBtn">Copy code</button>
+      <button class="sync-btn secondary" id="refreshBtn">Refresh</button>
+      <div class="sync-msg" id="exportMsg"></div>
+    </div>
+
+    <div class="sync-content" data-content="import">
+      <p class="sync-helper">Paste the code from your other device below. You'll be asked to confirm before overwriting any progress on <em>this</em> device.</p>
+      <textarea class="sync-textarea" id="importInput" placeholder="paste the long encoded string here..."></textarea>
+      <button class="sync-btn" id="importBtn">Load this state</button>
+      <button class="sync-btn secondary" id="clearBtn">Clear</button>
+      <div class="sync-msg" id="importMsg"></div>
+    </div>
+
+    <div class="sync-content" data-content="cloud">
+      <div id="cloudNotConnected">
+        <p class="sync-helper">One sync code per device. Paste it, you're connected — auto-syncs every change to a private GitHub Gist.</p>
+
+        <div class="sync-field">
+          <label>Sync code</label>
+          <textarea id="syncCodeInput" class="sync-textarea" placeholder="paste sync code (starts with mt1:...)" autocomplete="off" spellcheck="false" style="min-height:70px;"></textarea>
+        </div>
+        <button class="sync-btn" id="cloudConnectBtn">Connect with code</button>
+        <div class="sync-msg" id="cloudMsg"></div>
+
+        <details class="dropdown" style="margin-top:24px;">
+          <summary>Don't have a sync code yet — create one</summary>
+          <div class="dropdown-body">
+            <p class="sync-helper">First-time setup. Creates a new private gist and generates your sync code. You'll paste that code on every other device.</p>
+            <div class="sync-field">
+              <label>GitHub Fine-grained PAT — Gist scope only</label>
+              <input type="password" id="patInput" placeholder="github_pat_..." class="sync-input" autocomplete="off" spellcheck="false">
+              <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener" class="sync-link">→ Create PAT (30 sec) — only Gists: Read+Write</a>
+            </div>
+            <button class="sync-btn" id="cloudCreateBtn">Create new setup</button>
+            <div class="sync-msg" id="cloudCreateMsg"></div>
+          </div>
+        </details>
+      </div>
+
+      <div id="cloudConnected" style="display:none">
+        <div class="sync-status-card">
+          <div class="sync-status-label">Status</div>
+          <div class="sync-status-value" id="cloudStatusValue">—</div>
+          <div class="sync-status-detail" id="cloudStatusDetail">—</div>
+        </div>
+
+        <div class="sync-gist-info">
+          <div class="sync-status-label" style="margin-bottom:8px;">Your sync code · paste on another device</div>
+          <div id="syncCodeReveal" class="sync-code-reveal-hidden" onclick="toggleSyncCodeReveal()" title="Click to reveal">click to reveal · contains a PAT</div>
+          <div id="syncCodeButtons" style="margin-top:10px; display:none;">
+            <button class="sync-btn" id="copySyncCodeBtn" style="padding:6px 12px; font-size:9.5px;">Copy code</button>
+            <button class="sync-btn secondary" id="showSyncQRBtn" style="padding:6px 12px; font-size:9.5px;">Show QR</button>
+            <button class="sync-btn secondary" id="hideSyncCodeBtn" style="padding:6px 12px; font-size:9.5px;">Hide</button>
+          </div>
+          <div id="syncCodeQR" style="display:none; margin-top:14px;">
+            <div class="qr-wrap" id="syncCodeQRWrap"></div>
+            <p class="sync-helper" style="font-size:11.5px; margin-top:6px;">Scan with your phone's camera. It opens the tracker URL with the sync code pre-filled.</p>
+          </div>
+          <div style="margin-top:14px; padding-top:12px; border-top:1px dashed var(--rule); font-family: var(--mono); font-size:10.5px; color:var(--paper-faint); letter-spacing: 0.05em;">
+            Gist: <code id="cloudGistId">—</code>
+          </div>
+          <a href="#" id="cloudGistLink" target="_blank" rel="noopener">View on GitHub →</a>
+        </div>
+
+        <button class="sync-btn" id="cloudPushBtn">Push now</button>
+        <button class="sync-btn secondary" id="cloudPullBtn">Pull now</button>
+        <button class="sync-btn secondary" id="cloudDisconnectBtn">Disconnect</button>
+        <div class="sync-msg" id="cloudMsg2"></div>
+      </div>
+
+      <div class="sync-info">
+        <strong>Security model:</strong> Your sync code holds a PAT. Treat it like a password. Stored only in this browser's localStorage; only ever sent to <code>api.github.com</code>.
+        <br><br>
+        <strong>Recommended PAT:</strong> Fine-grained (not classic) · <code>Gists · Read+Write</code> only · 30–90 day expiry.
+        <br><br>
+        <strong>If sync code leaks:</strong> revoke the PAT at <code>github.com/settings/tokens</code>. The gist stays. Create a new PAT, generate a new sync code, re-paste on each device. Worst case (gist-only scope), an attacker reads/writes <em>just your gists</em>.
+        <br><br>
+        <strong>Want zero per-device setup?</strong> That requires a backend holding the PAT (Cloudflare Worker, Vercel function). About 50 lines of Worker code + leaving GitHub Pages. Not worth it until you have many devices.
+      </div>
+    </div>
+
+    <div class="sync-info" id="syncInfoQuick">
+      <strong>How Quick / Load work:</strong> Your state is JSON, compressed with <code>lz-string</code>, URL-safe base64 encoded. The QR just transports the text visually. Nothing leaves your devices except whatever you send to yourself.
+      <br><br>
+      <strong>Last-write-wins:</strong> importing replaces this device's state. If you've made changes on both devices since last sync, the one you import will overwrite the other.
+      <br><br>
+      <strong>Want it automatic?</strong> See the <em>Continuous</em> tab — auto-syncs every change to a private GitHub Gist.
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════════════════════
+const lc = (name) => {
+  const slug = name.toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-');
+  return `https://leetcode.com/problems/${slug}/`;
+};
+
+// HTML escape — for any user-controlled string rendered into the DOM.
+// Notes, imported state values, and anything from the sync layer pass through this.
+const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({
+  '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+}[c]));
+
+// Defensive validator for any state object loaded from external source (sync code, gist).
+// Returns true if the shape looks plausible; false otherwise — we never trust untyped input.
+function validateState(s) {
+  if (typeof s !== 'object' || s === null) return false;
+  if (s.completed && typeof s.completed !== 'object') return false;
+  if (s.notes && typeof s.notes !== 'object') return false;
+  if (s.completed) {
+    for (const k of Object.keys(s.completed)) {
+      const arr = s.completed[k];
+      if (!Array.isArray(arr)) return false;
+      if (!arr.every(v => typeof v === 'boolean' || v === null || v === undefined)) return false;
+    }
+  }
+  if (s.notes) {
+    for (const k of Object.keys(s.notes)) {
+      if (typeof s.notes[k] !== 'string') return false;
+      if (s.notes[k].length > 10000) return false; // reasonable cap
+    }
+  }
+  if (s.firstActivity != null && typeof s.firstActivity !== 'string') return false;
+  if (s.lastActivity != null && typeof s.lastActivity !== 'string') return false;
+  return true;
+}
+
+// Sync code = one opaque string carrying { pat, gistId }.
+// Format: "mt1:" + base64url(JSON). Versioned so we can evolve later.
+const SYNC_CODE_PREFIX = 'mt1:';
+
+function encodeSyncCode(pat, gistId) {
+  const payload = JSON.stringify({ pat, gistId });
+  // base64url
+  const b64 = btoa(unescape(encodeURIComponent(payload)))
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '');
+  return SYNC_CODE_PREFIX + b64;
+}
+
+function decodeSyncCode(code) {
+  const trimmed = String(code || '').trim();
+  if (!trimmed.startsWith(SYNC_CODE_PREFIX)) {
+    throw new Error('not a valid sync code (missing prefix)');
+  }
+  const b64url = trimmed.slice(SYNC_CODE_PREFIX.length);
+  const b64 = b64url.replace(/-/g, '+').replace(/_/g, '/');
+  const padded = b64 + '='.repeat((4 - b64.length % 4) % 4);
+  let payload;
+  try {
+    payload = JSON.parse(decodeURIComponent(escape(atob(padded))));
+  } catch (e) {
+    throw new Error('sync code is corrupt');
+  }
+  if (!payload || typeof payload !== 'object') throw new Error('sync code malformed');
+  if (typeof payload.pat !== 'string' || !payload.pat) throw new Error('sync code missing PAT');
+  if (typeof payload.gistId !== 'string' || !payload.gistId) throw new Error('sync code missing Gist ID');
+  return payload;
+}
+
+// Canonical resource URLs
+const R = {
+  neetcode:        "https://neetcode.io/practice",
+  hiIntro:         "https://www.hellointerview.com/learn/system-design/in-a-hurry/introduction",
+  hiCore:          "https://www.hellointerview.com/learn/system-design/in-a-hurry/core-concepts",
+  hiKey:           "https://www.hellointerview.com/learn/system-design/in-a-hurry/key-technologies",
+  hiPatterns:      "https://www.hellointerview.com/learn/system-design/in-a-hurry/patterns",
+  hiDelivery:      "https://www.hellointerview.com/learn/system-design/in-a-hurry/delivery",
+  hiBitly:         "https://www.hellointerview.com/learn/system-design/problem-breakdowns/bitly",
+  hiLLD:           "https://www.hellointerview.com/learn/low-level-design/introduction",
+  hiML:            "https://www.hellointerview.com/learn/ml-system-design/introduction",
+  pramp:           "https://www.pramp.com/",
+  iio:             "https://www.interviewing.io/",
+  levels:          "https://www.levels.fyi/",
+  haseeb1:         "https://haseebq.com/my-ten-rules-for-negotiating-a-job-offer/",
+  haseeb2:         "https://haseebq.com/how-not-to-bomb-your-offer-negotiation/",
+  pineconeLearn:   "https://www.pinecone.io/learn/",
+  pineconeRAG:     "https://www.pinecone.io/learn/retrieval-augmented-generation/",
+  pineconeVecDB:   "https://www.pinecone.io/learn/vector-database/",
+  sbert:           "https://www.sbert.net/",
+  faiss:           "https://github.com/facebookresearch/faiss",
+  ollama:          "https://ollama.com/",
+  ragas:           "https://github.com/explodinggradients/ragas",
+  langchain:       "https://docs.langchain.com/",
+  raft:            "https://raft.github.io/",
+  refactoringGuru: "https://refactoring.guru/design-patterns",
+  groking:         "https://github.com/tssovi/grokking-the-object-oriented-design-interview",
+  anthropicPrompt: "https://docs.claude.com/en/docs/build-with-claude/prompt-engineering/overview",
+  kafkaDocs:       "https://kafka.apache.org/documentation/",
+  redisRateLimit:  "https://redis.io/glossary/rate-limiting/",
+  consistentHash:  "https://www.toptal.com/big-data/consistent-hashing",
+  ddiaSummary:     "https://github.com/keyvanakbary/learning-notes/blob/master/books/designing-data-intensive-applications.md",
+  systemPrimer:    "https://github.com/donnemartin/system-design-primer",
+  lcContest:       "https://leetcode.com/contest/",
+  topmate:         "https://topmate.io/",
+};
+
+// ═══════════════════════════════════════════════════════════════════
+// CURRICULUM — 112 days, each task with optional links[]
+// ═══════════════════════════════════════════════════════════════════
+const CURRICULUM = [
+  // ═══ MODULE 1: SURVEY (Day 1-35) ═══
+  // Week 1
+  { module:1, week:1, day:1, theme:"Setup & baseline", budget:"2h", tasks:[
+    { tag:"LOG", text:"Open NeetCode 250 · LeetCode Premium · set up tracker sheet",
+      links:[{label:"NeetCode 250", url:R.neetcode},{label:"LeetCode", url:"https://leetcode.com/"}]},
+    { tag:"LOG", text:"Resume v1 — rewrite to 1-page MAANG-ATS (quantified impact, action verbs)",
+      links:[{label:"Topmate resume reviewers", url:R.topmate}]},
+    { tag:"BEH", text:"List 12 STAR-story candidates from NPM/DP World work" }
+  ]},
+  { module:1, week:1, day:2, theme:"Arrays & hashing I", budget:"1.5h", tasks:[
+    { tag:"DSA", text:"Three problems",
+      links:[{label:"Two Sum",url:lc("Two Sum")},{label:"Contains Duplicate",url:lc("Contains Duplicate")},{label:"Valid Anagram",url:lc("Valid Anagram")}]},
+    { tag:"SD", text:"Latency vs throughput · p50/p95/p99 · QPS estimation",
+      links:[{label:"Hello Interview · Core Concepts",url:R.hiCore}]}
+  ]},
+  { module:1, week:1, day:3, theme:"Arrays & hashing II", budget:"1.5h", tasks:[
+    { tag:"DSA", text:"Two problems",
+      links:[{label:"Group Anagrams",url:lc("Group Anagrams")},{label:"Top K Frequent Elements",url:lc("Top K Frequent Elements")}]},
+    { tag:"SD", text:"Vertical vs horizontal scaling · stateless vs stateful",
+      links:[{label:"Hello Interview · Core Concepts",url:R.hiCore}]}
+  ]},
+  { module:1, week:1, day:4, theme:"Two pointers", budget:"1.5h", tasks:[
+    { tag:"DSA", text:"Three problems",
+      links:[{label:"Valid Palindrome",url:lc("Valid Palindrome")},{label:"3Sum",url:lc("3sum")},{label:"Container With Most Water",url:lc("Container With Most Water")}]},
+    { tag:"BEH", text:"Story #1 — 'most challenging technical problem' (90 sec STAR)" }
+  ]},
+  { module:1, week:1, day:5, theme:"Sliding window", budget:"1.5h", tasks:[
+    { tag:"DSA", text:"Two problems",
+      links:[{label:"Best Time Buy/Sell Stock",url:lc("Best Time to Buy and Sell Stock")},{label:"Longest Substring Without Repeating",url:lc("Longest Substring Without Repeating Characters")}]},
+    { tag:"SD", text:"Caching · cache-aside, write-through, write-back · LRU/LFU eviction",
+      links:[{label:"Hello Interview · Key Technologies",url:R.hiKey}]}
+  ]},
+  { module:1, week:1, day:6, theme:"Weekend: stack + binary search + heap intro", budget:"6h", tasks:[
+    { tag:"DSA", text:"Stack",
+      links:[{label:"Valid Parentheses",url:lc("Valid Parentheses")},{label:"Min Stack",url:lc("Min Stack")},{label:"Daily Temperatures",url:lc("Daily Temperatures")}]},
+    { tag:"DSA", text:"Binary search",
+      links:[{label:"Binary Search",url:lc("Binary Search")},{label:"Search Rotated Sorted Array",url:lc("Search in Rotated Sorted Array")},{label:"Find Min Rotated",url:lc("Find Minimum in Rotated Sorted Array")}]},
+    { tag:"DSA", text:"Heap",
+      links:[{label:"Kth Largest Element",url:lc("Kth Largest Element in an Array")},{label:"Last Stone Weight",url:lc("Last Stone Weight")}]},
+    { tag:"SD", text:"Read DDIA Ch 1 — annotate (or use community summary)",
+      links:[{label:"DDIA summary",url:R.ddiaSummary}]},
+    { tag:"LOG", text:"Request 1 peer resume review",
+      links:[{label:"Topmate",url:R.topmate}]},
+    { tag:"BEH", text:"Stories #2 + #3 (mentoring, on-call incident)" }
+  ]},
+  { module:1, week:1, day:7, theme:"Sunday: review", budget:"3h", tasks:[
+    { tag:"DSA", text:"Re-solve 3 problems that felt shaky this week" },
+    { tag:"SD", text:"Sketch URL shortener (block diagram only)",
+      links:[{label:"Hello Interview · Bitly",url:R.hiBitly}]}
+  ]},
+
+  // Week 2 — Linked List + Trees
+  { module:1, week:2, day:8, theme:"Linked list I", budget:"1.5h", tasks:[
+    { tag:"DSA", text:"Three problems",
+      links:[{label:"Reverse Linked List",url:lc("Reverse Linked List")},{label:"Merge Two Sorted Lists",url:lc("Merge Two Sorted Lists")},{label:"Linked List Cycle",url:lc("Linked List Cycle")}]},
+    { tag:"SD", text:"SQL vs NoSQL — when each wins",
+      links:[{label:"Hello Interview · Key Technologies",url:R.hiKey}]}
+  ]},
+  { module:1, week:2, day:9, theme:"Linked list II", budget:"1.5h", tasks:[
+    { tag:"DSA", text:"Three problems",
+      links:[{label:"Reorder List",url:lc("Reorder List")},{label:"Remove Nth Node From End",url:lc("Remove Nth Node From End of List")},{label:"Find Duplicate Number",url:lc("Find the Duplicate Number")}]},
+    { tag:"SD", text:"Indexes — B-Tree vs LSM tree" }
+  ]},
+  { module:1, week:2, day:10, theme:"Trees I — basics", budget:"1.5h", tasks:[
+    { tag:"DSA", text:"Four problems",
+      links:[{label:"Invert Binary Tree",url:lc("Invert Binary Tree")},{label:"Max Depth BT",url:lc("Maximum Depth of Binary Tree")},{label:"Diameter BT",url:lc("Diameter of Binary Tree")},{label:"Balanced BT",url:lc("Balanced Binary Tree")}]},
+    { tag:"SD", text:"ACID vs BASE · isolation levels in own words" }
+  ]},
+  { module:1, week:2, day:11, theme:"Trees II — DFS", budget:"1.5h", tasks:[
+    { tag:"DSA", text:"Three problems",
+      links:[{label:"Same Tree",url:lc("Same Tree")},{label:"Subtree of Another Tree",url:lc("Subtree of Another Tree")},{label:"LCA of BST",url:lc("Lowest Common Ancestor of a Binary Search Tree")}]},
+    { tag:"BEH", text:"Story #4 (disagreement / conflict resolution)" }
+  ]},
+  { module:1, week:2, day:12, theme:"Trees III — BFS", budget:"1.5h", tasks:[
+    { tag:"DSA", text:"Three problems",
+      links:[{label:"BT Level Order",url:lc("Binary Tree Level Order Traversal")},{label:"Right Side View",url:lc("Binary Tree Right Side View")},{label:"Count Good Nodes",url:lc("Count Good Nodes in Binary Tree")}]},
+    { tag:"SD", text:"Replication — leader-follower, multi-leader, leaderless" }
+  ]},
+  { module:1, week:2, day:13, theme:"Weekend: BST + tries + heap deep", budget:"6h", tasks:[
+    { tag:"DSA", text:"BST",
+      links:[{label:"Validate BST",url:lc("Validate Binary Search Tree")},{label:"Kth Smallest BST",url:lc("Kth Smallest Element in a BST")},{label:"Construct BT from Pre+In",url:lc("Construct Binary Tree from Preorder and Inorder Traversal")}]},
+    { tag:"DSA", text:"Tries",
+      links:[{label:"Implement Trie",url:lc("Implement Trie Prefix Tree")},{label:"Add and Search Word",url:lc("Design Add and Search Words Data Structure")}]},
+    { tag:"DSA", text:"Heap practice",
+      links:[{label:"K Closest Points",url:lc("K Closest Points to Origin")}]},
+    { tag:"SD", text:"Sharding · hot partitions · consistent hashing",
+      links:[{label:"Consistent hashing",url:R.consistentHash}]},
+    { tag:"BEH", text:"Stories #5 + #6 (cross-team alignment, tech decision under pressure)" }
+  ]},
+  { module:1, week:2, day:14, theme:"Sunday: companies + review", budget:"3h", tasks:[
+    { tag:"DSA", text:"Re-solve 3 hardest from this week" },
+    { tag:"LOG", text:"Resume v3 based on peer feedback" },
+    { tag:"LOG", text:"List 15 target companies + current levels.fyi ranges",
+      links:[{label:"levels.fyi",url:R.levels}]}
+  ]},
+
+  // Week 3
+  { module:1, week:3, day:15, theme:"Graphs I — BFS on grids", budget:"1.5h", tasks:[
+    { tag:"DSA", text:"Two problems",
+      links:[{label:"Number of Islands",url:lc("Number of Islands")},{label:"Max Area of Island",url:lc("Max Area of Island")}]},
+    { tag:"SD", text:"Consistency — strong, eventual, causal, read-your-writes" }
+  ]},
+  { module:1, week:3, day:16, theme:"Graphs II — DFS", budget:"1.5h", tasks:[
+    { tag:"DSA", text:"Two problems",
+      links:[{label:"Clone Graph",url:lc("Clone Graph")},{label:"Pacific Atlantic Water Flow",url:lc("Pacific Atlantic Water Flow")}]},
+    { tag:"SD", text:"Load balancers — L4 vs L7, algorithms" }
+  ]},
+  { module:1, week:3, day:17, theme:"Graphs III — topo sort", budget:"1.5h", tasks:[
+    { tag:"DSA", text:"Two problems",
+      links:[{label:"Course Schedule",url:lc("Course Schedule")},{label:"Rotting Oranges",url:lc("Rotting Oranges")}]},
+    { tag:"BEH", text:"Story #7 (taking initiative — self-driven NPM work)" }
+  ]},
+  { module:1, week:3, day:18, theme:"Recursion", budget:"1.5h", tasks:[
+    { tag:"DSA", text:"Two problems",
+      links:[{label:"Subsets",url:lc("Subsets")},{label:"Permutations",url:lc("Permutations")}]},
+    { tag:"SD", text:"API Gateway · BFF pattern" }
+  ]},
+  { module:1, week:3, day:19, theme:"Backtracking", budget:"1.5h", tasks:[
+    { tag:"DSA", text:"Two problems",
+      links:[{label:"Combination Sum",url:lc("Combination Sum")},{label:"Word Search",url:lc("Word Search")}]},
+    { tag:"SD", text:"Distributed locks · leader election" }
+  ]},
+  { module:1, week:3, day:20, theme:"Weekend: DP intro + first full SD", budget:"6h", tasks:[
+    { tag:"DSA", text:"DP entry",
+      links:[{label:"Climbing Stairs",url:lc("Climbing Stairs")},{label:"House Robber",url:lc("House Robber")},{label:"House Robber II",url:lc("House Robber II")},{label:"Min Cost Climbing",url:lc("Min Cost Climbing Stairs")}]},
+    { tag:"DSA", text:"Strings DP",
+      links:[{label:"Longest Palindromic Substring",url:lc("Longest Palindromic Substring")}]},
+    { tag:"SD", text:"FULL DESIGN — URL shortener (write out: KGS, cache, hot keys)",
+      links:[{label:"Hello Interview · Bitly walkthrough",url:R.hiBitly}]},
+    { tag:"BEH", text:"Stories #8 + #9 (failure / outage — trace_id middleware story?)" }
+  ]},
+  { module:1, week:3, day:21, theme:"Sunday: first warm-up apps", budget:"3h", tasks:[
+    { tag:"DSA", text:"Re-solve 3 problems" },
+    { tag:"LOG", text:"Apply to 5 tier-2 'warm-up' companies (for reps, not target outcomes)" },
+    { tag:"LOG", text:"3 referral asks via IIT KGP / DP World network" }
+  ]},
+
+  // Week 4
+  { module:1, week:4, day:22, theme:"DP — 1D foundations", budget:"1.5h", tasks:[
+    { tag:"DSA", text:"Two problems",
+      links:[{label:"Coin Change",url:lc("Coin Change")},{label:"Maximum Product Subarray",url:lc("Maximum Product Subarray")}]},
+    { tag:"SD", text:"Kafka basics — partitions, consumer groups (speed run for articulation)",
+      links:[{label:"Kafka docs",url:R.kafkaDocs}]}
+  ]},
+  { module:1, week:4, day:23, theme:"DP — 1D advanced", budget:"1.5h", tasks:[
+    { tag:"DSA", text:"Two problems",
+      links:[{label:"Word Break",url:lc("Word Break")},{label:"Longest Increasing Subsequence",url:lc("Longest Increasing Subsequence")}]},
+    { tag:"SD", text:"Kafka deep — ISR, exactly-once, idempotent producer (use your real NPM experience)" }
+  ]},
+  { module:1, week:4, day:24, theme:"DP — 2D entry", budget:"1.5h", tasks:[
+    { tag:"DSA", text:"Two problems",
+      links:[{label:"Longest Common Subsequence",url:lc("Longest Common Subsequence")},{label:"Unique Paths",url:lc("Unique Paths")}]},
+    { tag:"SD", text:"CDN basics · edge caching",
+      links:[{label:"Hello Interview · Patterns",url:R.hiPatterns}]}
+  ]},
+  { module:1, week:4, day:25, theme:"Greedy", budget:"1.5h", tasks:[
+    { tag:"DSA", text:"Two problems",
+      links:[{label:"Maximum Subarray (Kadane)",url:lc("Maximum Subarray")},{label:"Jump Game",url:lc("Jump Game")}]},
+    { tag:"BEH", text:"Story #10 (ambiguous problem / scope definition)" }
+  ]},
+  { module:1, week:4, day:26, theme:"Intervals + bit manip", budget:"1.5h", tasks:[
+    { tag:"DSA", text:"Four problems",
+      links:[{label:"Insert Interval",url:lc("Insert Interval")},{label:"Merge Intervals",url:lc("Merge Intervals")},{label:"Single Number",url:lc("Single Number")},{label:"Number of 1 Bits",url:lc("Number of 1 Bits")}]},
+    { tag:"SD", text:"Pub-sub · event sourcing · CQRS basics" }
+  ]},
+  { module:1, week:4, day:27, theme:"Weekend: math + LLD intro + full SD", budget:"6h", tasks:[
+    { tag:"DSA", text:"Math",
+      links:[{label:"Pow(x,n)",url:lc("Powx N")},{label:"Sqrt(x)",url:lc("Sqrtx")},{label:"Happy Number",url:lc("Happy Number")}]},
+    { tag:"LLD", text:"SOLID — write 1 paragraph each in own words",
+      links:[{label:"Refactoring Guru",url:R.refactoringGuru}]},
+    { tag:"LLD", text:"Design patterns survey: Strategy, Factory, Observer, Decorator, Singleton",
+      links:[{label:"Refactoring Guru patterns",url:R.refactoringGuru},{label:"Hello Interview · LLD",url:R.hiLLD}]},
+    { tag:"SD", text:"FULL DESIGN — Pastebin (note differences from URL shortener)" },
+    { tag:"BEH", text:"Stories #11 + #12 (failure, biggest mistake — hardest, do them now)" }
+  ]},
+  { module:1, week:4, day:28, theme:"Sunday: apply + self-rate", budget:"3h", tasks:[
+    { tag:"LOG", text:"Apply to 5 more companies (mix of tier-1 + tier-2)" },
+    { tag:"LOG", text:"5 LinkedIn recruiter outreaches (tailored, not template)" },
+    { tag:"LOG", text:"Self-rate each topic 1–10 · circle bottom 3 → Module 2 depth focus" }
+  ]},
+
+  // Week 5 — AI Systems Primer
+  { module:1, week:5, day:29, theme:"AI primer — why this matters", budget:"1.5h", tasks:[
+    { tag:"AI", text:"Read: 'How LLMs work' — transformers high-level (no math)",
+      links:[{label:"Pinecone Learn",url:R.pineconeLearn}]},
+    { tag:"AI", text:"Read: tokens, context window, why inference is expensive" },
+    { tag:"LOG", text:"Skim 3 GenAI SD questions from recent guides — get a feel" }
+  ]},
+  { module:1, week:5, day:30, theme:"AI primer — RAG basics", budget:"1.5h", tasks:[
+    { tag:"AI", text:"RAG architecture — offline indexing + online retrieval + generation",
+      links:[{label:"Pinecone · RAG",url:R.pineconeRAG}]},
+    { tag:"AI", text:"Watch 1 hour of RAG design talk (Hello Interview GenAI / DeepLearning.AI short course)",
+      links:[{label:"Hello Interview · ML SD",url:R.hiML}]}
+  ]},
+  { module:1, week:5, day:31, theme:"AI primer — vector DBs & embeddings", budget:"1.5h", tasks:[
+    { tag:"AI", text:"Embeddings · cosine vs dot product · ANN search basics",
+      links:[{label:"Pinecone · Vector DB",url:R.pineconeVecDB},{label:"Sentence Transformers",url:R.sbert}]},
+    { tag:"AI", text:"Vector DB landscape — Pinecone, Weaviate, pgvector, FAISS pros/cons",
+      links:[{label:"FAISS",url:R.faiss}]},
+    { tag:"DSA", text:"2 maintenance problems (any easy from earlier weeks)" }
+  ]},
+  { module:1, week:5, day:32, theme:"AI primer — LLM serving economics", budget:"1.5h", tasks:[
+    { tag:"AI", text:"Prefill vs decode · KV cache · batching · throughput" },
+    { tag:"AI", text:"Cost-per-token math · latency budgets (500ms vs 5s)" },
+    { tag:"BEH", text:"Polish top 3 stories — record yourself, listen back" }
+  ]},
+  { module:1, week:5, day:33, theme:"AI primer — eval & guardrails", budget:"1.5h", tasks:[
+    { tag:"AI", text:"LLM-as-judge · RAGAS metrics (faithfulness, answer relevance, context relevance)",
+      links:[{label:"RAGAS",url:R.ragas}]},
+    { tag:"AI", text:"Prompt injection · PII detection · guardrails" },
+    { tag:"LOG", text:"Pipeline check — apps live, conversations in flight?" }
+  ]},
+  { module:1, week:5, day:34, theme:"Weekend: first GenAI design + LLD", budget:"6h", tasks:[
+    { tag:"AI", text:"FULL DESIGN — 'AI customer support over product docs' (RAG end-to-end, write it up)",
+      links:[{label:"Pinecone · RAG patterns",url:R.pineconeRAG}]},
+    { tag:"LLD", text:"FULL DESIGN + Java code — Parking Lot (multi-level, multi-vehicle)",
+      links:[{label:"Grokking OOD",url:R.groking}]},
+    { tag:"DSA", text:"3 problems from weakest area identified Day 28" },
+    { tag:"BEH", text:"Run all 12 stories aloud (record, time each)" }
+  ]},
+  { module:1, week:5, day:35, theme:"MODULE I RETRO", budget:"3h", tasks:[
+    { tag:"LOG", text:"Audit Modules I·1–5 — what stuck, what didn't? List 5 weakest → Module 2 priorities" },
+    { tag:"LOG", text:"Pipeline status: apps out, recruiter conversations, expected first screens" }
+  ]},
+
+  // ═══ MODULE 2: DEPTH (Day 36-63) ═══
+  // Week 6
+  { module:2, week:6, day:36, theme:"Hard DP I", budget:"1.5h", tasks:[
+    { tag:"DSA", text:"Two problems (deeper passes)",
+      links:[{label:"House Robber II",url:lc("House Robber II")},{label:"Decode Ways",url:lc("Decode Ways")}]},
+    { tag:"SD", text:"Saga pattern · 2PC limitations · distributed transactions reality" }
+  ]},
+  { module:2, week:6, day:37, theme:"Hard DP II", budget:"1.5h", tasks:[
+    { tag:"DSA", text:"Two problems",
+      links:[{label:"Edit Distance",url:lc("Edit Distance")},{label:"Longest Increasing Path in Matrix",url:lc("Longest Increasing Path in a Matrix")}]},
+    { tag:"AI", text:"Re-read RAG architecture · sketch from memory · check against original",
+      links:[{label:"Pinecone · RAG",url:R.pineconeRAG}]}
+  ]},
+  { module:2, week:6, day:38, theme:"Hard DP III", budget:"1.5h", tasks:[
+    { tag:"DSA", text:"Two problems",
+      links:[{label:"Regular Expression Matching",url:lc("Regular Expression Matching")},{label:"Wildcard Matching",url:lc("Wildcard Matching")}]},
+    { tag:"SD", text:"Consensus — Paxos overview, Raft (whiteboard the basics)",
+      links:[{label:"Raft visualization",url:R.raft}]}
+  ]},
+  { module:2, week:6, day:39, theme:"Advanced graphs I", budget:"1.5h", tasks:[
+    { tag:"DSA", text:"Two problems",
+      links:[{label:"Word Ladder",url:lc("Word Ladder")},{label:"Network Delay Time",url:lc("Network Delay Time")}]},
+    { tag:"BEH", text:"Story polish — top 5 to crisp 2-min versions" }
+  ]},
+  { module:2, week:6, day:40, theme:"Advanced graphs II", budget:"1.5h", tasks:[
+    { tag:"DSA", text:"Two problems",
+      links:[{label:"Alien Dictionary",url:lc("Alien Dictionary")},{label:"Cheapest Flights K Stops",url:lc("Cheapest Flights Within K Stops")}]},
+    { tag:"SD", text:"Geospatial indexing — quadtree, geohash, S2" }
+  ]},
+  { module:2, week:6, day:41, theme:"Weekend: SD intensive I", budget:"7h", tasks:[
+    { tag:"SD", text:"FULL DESIGN — Twitter timeline (push vs pull, fan-out, celebrity problem)",
+      links:[{label:"Hello Interview · Patterns",url:R.hiPatterns}]},
+    { tag:"SD", text:"FULL DESIGN — Instagram (feed, follow graph, like counter at scale)" },
+    { tag:"DSA", text:"3 hard problems from bottom-3 weak topics" }
+  ]},
+  { module:2, week:6, day:42, theme:"Weekend: SD intensive II", budget:"6h", tasks:[
+    { tag:"SD", text:"FULL DESIGN — WhatsApp / real-time chat (1:1 + group, presence, receipts)" },
+    { tag:"AI", text:"FULL DESIGN — Q&A over enterprise docs (RAG with reranking) — go deeper than Week 5" }
+  ]},
+
+  // Week 7
+  { module:2, week:7, day:43, theme:"Hard trees + reranking", budget:"1.5h", tasks:[
+    { tag:"DSA", text:"Two problems",
+      links:[{label:"BT Max Path Sum",url:lc("Binary Tree Maximum Path Sum")},{label:"Serialize/Deserialize BT",url:lc("Serialize and Deserialize Binary Tree")}]},
+    { tag:"AI", text:"Hybrid search · Reciprocal Rank Fusion · cross-encoder rerankers",
+      links:[{label:"Pinecone Learn",url:R.pineconeLearn}]}
+  ]},
+  { module:2, week:7, day:44, theme:"Hard recursion + streams", budget:"1.5h", tasks:[
+    { tag:"DSA", text:"Two problems",
+      links:[{label:"N-Queens",url:lc("N Queens")},{label:"Palindrome Partitioning",url:lc("Palindrome Partitioning")}]},
+    { tag:"SD", text:"Stream processing — Kafka Streams, Flink, windows, watermarks" }
+  ]},
+  { module:2, week:7, day:45, theme:"Contest-style mixed", budget:"1.5h", tasks:[
+    { tag:"DSA", text:"3 medium-hard problems mixed, timed (~30 min each)",
+      links:[{label:"LeetCode Contests",url:R.lcContest}]},
+    { tag:"AI", text:"Agent patterns · tool use · function calling" }
+  ]},
+  { module:2, week:7, day:46, theme:"Hard sliding window + intervals", budget:"1.5h", tasks:[
+    { tag:"DSA", text:"Two problems",
+      links:[{label:"Sliding Window Maximum",url:lc("Sliding Window Maximum")},{label:"Minimum Window Substring",url:lc("Minimum Window Substring")}]},
+    { tag:"BEH", text:"Story polish — bottom 5 (the ones still rough)" }
+  ]},
+  { module:2, week:7, day:47, theme:"Design problems + heap", budget:"1.5h", tasks:[
+    { tag:"DSA", text:"Two problems",
+      links:[{label:"Find Median from Data Stream",url:lc("Find Median from Data Stream")},{label:"Design Twitter",url:lc("Design Twitter")}]},
+    { tag:"SD", text:"Time-series databases · write-heavy workloads · compaction" }
+  ]},
+  { module:2, week:7, day:48, theme:"Weekend: LLD intensive I", budget:"7h", tasks:[
+    { tag:"LLD", text:"Full design + Java — LRU Cache from scratch, O(1) get/put",
+      links:[{label:"LRU Cache",url:lc("LRU Cache")},{label:"Grokking OOD",url:R.groking}]},
+    { tag:"LLD", text:"Full design + Java — ATM (State pattern)" },
+    { tag:"LLD", text:"Full design + Java — Movie Ticket Booking (concurrent bookings, seat lock)" },
+    { tag:"DSA", text:"2 hard problems" }
+  ]},
+  { module:2, week:7, day:49, theme:"Weekend: LLD intensive II", budget:"6h", tasks:[
+    { tag:"LLD", text:"Full design + Java — Vending Machine · Library Management",
+      links:[{label:"Grokking OOD",url:R.groking}]},
+    { tag:"LLD", text:"Full design + Java — Notification system (multi-channel, retry, dedup)" }
+  ]},
+
+  // Week 8
+  { module:2, week:8, day:50, theme:"SD — distributed systems deep", budget:"1.5h", tasks:[
+    { tag:"SD", text:"FULL DESIGN — Distributed cache, Redis-like (consistent hashing, replication, gossip)" },
+    { tag:"AI", text:"LLM cost optimization (prompt caching, model routing, distillation)" }
+  ]},
+  { module:2, week:8, day:51, theme:"SD — search + AI search", budget:"1.5h", tasks:[
+    { tag:"SD", text:"Search systems — inverted index, ranking, BM25 (foundation for AI search)" },
+    { tag:"AI", text:"Re-read evaluation frameworks · sketch RAGAS pipeline from memory",
+      links:[{label:"RAGAS",url:R.ragas}]}
+  ]},
+  { module:2, week:8, day:52, theme:"SD — rate limit + idempotency", budget:"1.5h", tasks:[
+    { tag:"SD", text:"Rate limiting — token bucket, leaky bucket, sliding window, distributed",
+      links:[{label:"Redis · rate limiting",url:R.redisRateLimit}]},
+    { tag:"SD", text:"Idempotency · retries · exponential backoff with jitter" }
+  ]},
+  { module:2, week:8, day:53, theme:"SD — probabilistic structures", budget:"1.5h", tasks:[
+    { tag:"SD", text:"Bloom filter · Count-Min Sketch · HyperLogLog — when each saves the day" },
+    { tag:"BEH", text:"Record top 5 stories on video · evaluate pacing, filler words, structure" }
+  ]},
+  { module:2, week:8, day:54, theme:"MOCK #1", budget:"2.5h", tasks:[
+    { tag:"MOCK", text:"Pramp coding round — first mock, expect to be rusty, that's the point",
+      links:[{label:"Pramp",url:R.pramp}]},
+    { tag:"LOG", text:"Detailed retro: what felt awkward in communication? Where did you get stuck?" }
+  ]},
+  { module:2, week:8, day:55, theme:"Weekend: GenAI SD intensive I", budget:"7h", tasks:[
+    { tag:"AI", text:"FULL DESIGN — Real-time AI translation (latency-sensitive, multi-language)" },
+    { tag:"AI", text:"FULL DESIGN — Coding assistant like Copilot (completion vs chat, model routing)" },
+    { tag:"DSA", text:"3 hard problems on remaining weak areas" }
+  ]},
+  { module:2, week:8, day:56, theme:"Weekend: GenAI SD intensive II", budget:"6h", tasks:[
+    { tag:"AI", text:"FULL DESIGN — AI-powered fraud detection (real-time + batch, model serving, drift)" },
+    { tag:"MOCK", text:"Self-mock SD — pick a prompt, 45-min timer, write solo, then critique" },
+    { tag:"LOG", text:"Apply to 5 MAANG direct (Google, Amazon, Meta, Apple, Microsoft)" }
+  ]},
+
+  // Week 9
+  { module:2, week:9, day:57, theme:"AI fluency drills", budget:"1.5h", tasks:[
+    { tag:"AI", text:"Practice Claude/Cursor for: refactor an NPM module · debug a failing test · generate unit tests" },
+    { tag:"AI", text:"Prompt engineering — chain of thought, few-shot, structured output",
+      links:[{label:"Anthropic · prompt engineering",url:R.anthropicPrompt}]}
+  ]},
+  { module:2, week:9, day:58, theme:"Your AI-in-workflow story", budget:"1.5h", tasks:[
+    { tag:"AI", text:"Document 3–5 examples of how you've used AI productively at DP World (trace_id work, SonarQube, MCP server)" },
+    { tag:"BEH", text:"Prep 'AI tools in my workflow' story — be specific about limits and failures" }
+  ]},
+  { module:2, week:9, day:59, theme:"Cross-cutting: observability", budget:"1.5h", tasks:[
+    { tag:"SD", text:"Observability — metrics, logs, traces (the three pillars)" },
+    { tag:"BEH", text:"Polish 'distributed trace context propagation' story — gold for senior signal" }
+  ]},
+  { module:2, week:9, day:60, theme:"MOCK #2", budget:"2.5h", tasks:[
+    { tag:"MOCK", text:"Pramp or Interviewing.io — system design round",
+      links:[{label:"Pramp",url:R.pramp},{label:"Interviewing.io",url:R.iio}]},
+    { tag:"LOG", text:"Retro: timing, decomposition quality, requirements gathering" }
+  ]},
+  { module:2, week:9, day:61, theme:"Weak area drill", budget:"1.5h", tasks:[
+    { tag:"DSA", text:"3 problems on weakest topic exposed in mocks" },
+    { tag:"AI", text:"Refresh weakest AI concept (likely embeddings or eval)" }
+  ]},
+  { module:2, week:9, day:62, theme:"Weekend: integration", budget:"6h", tasks:[
+    { tag:"DSA", text:"4 hard problems across patterns (timed)" },
+    { tag:"SD", text:"Self-mock — any system design, 45 min solo" },
+    { tag:"AI", text:"Self-mock — any GenAI design, 45 min solo" },
+    { tag:"LOG", text:"First MAANG phone screens likely scheduling this week — confirm calendar" }
+  ]},
+  { module:2, week:9, day:63, theme:"MODULE II RETRO", budget:"3h", tasks:[
+    { tag:"LOG", text:"Self-assess: which areas interview-ready? Which still need work?" },
+    { tag:"BEH", text:"FINAL story bank lockdown — 12 stories, each <2 min, recorded, reviewed" },
+    { tag:"LOG", text:"Calibrate Module 3 plan based on real weak areas exposed in mocks" }
+  ]},
+
+  // ═══ MODULE 3: BUILD + APPLY (Day 64-84) ═══
+  // Week 10 — BUILD #1
+  { module:3, week:10, day:64, theme:"BUILD #1 kickoff — rate limiter", budget:"2h", tasks:[
+    { tag:"BUILD", text:"New repo — distributed rate limiter (Node.js or Java; Redis backend)",
+      links:[{label:"Redis · rate limiting guide",url:R.redisRateLimit}]},
+    { tag:"BUILD", text:"README outlining design — token bucket + sliding window log" },
+    { tag:"LOG", text:"Apply to 5 more companies this week" }
+  ]},
+  { module:3, week:10, day:65, theme:"BUILD #1 — token bucket", budget:"1.5h", tasks:[
+    { tag:"BUILD", text:"Implement token bucket · unit tests · Redis Lua script for atomicity" },
+    { tag:"DSA", text:"2 maintenance problems" }
+  ]},
+  { module:3, week:10, day:66, theme:"BUILD #1 — sliding window", budget:"1.5h", tasks:[
+    { tag:"BUILD", text:"Implement sliding window log · benchmark vs token bucket" },
+    { tag:"AI", text:"Refresh RAG architecture (needed next week for BUILD #2)",
+      links:[{label:"Pinecone · RAG",url:R.pineconeRAG}]}
+  ]},
+  { module:3, week:10, day:67, theme:"BUILD #1 — distributed", budget:"1.5h", tasks:[
+    { tag:"BUILD", text:"Multi-instance test — 2+ processes against same Redis · verify atomicity" },
+    { tag:"BEH", text:"Run all 12 stories aloud in commute / shower" }
+  ]},
+  { module:3, week:10, day:68, theme:"BUILD #1 — load test + wrap", budget:"1.5h", tasks:[
+    { tag:"BUILD", text:"Load test with hey/wrk · measure p50/p95/p99 · document results in README" },
+    { tag:"BUILD", text:"Push to GitHub · pin to LinkedIn profile · real portfolio piece" }
+  ]},
+  { module:3, week:10, day:69, theme:"Weekend: MOCK #3 + heavy SD", budget:"7h", tasks:[
+    { tag:"MOCK", text:"Full coding mock — paid Interviewing.io if possible (calibration is worth it)",
+      links:[{label:"Interviewing.io",url:R.iio}]},
+    { tag:"SD", text:"FULL DESIGN — Dropbox / file sync (chunking, dedup, conflict resolution)" },
+    { tag:"DSA", text:"2 hard problems" }
+  ]},
+  { module:3, week:10, day:70, theme:"Sunday: phone screen prep", budget:"3h", tasks:[
+    { tag:"LOG", text:"1–2 phone screens likely this week — confirm, prep day-of pages" },
+    { tag:"DSA", text:"Light review · 2 easier problems for confidence" },
+    { tag:"BEH", text:"Final run of top 5 stories" }
+  ]},
+
+  // Week 11 — BUILD #2 (RAG)
+  { module:3, week:11, day:71, theme:"Active interview · BUILD #2 kickoff", budget:"2h", tasks:[
+    { tag:"LOG", text:"Phone screen day likely · post-screen retro after" },
+    { tag:"BUILD", text:"New repo — RAG over your docs · Ollama for local inference",
+      links:[{label:"Ollama",url:R.ollama}]}
+  ]},
+  { module:3, week:11, day:72, theme:"BUILD #2 — embeddings", budget:"1.5h", tasks:[
+    { tag:"BUILD", text:"Chunking — recursive character splitter with overlap" },
+    { tag:"BUILD", text:"Embeddings using sentence-transformers (all-MiniLM-L6-v2)",
+      links:[{label:"sentence-transformers",url:R.sbert}]},
+    { tag:"AI", text:"Re-read chunking strategies · note tradeoffs you observed" }
+  ]},
+  { module:3, week:11, day:73, theme:"BUILD #2 — vector store + retrieval", budget:"1.5h", tasks:[
+    { tag:"BUILD", text:"Vector store — FAISS or pgvector locally",
+      links:[{label:"FAISS",url:R.faiss}]},
+    { tag:"BUILD", text:"Retrieval — top-k similarity search · LLM call via Ollama" }
+  ]},
+  { module:3, week:11, day:74, theme:"BUILD #2 — reranking + eval", budget:"1.5h", tasks:[
+    { tag:"BUILD", text:"Add cross-encoder reranker (ms-marco-MiniLM)" },
+    { tag:"BUILD", text:"Basic eval — 5 Q&A pairs · measure faithfulness with LLM-as-judge",
+      links:[{label:"RAGAS",url:R.ragas}]}
+  ]},
+  { module:3, week:11, day:75, theme:"BUILD #2 — wrap + story", budget:"1.5h", tasks:[
+    { tag:"BUILD", text:"README · architecture diagram · cost/latency analysis · GitHub push" },
+    { tag:"BEH", text:"Now a STAR story — '12 stories' becomes 13. Best AI-fluency story you'll have." }
+  ]},
+  { module:3, week:11, day:76, theme:"Weekend: mocks + apps", budget:"7h", tasks:[
+    { tag:"MOCK", text:"SD mock — request a GenAI-flavored prompt if possible",
+      links:[{label:"Interviewing.io",url:R.iio}]},
+    { tag:"MOCK", text:"Behavioral mock — record full 30-min session" },
+    { tag:"LOG", text:"Apply to any remaining target companies" },
+    { tag:"DSA", text:"2 hard problems" }
+  ]},
+  { module:3, week:11, day:77, theme:"Sunday: recovery + pipeline", budget:"3h", tasks:[
+    { tag:"DSA", text:"2 light problems" },
+    { tag:"LOG", text:"Pipeline review — onsite loops should be appearing on calendar" }
+  ]},
+
+  // Week 12 — active interviews
+  { module:3, week:12, day:78, theme:"Active interview", budget:"1.5h", tasks:[
+    { tag:"DSA", text:"2 problems · light review only" },
+    { tag:"BEH", text:"Run top story aloud at start of day" }
+  ]},
+  { module:3, week:12, day:79, theme:"Active interview", budget:"1.5h", tasks:[
+    { tag:"DSA", text:"2 problems" },
+    { tag:"SD", text:"Refresh — pick the SD topic most likely in upcoming interview" }
+  ]},
+  { module:3, week:12, day:80, theme:"Active interview", budget:"1.5h", tasks:[
+    { tag:"DSA", text:"1–2 problems" },
+    { tag:"AI", text:"Refresh — quick re-read of RAG architecture",
+      links:[{label:"Pinecone · RAG",url:R.pineconeRAG}]},
+    { tag:"LOG", text:"Post-round retros essential — write what surprised you" }
+  ]},
+  { module:3, week:12, day:81, theme:"Active interview", budget:"1.5h", tasks:[
+    { tag:"DSA", text:"1–2 problems" },
+    { tag:"BEH", text:"Story refresh — the one you fumbled in last mock" }
+  ]},
+  { module:3, week:12, day:82, theme:"Weak area drill", budget:"1.5h", tasks:[
+    { tag:"DSA", text:"Drill area most exposed in real interviews — 2 targeted problems" },
+    { tag:"LOG", text:"If any company stalled — politely push timeline ('I have other active loops')" }
+  ]},
+  { module:3, week:12, day:83, theme:"Weekend: full mock loop", budget:"8h", tasks:[
+    { tag:"MOCK", text:"Simulate full 5-round loop — 3 coding + 1 SD + 1 behavioral",
+      links:[{label:"Interviewing.io",url:R.iio}]},
+    { tag:"MOCK", text:"Detailed retro · note fatigue points · plan recovery for real onsites" }
+  ]},
+  { module:3, week:12, day:84, theme:"MODULE III RETRO", budget:"3h", tasks:[
+    { tag:"LOG", text:"Pipeline — onsites scheduled? Forecast negotiation window" },
+    { tag:"LOG", text:"Honest read on weakest exposed area in real interviews → Module 4 drill plan" }
+  ]},
+
+  // ═══ MODULE 4: EXECUTE (Day 85-112) ═══
+  // Week 13 — Onsite week 1
+  { module:4, week:13, day:85, theme:"Onsite week 1", budget:"1.5h", tasks:[
+    { tag:"DSA", text:"1–2 problems · don't introduce new patterns" },
+    { tag:"SD", text:"1 SD topic refresh of choice" },
+    { tag:"BEH", text:"Run 1 story aloud" }
+  ]},
+  { module:4, week:13, day:86, theme:"Onsite week 1", budget:"1.5h", tasks:[
+    { tag:"DSA", text:"1–2 problems · easier ones for confidence" },
+    { tag:"LOG", text:"React to feedback in real-time — don't change prep on rumors" }
+  ]},
+  { module:4, week:13, day:87, theme:"Onsite week 1", budget:"1.5h", tasks:[
+    { tag:"DSA", text:"2 problems · mix patterns" },
+    { tag:"AI", text:"30 min on whichever GenAI design feels fuzziest" }
+  ]},
+  { module:4, week:13, day:88, theme:"Onsite week 1", budget:"1.5h", tasks:[
+    { tag:"DSA", text:"2 problems" },
+    { tag:"BEH", text:"Run all 5 top stories in head during commute" }
+  ]},
+  { module:4, week:13, day:89, theme:"Onsite week 1", budget:"1.5h", tasks:[
+    { tag:"DSA", text:"1–2 problems" },
+    { tag:"LOG", text:"Sleep & food matter more than reps now. Protect 7+ hr sleep." }
+  ]},
+  { module:4, week:13, day:90, theme:"Weekend: mock + reading", budget:"5h", tasks:[
+    { tag:"MOCK", text:"Mock loop if no real interview · skip if scheduled" },
+    { tag:"LOG", text:"Begin reading Haseeb · 10 Rules Part 1",
+      links:[{label:"Haseeb · Part 1",url:R.haseeb1}]}
+  ]},
+  { module:4, week:13, day:91, theme:"Sunday: rest + light review", budget:"2h", tasks:[
+    { tag:"DSA", text:"1 problem · for the rhythm" },
+    { tag:"LOG", text:"Plan week 14 around confirmed interviews" }
+  ]},
+
+  // Week 14
+  { module:4, week:14, day:92, theme:"Onsite week 2", budget:"1.5h", tasks:[
+    { tag:"DSA", text:"1–2 problems light" },
+    { tag:"BEH", text:"Quick story refresh" }
+  ]},
+  { module:4, week:14, day:93, theme:"Onsite week 2", budget:"1.5h", tasks:[
+    { tag:"DSA", text:"1–2 problems" },
+    { tag:"LOG", text:"If first offer arrives — DO NOT accept on the call. 'Let me think and revert.'" }
+  ]},
+  { module:4, week:14, day:94, theme:"Onsite week 2", budget:"1.5h", tasks:[
+    { tag:"DSA", text:"1 problem · maintenance" },
+    { tag:"SD", text:"30 min SD refresh on weakest topic" }
+  ]},
+  { module:4, week:14, day:95, theme:"Onsite week 2", budget:"1.5h", tasks:[
+    { tag:"DSA", text:"1 problem" },
+    { tag:"LOG", text:"Use any offer to accelerate other loops — 'I have a deadline of X'" }
+  ]},
+  { module:4, week:14, day:96, theme:"Onsite week 2", budget:"1.5h", tasks:[
+    { tag:"DSA", text:"1 problem" },
+    { tag:"BEH", text:"Story practice" }
+  ]},
+  { module:4, week:14, day:97, theme:"Weekend: negotiation prep deep", budget:"5h", tasks:[
+    { tag:"LOG", text:"Re-read Haseeb (second pass) · note competing-offer template",
+      links:[{label:"Haseeb · Part 1",url:R.haseeb1},{label:"Haseeb · Part 2",url:R.haseeb2}]},
+    { tag:"LOG", text:"Pull current levels.fyi for L5 Bangalore — band, percentiles",
+      links:[{label:"levels.fyi",url:R.levels}]},
+    { tag:"LOG", text:"Draft asking number + walk-away number for each active company" }
+  ]},
+  { module:4, week:14, day:98, theme:"Sunday: mock loop", budget:"6h", tasks:[
+    { tag:"MOCK", text:"Full 5-round mock loop · simulate fatigue · note rough spots" }
+  ]},
+
+  // Week 15
+  { module:4, week:15, day:99, theme:"Offer week 1", budget:"1.5h", tasks:[
+    { tag:"DSA", text:"1 problem" },
+    { tag:"LOG", text:"Push any stalled company — 'others are moving, when can I expect a decision?'" }
+  ]},
+  { module:4, week:15, day:100, theme:"Offer week 1", budget:"1.5h", tasks:[
+    { tag:"DSA", text:"1 problem · light" },
+    { tag:"LOG", text:"Don't burn bridges — gracefully decline ruled-out companies" }
+  ]},
+  { module:4, week:15, day:101, theme:"Offer week 1", budget:"1h", tasks:[
+    { tag:"LOG", text:"Log every incoming offer: base, RSU 4-yr & yr-1, sign-on, joining bonus, vesting cliff" },
+    { tag:"DSA", text:"1 problem if energy permits" }
+  ]},
+  { module:4, week:15, day:102, theme:"Offer week 1", budget:"1h", tasks:[
+    { tag:"LOG", text:"Confirm written offer details — never negotiate based on verbal only" }
+  ]},
+  { module:4, week:15, day:103, theme:"Offer week 1", budget:"1.5h", tasks:[
+    { tag:"LOG", text:"Schedule final rounds for pending companies — push for same 1-week window" }
+  ]},
+  { module:4, week:15, day:104, theme:"Weekend: compare + negotiate", budget:"5h", tasks:[
+    { tag:"LOG", text:"All offers on one sheet · normalize to 4-yr total comp · note non-monetary",
+      links:[{label:"levels.fyi",url:R.levels}]},
+    { tag:"LOG", text:"Competing-offer emails to top 2-3 (Haseeb's template)",
+      links:[{label:"Haseeb · Part 2",url:R.haseeb2}]},
+    { tag:"LOG", text:"Optional: Rora or Levels.fyi negotiation service (often nets ₹3-8L)" }
+  ]},
+  { module:4, week:15, day:105, theme:"Sunday: decision matrix", budget:"3h", tasks:[
+    { tag:"LOG", text:"Decision matrix — comp, growth, team, tech stack, manager, location" },
+    { tag:"LOG", text:"Sleep on it. The matrix is a tool, not an answer." }
+  ]},
+
+  // Week 16
+  { module:4, week:16, day:106, theme:"Negotiation round", budget:"1h", tasks:[
+    { tag:"LOG", text:"Counter-offer — ask for ONE specific bump (sign-on or stock refresh, not base)" },
+    { tag:"LOG", text:"Recruiters expect this. It's professional, not greedy." }
+  ]},
+  { module:4, week:16, day:107, theme:"Negotiation round", budget:"1h", tasks:[
+    { tag:"LOG", text:"Review responses · know negotiable (sign-on, stock) vs locked (base bands)" }
+  ]},
+  { module:4, week:16, day:108, theme:"Final review", budget:"1h", tasks:[
+    { tag:"LOG", text:"Final comp comparison · decide" }
+  ]},
+  { module:4, week:16, day:109, theme:"Verbal accept", budget:"30m", tasks:[
+    { tag:"LOG", text:"Verbal accept · confirm written offer arriving" }
+  ]},
+  { module:4, week:16, day:110, theme:"Written accept", budget:"30m", tasks:[
+    { tag:"LOG", text:"Written acceptance · confirm start date · politely decline other offers" }
+  ]},
+  { module:4, week:16, day:111, theme:"Notice period", budget:"1h", tasks:[
+    { tag:"LOG", text:"Resignation at DP World · professional notice · keep relationships intact" }
+  ]},
+  { module:4, week:16, day:112, theme:"DONE", budget:"—", tasks:[
+    { tag:"LOG", text:"You did it. Sixteen weeks of work, no cramming." },
+    { tag:"LOG", text:"Write a short LinkedIn post a month after joining — pay it forward" }
+  ]}
+];
+
+const MODULES = [
+  { id:1, num:"I",   title:"Survey",        range:"DAY 01 — 35  ·  5 WEEKS", tagline:"Cover the entire map at moderate depth." },
+  { id:2, num:"II",  title:"Depth",         range:"DAY 36 — 63  ·  4 WEEKS", tagline:"Spiral back to what's hardest. Where offers are won." },
+  { id:3, num:"III", title:"Build + Apply", range:"DAY 64 — 84  ·  3 WEEKS", tagline:"Two GitHub builds. Real applications. Mocks accelerate." },
+  { id:4, num:"IV",  title:"Execute",       range:"DAY 85 — 112 ·  4 WEEKS", tagline:"Onsites, negotiation, decision. Prep is maintenance." }
+];
+
+// ═══════════════════════════════════════════════════════════════════
+// STATE + STORAGE
+// ═══════════════════════════════════════════════════════════════════
+const STORAGE_KEY = "maang-16w-v3-progress";
+let state = {
+  completed: {}, // { dayNum: [bool, bool, ...] }
+  notes: {},     // { dayNum: "..." }
+  firstActivity: null,
+  lastActivity: null
+};
+
+async function loadState() {
+  try {
+    // Artifact storage first (claude.ai context)
+    if (typeof window.storage !== 'undefined' && window.storage) {
+      const result = await window.storage.get(STORAGE_KEY);
+      if (result && result.value) {
+        state = { ...state, ...JSON.parse(result.value) };
+        return;
+      }
+    }
+  } catch (e) {}
+  // localStorage fallback (downloaded standalone file)
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) state = { ...state, ...JSON.parse(stored) };
+  } catch (e) {}
+}
+
+async function saveState() {
+  const json = JSON.stringify(state);
+  try {
+    if (typeof window.storage !== 'undefined' && window.storage) {
+      await window.storage.set(STORAGE_KEY, json);
+    }
+  } catch (e) {}
+  // Always also write to localStorage as backup / fallback
+  try { localStorage.setItem(STORAGE_KEY, json); } catch (e) {}
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// COMPUTED
+// ═══════════════════════════════════════════════════════════════════
+function currentDay() {
+  // Find first day with any incomplete tasks
+  for (const d of CURRICULUM) {
+    const checks = state.completed[d.day] || [];
+    const allDone = d.tasks.every((_, i) => checks[i]);
+    if (!allDone) return d.day;
+  }
+  return null; // all done
+}
+
+function totalProgress() {
+  let done = 0, total = 0;
+  CURRICULUM.forEach(d => {
+    total += d.tasks.length;
+    (state.completed[d.day] || []).forEach(c => { if (c) done++; });
+  });
+  return { done, total, pct: total ? (done/total*100) : 0 };
+}
+
+function daysCompleted() {
+  let n = 0;
+  for (const d of CURRICULUM) {
+    const checks = state.completed[d.day] || [];
+    if (d.tasks.length > 0 && d.tasks.every((_, i) => checks[i])) n++;
+  }
+  return n;
+}
+
+function tagBreakdown() {
+  const tags = {};
+  CURRICULUM.forEach(d => {
+    d.tasks.forEach((t, i) => {
+      const tag = t.tag.toLowerCase();
+      tags[tag] = tags[tag] || { total:0, done:0 };
+      tags[tag].total++;
+      if ((state.completed[d.day] || [])[i]) tags[tag].done++;
+    });
+  });
+  return tags;
+}
+
+function pace() {
+  if (!state.firstActivity || !state.lastActivity) return null;
+  const first = new Date(state.firstActivity);
+  const last = new Date(state.lastActivity);
+  const daysElapsed = Math.max(1, Math.ceil((last - first) / (1000*60*60*24)) + 1);
+  const tasksDone = totalProgress().done;
+  return {
+    daysElapsed,
+    tasksPerDay: tasksDone / daysElapsed,
+    started: state.firstActivity,
+    last: state.lastActivity
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// RENDER
+// ═══════════════════════════════════════════════════════════════════
+function renderLinks(links) {
+  if (!links || links.length === 0) return '';
+  return `<div class="task-links">${links.map(l => `<a href="${l.url}" target="_blank" rel="noopener">${l.label}</a>`).join('')}</div>`;
+}
+
+function renderFocus() {
+  const inner = document.getElementById('focusInner');
+  const day = currentDay();
+
+  if (day === null) {
+    inner.innerHTML = `
+      <div class="focus-header">
+        <div>
+          <div class="focus-label">FOCUS · ALL DONE</div>
+          <div class="focus-day-num">Complete.</div>
+          <div class="focus-day-theme">112 of 112 days. Sixteen weeks. You showed up.</div>
+        </div>
+      </div>
+      <div class="focus-empty">Time to negotiate hard and pick the right offer.</div>
+    `;
+    return;
+  }
+
+  const d = CURRICULUM.find(x => x.day === day);
+  const checks = state.completed[day] || [];
+  const doneCount = checks.filter(Boolean).length;
+
+  inner.innerHTML = `
+    <div class="focus-header">
+      <div>
+        <div class="focus-label">FOCUS · DAY ${day} of 112</div>
+        <div class="focus-day-num">Day ${day}</div>
+        <div class="focus-day-theme">${d.theme}</div>
+      </div>
+      <div class="focus-budget">
+        <strong>${d.budget}</strong>
+        ${doneCount} of ${d.tasks.length} done
+      </div>
+    </div>
+    <ul class="focus-tasks">
+      ${d.tasks.map((t, i) => `
+        <li class="${checks[i] ? 'checked' : ''}">
+          <input type="checkbox" data-day="${day}" data-idx="${i}" ${checks[i] ? 'checked' : ''} class="focus-cb">
+          <div class="task-body">
+            <div class="task-meta">
+              <span class="day-tag ${t.tag.toLowerCase()}">${t.tag}</span>
+              <span>${t.text}</span>
+            </div>
+            ${renderLinks(t.links)}
+          </div>
+        </li>
+      `).join('')}
+    </ul>
+    <div class="focus-footer">
+      <span>Module ${['','I','II','III','IV'][d.module]} · Week ${d.week}</span>
+      <span>Check what you finish · auto-advances when all done</span>
+    </div>
+  `;
+
+  inner.querySelectorAll('.focus-cb').forEach(cb => {
+    cb.addEventListener('change', () => handleCheck(+cb.dataset.day, +cb.dataset.idx, cb.checked));
+  });
+}
+
+function renderStats() {
+  const p = totalProgress();
+  const days = daysCompleted();
+  const pc = pace();
+
+  document.getElementById('stats').innerHTML = `
+    <div class="stat">
+      <div class="label">Days Done</div>
+      <div class="value accent">${days} / 112</div>
+      <div class="sub">${(days/112*100).toFixed(0)}% of plan</div>
+    </div>
+    <div class="stat">
+      <div class="label">Tasks Done</div>
+      <div class="value">${p.done} / ${p.total}</div>
+      <div class="sub">${p.pct.toFixed(0)}% of all tasks</div>
+    </div>
+    <div class="stat">
+      <div class="label">Current Module</div>
+      <div class="value">${getCurrentModule()}</div>
+      <div class="sub">${getCurrentWeek()}</div>
+    </div>
+    <div class="stat">
+      <div class="label">Pace</div>
+      <div class="value">${pc ? pc.tasksPerDay.toFixed(1) : '—'}</div>
+      <div class="sub">tasks per day avg</div>
+    </div>
+  `;
+
+  document.getElementById('progressFill').style.right = (100 - p.pct) + '%';
+  document.getElementById('progressPct').textContent = p.pct.toFixed(0) + '%';
+
+  // tag stats
+  const tags = tagBreakdown();
+  const order = ['dsa', 'sd', 'ai', 'lld', 'beh', 'build', 'mock', 'log'];
+  const labels = { dsa:'DSA', sd:'SD', ai:'AI', lld:'LLD', beh:'BEH', build:'BUILD', mock:'MOCK', log:'LOG' };
+  document.getElementById('tagStats').innerHTML = order.filter(t => tags[t]).map(t => {
+    const s = tags[t];
+    return `<span class="tag-stat ${t}"><span class="dot"></span>${labels[t]} ${s.done}/${s.total}</span>`;
+  }).join('');
+
+  // pace label
+  if (pc) {
+    const startStr = new Date(pc.started).toLocaleDateString('en', {month:'short',day:'numeric'}).toUpperCase();
+    document.getElementById('paceLabel').textContent = `STARTED ${startStr} · ${pc.daysElapsed}D ACTIVE · ${pc.tasksPerDay.toFixed(1)}/D`;
+  } else {
+    document.getElementById('paceLabel').textContent = `READY · CHECK ANY TASK TO BEGIN`;
+  }
+}
+
+function getCurrentModule() {
+  const day = currentDay();
+  if (day === null) return '—';
+  const d = CURRICULUM.find(x => x.day === day);
+  return ['','I','II','III','IV'][d.module];
+}
+function getCurrentWeek() {
+  const day = currentDay();
+  if (day === null) return 'plan complete';
+  const d = CURRICULUM.find(x => x.day === day);
+  return `Week ${d.week}`;
+}
+
+function renderModules() {
+  const root = document.getElementById('moduleRoot');
+  const todayDay = currentDay();
+  let html = '';
+
+  MODULES.forEach(mod => {
+    const days = CURRICULUM.filter(d => d.module === mod.id);
+    const weeks = {};
+    days.forEach(d => { (weeks[d.week] = weeks[d.week] || []).push(d); });
+    const weekIds = Object.keys(weeks).sort((a,b) => +a - +b);
+
+    let inner = '';
+    weekIds.forEach(wk => {
+      inner += `<div class="week-strip">WEEK ${wk}</div>`;
+      inner += weeks[wk].map(d => renderDay(d, todayDay)).join('');
+    });
+
+    html += `
+      <section class="module" id="module-${mod.id}">
+        <div class="module-header">
+          <div class="module-num">${mod.num}</div>
+          <div class="module-titlebox">
+            <h3>${mod.title}</h3>
+            <div class="module-meta">${mod.range}</div>
+          </div>
+          <div class="module-tagline">"${mod.tagline}"</div>
+        </div>
+        <div class="days">${inner}</div>
+      </section>
+    `;
+  });
+
+  root.innerHTML = html;
+
+  root.querySelectorAll('.tasks input[type="checkbox"]').forEach(cb => {
+    cb.addEventListener('change', () => handleCheck(+cb.dataset.day, +cb.dataset.idx, cb.checked));
+  });
+
+  root.querySelectorAll('.day-notes').forEach(ta => {
+    ta.addEventListener('input', async () => {
+      const day = +ta.dataset.day;
+      state.notes[day] = ta.value;
+      state.lastActivity = new Date().toISOString();
+      await saveState();
+      scheduleSync();
+    });
+  });
+}
+
+function renderDay(d, todayDay) {
+  const isToday = d.day === todayDay;
+  const checks = state.completed[d.day] || [];
+  const allDone = d.tasks.length > 0 && d.tasks.every((_, i) => checks[i]);
+  const isWeekend = d.theme.toLowerCase().startsWith('weekend') || d.theme.toLowerCase().startsWith('sunday');
+
+  return `
+    <div class="day ${isToday ? 'today' : ''} ${allDone ? 'done' : ''}" data-day="${d.day}" id="day-${d.day}">
+      <div class="day-header">
+        <span class="day-num">Day ${String(d.day).padStart(2,'0')}<span class="small">${isWeekend ? '· WKND' : ''}</span></span>
+      </div>
+      <div class="day-theme">${d.theme}</div>
+      <div class="day-budget">⌛ ${d.budget} · ${d.tasks.length} ${d.tasks.length===1?'task':'tasks'}</div>
+      <ul class="tasks">
+        ${d.tasks.map((t, i) => `
+          <li class="${checks[i] ? 'checked' : ''}">
+            <div class="task-row">
+              <input type="checkbox" data-day="${d.day}" data-idx="${i}" ${checks[i] ? 'checked' : ''}>
+              <span class="day-tag ${t.tag.toLowerCase()}">${t.tag}</span>
+              <span>${t.text}</span>
+            </div>
+            ${renderLinks(t.links)}
+          </li>
+        `).join('')}
+      </ul>
+      <textarea class="day-notes" data-day="${d.day}" placeholder="notes · what went well, what to revisit...">${esc(state.notes[d.day] || '')}</textarea>
+    </div>
+  `;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// HANDLERS
+// ═══════════════════════════════════════════════════════════════════
+async function handleCheck(day, idx, checked) {
+  state.completed[day] = state.completed[day] || [];
+  state.completed[day][idx] = checked;
+
+  const now = new Date().toISOString();
+  if (!state.firstActivity && checked) state.firstActivity = now;
+  state.lastActivity = now;
+
+  await saveState();
+
+  // Determine if today changed
+  const prevToday = document.querySelector('.day.today')?.dataset.day;
+  const newToday = currentDay();
+
+  // Update visual states for both day card instances
+  document.querySelectorAll(`input[data-day="${day}"][data-idx="${idx}"]`).forEach(cb => {
+    cb.checked = checked;
+    const li = cb.closest('li');
+    if (li) {
+      if (checked) li.classList.add('checked');
+      else li.classList.remove('checked');
+    }
+  });
+
+  // Update day done state
+  const d = CURRICULUM.find(x => x.day === day);
+  const checks = state.completed[day] || [];
+  const allDone = d.tasks.every((_, i) => checks[i]);
+  const dayEl = document.getElementById('day-' + day);
+  if (dayEl) {
+    if (allDone) dayEl.classList.add('done'); else dayEl.classList.remove('done');
+  }
+
+  // If today changed, full re-render of focus + module grid (cheap)
+  if (String(prevToday) !== String(newToday)) {
+    renderFocus();
+    renderModules();
+  } else {
+    // Just update focus and stats
+    renderFocus();
+  }
+  renderStats();
+  scheduleSync(); // cloud sync (debounced, no-op if not connected)
+}
+
+document.getElementById('jumpFocus').addEventListener('click', () => {
+  document.getElementById('focus').scrollIntoView({ behavior:'smooth', block:'start' });
+});
+
+document.getElementById('resetAll').addEventListener('click', async () => {
+  if (!confirm("Reset all progress? Checkboxes, notes, and pace data will be cleared.")) return;
+  state = { completed: {}, notes: {}, firstActivity: null, lastActivity: null };
+  await saveState();
+  renderAll();
+});
+
+function renderAll() {
+  renderStats();
+  renderFocus();
+  renderModules();
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// SYNC — QR + text code, point-in-time
+// ═══════════════════════════════════════════════════════════════════
+function openSync() {
+  document.getElementById('syncOverlay').classList.add('open');
+  refreshExport();
+  updateCloudPanel(); // sync cloud tab UI with current gistConfig state
+  // Default to export tab
+  document.querySelectorAll('.sync-tab').forEach(x => x.classList.remove('active'));
+  document.querySelectorAll('.sync-content').forEach(x => x.classList.remove('active'));
+  document.querySelector('.sync-tab[data-tab="export"]').classList.add('active');
+  document.querySelector('.sync-content[data-content="export"]').classList.add('active');
+  // Ensure quick-info is visible on default tab
+  const quickInfo = document.getElementById('syncInfoQuick');
+  if (quickInfo) quickInfo.style.display = 'block';
+}
+
+function closeSync() {
+  document.getElementById('syncOverlay').classList.remove('open');
+}
+
+function refreshExport() {
+  const codeBox = document.getElementById('exportCode');
+  const qrWrap = document.getElementById('qrWrap');
+  const msg = document.getElementById('exportMsg');
+
+  try {
+    if (typeof LZString === 'undefined') {
+      codeBox.textContent = 'Compression library failed to load. Check your internet (sync uses CDN-hosted lz-string + qrcode-generator, both MIT, both open source).';
+      qrWrap.innerHTML = '<div class="qr-fallback">offline — sync needs CDN access once</div>';
+      return;
+    }
+
+    const json = JSON.stringify(state);
+    const code = LZString.compressToEncodedURIComponent(json);
+    codeBox.textContent = code;
+
+    qrWrap.innerHTML = '';
+    if (typeof qrcode !== 'undefined') {
+      try {
+        const qr = qrcode(0, 'L'); // auto-version, low error correction (more data capacity)
+        qr.addData(code);
+        qr.make();
+        qrWrap.innerHTML = qr.createImgTag(4, 8);
+      } catch (e) {
+        qrWrap.innerHTML = '<div class="qr-fallback">Code too long for QR — use "Copy code" instead.<br>(Happens once you have lots of progress + notes.)</div>';
+      }
+    } else {
+      qrWrap.innerHTML = '<div class="qr-fallback">QR library loading… use "Copy code" for now.</div>';
+    }
+
+    msg.textContent = `${(code.length / 1024).toFixed(1)}KB · ${Object.keys(state.completed || {}).length} day(s) of progress · ${Object.keys(state.notes || {}).length} note(s)`;
+    msg.className = 'sync-msg';
+  } catch (e) {
+    msg.textContent = 'Export error: ' + (e.message || 'unknown');
+    msg.className = 'sync-msg error';
+  }
+}
+
+function tryImport() {
+  const input = document.getElementById('importInput');
+  const msg = document.getElementById('importMsg');
+  const code = input.value.trim();
+
+  if (!code) {
+    msg.textContent = 'Paste a sync code first.';
+    msg.className = 'sync-msg error';
+    return;
+  }
+
+  if (typeof LZString === 'undefined') {
+    msg.textContent = 'Compression library failed to load. Check your internet — sync needs CDN access once.';
+    msg.className = 'sync-msg error';
+    return;
+  }
+
+  try {
+    const json = LZString.decompressFromEncodedURIComponent(code);
+    if (!json) throw new Error('could not decompress — code may be corrupt or truncated');
+    const parsed = JSON.parse(json);
+
+    if (!validateState(parsed)) {
+      throw new Error('this does not look like valid tracker state');
+    }
+
+    const incomingDays = Object.keys(parsed.completed || {}).length;
+    const incomingNotes = Object.keys(parsed.notes || {}).length;
+    const currentP = totalProgress();
+    const willOverwrite = currentP.done > 0 || Object.keys(state.notes || {}).length > 0;
+
+    let confirmMsg = `Load incoming state?\n\n• ${incomingDays} day(s) of progress\n• ${incomingNotes} note(s)`;
+    if (willOverwrite) {
+      confirmMsg += `\n\nThis will REPLACE your current state on this device (${currentP.done} task(s) checked, ${Object.keys(state.notes || {}).length} note(s)).`;
+    }
+
+    if (!confirm(confirmMsg)) {
+      msg.textContent = 'Cancelled.';
+      msg.className = 'sync-msg';
+      return;
+    }
+
+    state = { completed: {}, notes: {}, firstActivity: null, lastActivity: null, ...parsed };
+    saveState();
+    renderAll();
+    msg.textContent = `Loaded ✓ ${incomingDays} day(s), ${incomingNotes} note(s). Closing…`;
+    msg.className = 'sync-msg success';
+    setTimeout(closeSync, 1400);
+  } catch (e) {
+    msg.textContent = 'Could not read code: ' + (e.message || 'invalid format');
+    msg.className = 'sync-msg error';
+  }
+}
+
+// Auto-import from URL hash
+//   #sync=...    → state import (LZ-compressed)
+//   #connect=... → cloud sync code (fills the Cloud tab and opens it)
+function checkUrlSync() {
+  if (!location.hash) return;
+  if (location.hash.startsWith('#sync=')) {
+    const code = decodeURIComponent(location.hash.slice(6));
+    document.getElementById('importInput').value = code;
+    history.replaceState(null, '', location.pathname + location.search);
+    openSync();
+    document.querySelector('.sync-tab[data-tab="import"]').click();
+  } else if (location.hash.startsWith('#connect=')) {
+    const code = decodeURIComponent(location.hash.slice(9));
+    history.replaceState(null, '', location.pathname + location.search);
+    openSync();
+    document.querySelector('.sync-tab[data-tab="cloud"]').click();
+    const input = document.getElementById('syncCodeInput');
+    if (input) {
+      input.value = code;
+      // Don't auto-connect — let user see what's about to happen and click Connect
+      const msg = document.getElementById('cloudMsg');
+      if (msg) {
+        msg.textContent = 'Sync code received from QR ✓ click Connect to load';
+        msg.className = 'sync-msg success';
+      }
+    }
+  }
+}
+
+// Tab switching
+document.querySelectorAll('.sync-tab').forEach(t => {
+  t.addEventListener('click', () => {
+    document.querySelectorAll('.sync-tab').forEach(x => x.classList.remove('active'));
+    document.querySelectorAll('.sync-content').forEach(x => x.classList.remove('active'));
+    t.classList.add('active');
+    document.querySelector(`.sync-content[data-content="${t.dataset.tab}"]`).classList.add('active');
+    // Quick-tab info block only relevant for export/import tabs
+    const quickInfo = document.getElementById('syncInfoQuick');
+    if (quickInfo) quickInfo.style.display = (t.dataset.tab === 'cloud') ? 'none' : 'block';
+  });
+});
+
+// Close on overlay click outside modal
+document.getElementById('syncOverlay').addEventListener('click', (e) => {
+  if (e.target.id === 'syncOverlay') closeSync();
+});
+
+// Escape closes modal
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && document.getElementById('syncOverlay').classList.contains('open')) {
+    closeSync();
+  }
+});
+
+// Sync button → open modal
+document.getElementById('syncBtn').addEventListener('click', openSync);
+
+// Copy code to clipboard
+document.getElementById('copyBtn').addEventListener('click', async () => {
+  const code = document.getElementById('exportCode').textContent;
+  const msg = document.getElementById('exportMsg');
+  try {
+    await navigator.clipboard.writeText(code);
+    msg.textContent = 'Copied to clipboard ✓';
+    msg.className = 'sync-msg success';
+    setTimeout(() => { msg.textContent = ''; msg.className = 'sync-msg'; }, 2000);
+  } catch (e) {
+    // Fallback for non-secure contexts (file://)
+    const ta = document.createElement('textarea');
+    ta.value = code;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); msg.textContent = 'Copied ✓'; msg.className = 'sync-msg success'; }
+    catch (e2) { msg.textContent = 'Copy failed — select the code manually'; msg.className = 'sync-msg error'; }
+    document.body.removeChild(ta);
+    setTimeout(() => { msg.textContent = ''; msg.className = 'sync-msg'; }, 2000);
+  }
+});
+
+document.getElementById('refreshBtn').addEventListener('click', refreshExport);
+document.getElementById('importBtn').addEventListener('click', tryImport);
+document.getElementById('clearBtn').addEventListener('click', () => {
+  document.getElementById('importInput').value = '';
+  document.getElementById('importMsg').textContent = '';
+});
+
+// ═══════════════════════════════════════════════════════════════════
+// CLOUD SYNC — GitHub Gist, continuous, PAT in localStorage only
+// ═══════════════════════════════════════════════════════════════════
+const GIST_FILENAME = 'maang-tracker-state.json';
+const GIST_CONFIG_KEY = 'maang-tracker-gist-config-v1';
+const SYNC_DEBOUNCE_MS = 2500;
+
+let gistConfig = null;   // { pat, gistId, lastSynced }
+let syncTimer = null;
+let isSyncing = false;
+let lastSyncError = null;
+
+function loadGistConfig() {
+  try {
+    const stored = localStorage.getItem(GIST_CONFIG_KEY);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      if (parsed && typeof parsed.pat === 'string' && typeof parsed.gistId === 'string') {
+        gistConfig = parsed;
+      }
+    }
+  } catch (e) {}
+}
+
+function saveGistConfig() {
+  try {
+    if (gistConfig) localStorage.setItem(GIST_CONFIG_KEY, JSON.stringify(gistConfig));
+    else localStorage.removeItem(GIST_CONFIG_KEY);
+  } catch (e) {}
+}
+
+async function githubAPI(path, method = 'GET', body = null) {
+  if (!gistConfig || !gistConfig.pat) throw new Error('not connected');
+  const headers = {
+    'Authorization': `Bearer ${gistConfig.pat}`,
+    'Accept': 'application/vnd.github+json',
+    'X-GitHub-Api-Version': '2022-11-28'
+  };
+  const init = { method, headers };
+  if (body) {
+    headers['Content-Type'] = 'application/json';
+    init.body = JSON.stringify(body);
+  }
+  const res = await fetch(`https://api.github.com${path}`, init);
+  if (!res.ok) {
+    let msg = `${res.status}`;
+    try { const j = await res.json(); msg = j.message || msg; } catch {}
+    if (res.status === 401) throw new Error('PAT rejected — check token or re-paste');
+    if (res.status === 403) throw new Error('Forbidden — likely missing Gists scope, or rate-limited');
+    if (res.status === 404) throw new Error('Gist not found — wrong ID or PAT cannot see it');
+    throw new Error(msg);
+  }
+  return res.json();
+}
+
+async function pushToGist() {
+  if (!gistConfig || !gistConfig.gistId) return;
+  await githubAPI(`/gists/${gistConfig.gistId}`, 'PATCH', {
+    files: { [GIST_FILENAME]: { content: JSON.stringify(state, null, 2) } }
+  });
+}
+
+async function pullFromGist() {
+  if (!gistConfig || !gistConfig.gistId) return null;
+  const result = await githubAPI(`/gists/${gistConfig.gistId}`);
+  const file = result.files && result.files[GIST_FILENAME];
+  if (!file) throw new Error('gist exists but does not contain tracker state');
+  const parsed = JSON.parse(file.content);
+  if (!validateState(parsed)) throw new Error('gist contents failed validation');
+  return parsed;
+}
+
+async function createNewGist() {
+  const result = await githubAPI('/gists', 'POST', {
+    description: 'MAANG Tracker · personal state (private)',
+    public: false,
+    files: { [GIST_FILENAME]: { content: JSON.stringify(state, null, 2) } }
+  });
+  return result.id;
+}
+
+function scheduleSync() {
+  if (!gistConfig || !gistConfig.gistId) return;
+  if (syncTimer) clearTimeout(syncTimer);
+  setSyncStatus('syncing');
+  syncTimer = setTimeout(() => doPush(), SYNC_DEBOUNCE_MS);
+}
+
+async function doPush() {
+  if (!gistConfig || !gistConfig.gistId || isSyncing) return;
+  isSyncing = true;
+  setSyncStatus('syncing');
+  try {
+    await pushToGist();
+    gistConfig.lastSynced = new Date().toISOString();
+    lastSyncError = null;
+    saveGistConfig();
+    setSyncStatus('synced');
+  } catch (e) {
+    lastSyncError = e.message;
+    setSyncStatus('error');
+  } finally {
+    isSyncing = false;
+  }
+}
+
+async function doPull() {
+  if (!gistConfig || !gistConfig.gistId) return false;
+  setSyncStatus('syncing');
+  try {
+    const remote = await pullFromGist();
+    const localLast = state.lastActivity ? new Date(state.lastActivity).getTime() : 0;
+    const remoteLast = remote.lastActivity ? new Date(remote.lastActivity).getTime() : 0;
+    let applied = false;
+    if (remoteLast > localLast) {
+      state = { completed: {}, notes: {}, firstActivity: null, lastActivity: null, ...remote };
+      await saveState();
+      renderAll();
+      applied = true;
+    }
+    gistConfig.lastSynced = new Date().toISOString();
+    lastSyncError = null;
+    saveGistConfig();
+    setSyncStatus('synced');
+    return applied;
+  } catch (e) {
+    lastSyncError = e.message;
+    setSyncStatus('error');
+    return false;
+  }
+}
+
+function setSyncStatus(status) {
+  const dot = document.getElementById('syncDot');
+  if (!dot) return;
+  dot.classList.remove('synced', 'syncing', 'error');
+  if (!gistConfig || !gistConfig.gistId) {
+    dot.style.display = 'none';
+    return;
+  }
+  dot.style.display = 'inline-block';
+  dot.classList.add(status);
+  const ago = gistConfig.lastSynced ? syncTimeAgo(gistConfig.lastSynced) : 'never';
+  dot.title = {
+    synced: `Synced ${ago}`,
+    syncing: 'Syncing…',
+    error: 'Sync error: ' + (lastSyncError || 'unknown')
+  }[status] || ago;
+
+  // Update cloud panel if open
+  updateCloudPanel();
+}
+
+function syncTimeAgo(iso) {
+  const diff = Date.now() - new Date(iso).getTime();
+  if (diff < 5000) return 'just now';
+  if (diff < 60000) return Math.floor(diff / 1000) + 's ago';
+  if (diff < 3600000) return Math.floor(diff / 60000) + 'm ago';
+  if (diff < 86400000) return Math.floor(diff / 3600000) + 'h ago';
+  return Math.floor(diff / 86400000) + 'd ago';
+}
+
+function updateCloudPanel() {
+  const notConn = document.getElementById('cloudNotConnected');
+  const conn = document.getElementById('cloudConnected');
+  if (!notConn || !conn) return;
+  if (gistConfig && gistConfig.gistId) {
+    notConn.style.display = 'none';
+    conn.style.display = 'block';
+    document.getElementById('cloudGistId').textContent = gistConfig.gistId;
+    document.getElementById('cloudGistLink').href = `https://gist.github.com/${gistConfig.gistId}`;
+    const sv = document.getElementById('cloudStatusValue');
+    const sd = document.getElementById('cloudStatusDetail');
+    sv.classList.remove('synced', 'syncing', 'error');
+    if (isSyncing) {
+      sv.textContent = 'Syncing…';
+      sv.classList.add('syncing');
+      sd.textContent = '';
+    } else if (lastSyncError) {
+      sv.textContent = 'Error';
+      sv.classList.add('error');
+      sd.textContent = lastSyncError;
+    } else {
+      sv.textContent = 'Synced';
+      sv.classList.add('synced');
+      sd.textContent = gistConfig.lastSynced ? `last sync ${syncTimeAgo(gistConfig.lastSynced)}` : 'connected';
+    }
+    renderSyncCodeReveal();
+  } else {
+    notConn.style.display = 'block';
+    conn.style.display = 'none';
+  }
+}
+
+async function connectCloud() {
+  const code = document.getElementById('syncCodeInput').value.trim();
+  const msg = document.getElementById('cloudMsg');
+
+  if (!code) {
+    msg.textContent = 'Paste a sync code first.';
+    msg.className = 'sync-msg error';
+    return;
+  }
+
+  let decoded;
+  try {
+    decoded = decodeSyncCode(code);
+  } catch (e) {
+    msg.textContent = 'Invalid sync code: ' + e.message;
+    msg.className = 'sync-msg error';
+    return;
+  }
+
+  msg.textContent = 'Connecting…';
+  msg.className = 'sync-msg';
+
+  // Tentatively set gistConfig so githubAPI works
+  gistConfig = { pat: decoded.pat, gistId: decoded.gistId };
+
+  try {
+    const remote = await pullFromGist();
+    const localHasData = totalProgress().done > 0 || Object.keys(state.notes || {}).length > 0;
+
+    if (localHasData) {
+      const localLast = state.lastActivity ? new Date(state.lastActivity).getTime() : 0;
+      const remoteLast = remote.lastActivity ? new Date(remote.lastActivity).getTime() : 0;
+      if (localLast > remoteLast) {
+        if (!confirm('This device has NEWER local progress than the gist. Connect anyway?\n\nIf yes, your local state will be pushed up and become the canonical state. (The gist will be overwritten with your local data.)')) {
+          gistConfig = null;
+          msg.textContent = 'Cancelled.';
+          msg.className = 'sync-msg';
+          return;
+        }
+        // Keep local state, push it up
+        gistConfig.lastSynced = new Date().toISOString();
+        saveGistConfig();
+        await doPush();
+        msg.textContent = 'Connected ✓ pushed local state (it was newer)';
+        msg.className = 'sync-msg success';
+      } else {
+        if (!confirm('Replace local progress with the gist state? (Gist is newer or equal.)')) {
+          gistConfig = null;
+          msg.textContent = 'Cancelled.';
+          msg.className = 'sync-msg';
+          return;
+        }
+        state = { completed:{}, notes:{}, firstActivity:null, lastActivity:null, ...remote };
+        await saveState();
+        renderAll();
+        gistConfig.lastSynced = new Date().toISOString();
+        saveGistConfig();
+        msg.textContent = 'Connected ✓ pulled remote state';
+        msg.className = 'sync-msg success';
+      }
+    } else {
+      // No local data — just pull
+      state = { completed:{}, notes:{}, firstActivity:null, lastActivity:null, ...remote };
+      await saveState();
+      renderAll();
+      gistConfig.lastSynced = new Date().toISOString();
+      saveGistConfig();
+      msg.textContent = 'Connected ✓ pulled remote state';
+      msg.className = 'sync-msg success';
+    }
+    setSyncStatus('synced');
+    updateCloudPanel();
+    document.getElementById('syncCodeInput').value = '';
+  } catch (e) {
+    gistConfig = null;
+    msg.textContent = 'Connection failed: ' + e.message;
+    msg.className = 'sync-msg error';
+    setSyncStatus('idle');
+  }
+}
+
+async function createNewSetup() {
+  const pat = document.getElementById('patInput').value.trim();
+  const msg = document.getElementById('cloudCreateMsg');
+
+  if (!pat) {
+    msg.textContent = 'Paste a PAT first.';
+    msg.className = 'sync-msg error';
+    return;
+  }
+  if (!pat.startsWith('github_pat_') && !pat.startsWith('ghp_')) {
+    msg.textContent = 'That doesn\'t look like a GitHub PAT (expecting github_pat_... or ghp_...).';
+    msg.className = 'sync-msg error';
+    return;
+  }
+
+  msg.textContent = 'Creating private gist…';
+  msg.className = 'sync-msg';
+
+  gistConfig = { pat, gistId: '' };
+
+  try {
+    const newId = await createNewGist();
+    gistConfig.gistId = newId;
+    gistConfig.lastSynced = new Date().toISOString();
+    saveGistConfig();
+    document.getElementById('patInput').value = '';
+    msg.textContent = 'Created ✓ generating sync code…';
+    msg.className = 'sync-msg success';
+    setSyncStatus('synced');
+    updateCloudPanel();
+  } catch (e) {
+    gistConfig = null;
+    msg.textContent = 'Failed: ' + e.message;
+    msg.className = 'sync-msg error';
+    setSyncStatus('idle');
+  }
+}
+
+// Sync code reveal/hide
+let syncCodeRevealed = false;
+function toggleSyncCodeReveal() {
+  if (!gistConfig || !gistConfig.gistId) return;
+  syncCodeRevealed = !syncCodeRevealed;
+  renderSyncCodeReveal();
+}
+window.toggleSyncCodeReveal = toggleSyncCodeReveal;
+function renderSyncCodeReveal() {
+  const reveal = document.getElementById('syncCodeReveal');
+  const buttons = document.getElementById('syncCodeButtons');
+  const qrBox = document.getElementById('syncCodeQR');
+  if (!reveal) return;
+  if (syncCodeRevealed && gistConfig && gistConfig.gistId) {
+    const code = encodeSyncCode(gistConfig.pat, gistConfig.gistId);
+    reveal.className = 'sync-code-revealed';
+    reveal.textContent = code;
+    reveal.title = 'Click to select all';
+    buttons.style.display = 'block';
+  } else {
+    reveal.className = 'sync-code-reveal-hidden';
+    reveal.textContent = 'click to reveal · contains a PAT';
+    reveal.title = 'Click to reveal';
+    buttons.style.display = 'none';
+    if (qrBox) qrBox.style.display = 'none';
+  }
+}
+
+async function copySyncCode() {
+  if (!gistConfig || !gistConfig.gistId) return;
+  const code = encodeSyncCode(gistConfig.pat, gistConfig.gistId);
+  const msg = document.getElementById('cloudMsg2');
+  try {
+    await navigator.clipboard.writeText(code);
+    msg.textContent = 'Sync code copied ✓ paste on another device';
+    msg.className = 'sync-msg success';
+    setTimeout(() => { msg.textContent = ''; msg.className = 'sync-msg'; }, 2400);
+  } catch (e) {
+    msg.textContent = 'Copy failed — select the revealed code manually';
+    msg.className = 'sync-msg error';
+  }
+}
+
+function showSyncQR() {
+  if (!gistConfig || !gistConfig.gistId) return;
+  const qrBox = document.getElementById('syncCodeQR');
+  const wrap = document.getElementById('syncCodeQRWrap');
+  if (!qrBox || !wrap) return;
+
+  // Encode QR as URL with #connect= so scanning opens the tracker and auto-fills
+  const code = encodeSyncCode(gistConfig.pat, gistConfig.gistId);
+  const baseUrl = location.origin + location.pathname;
+  const qrTarget = baseUrl + '#connect=' + encodeURIComponent(code);
+
+  wrap.innerHTML = '';
+  if (typeof qrcode !== 'undefined') {
+    try {
+      const qr = qrcode(0, 'L');
+      qr.addData(qrTarget);
+      qr.make();
+      wrap.innerHTML = qr.createImgTag(4, 8);
+    } catch (e) {
+      wrap.innerHTML = '<div class="qr-fallback">QR generation failed — use Copy code instead.</div>';
+    }
+  } else {
+    wrap.innerHTML = '<div class="qr-fallback">QR library not loaded — use Copy code.</div>';
+  }
+  qrBox.style.display = 'block';
+}
+
+function disconnectCloud() {
+  if (!confirm('Disconnect cloud sync? Your PAT will be removed from this browser. Your gist on GitHub stays intact — you can reconnect anytime with the same sync code.')) return;
+  gistConfig = null;
+  saveGistConfig();
+  if (syncTimer) clearTimeout(syncTimer);
+  syncCodeRevealed = false;
+  updateCloudPanel();
+  setSyncStatus('idle');
+  const codeInput = document.getElementById('syncCodeInput');
+  if (codeInput) codeInput.value = '';
+  const patInput = document.getElementById('patInput');
+  if (patInput) patInput.value = '';
+  document.getElementById('cloudMsg').textContent = '';
+}
+
+// Wire up cloud tab buttons
+function wireCloudButtons() {
+  const connectBtn = document.getElementById('cloudConnectBtn');
+  if (connectBtn) connectBtn.addEventListener('click', connectCloud);
+
+  const createBtn = document.getElementById('cloudCreateBtn');
+  if (createBtn) createBtn.addEventListener('click', createNewSetup);
+
+  const copyBtn = document.getElementById('copySyncCodeBtn');
+  if (copyBtn) copyBtn.addEventListener('click', copySyncCode);
+
+  const qrBtn = document.getElementById('showSyncQRBtn');
+  if (qrBtn) qrBtn.addEventListener('click', showSyncQR);
+
+  const hideBtn = document.getElementById('hideSyncCodeBtn');
+  if (hideBtn) hideBtn.addEventListener('click', () => { syncCodeRevealed = false; renderSyncCodeReveal(); });
+
+  const pushBtn = document.getElementById('cloudPushBtn');
+  if (pushBtn) pushBtn.addEventListener('click', async () => {
+    const msg = document.getElementById('cloudMsg2');
+    msg.textContent = 'Pushing…';
+    msg.className = 'sync-msg';
+    await doPush();
+    if (lastSyncError) {
+      msg.textContent = 'Push failed: ' + lastSyncError;
+      msg.className = 'sync-msg error';
+    } else {
+      msg.textContent = 'Pushed ✓';
+      msg.className = 'sync-msg success';
+      setTimeout(() => { msg.textContent = ''; }, 2000);
+    }
+  });
+
+  const pullBtn = document.getElementById('cloudPullBtn');
+  if (pullBtn) pullBtn.addEventListener('click', async () => {
+    const msg = document.getElementById('cloudMsg2');
+    if (!confirm('Pull state from gist? This may overwrite this device\'s state if the gist is newer.')) return;
+    msg.textContent = 'Pulling…';
+    msg.className = 'sync-msg';
+    const applied = await doPull();
+    if (lastSyncError) {
+      msg.textContent = 'Pull failed: ' + lastSyncError;
+      msg.className = 'sync-msg error';
+    } else {
+      msg.textContent = applied ? 'Pulled & applied ✓' : 'Pulled — local was already newer, no changes';
+      msg.className = 'sync-msg success';
+      setTimeout(() => { msg.textContent = ''; }, 2500);
+    }
+  });
+
+  const disBtn = document.getElementById('cloudDisconnectBtn');
+  if (disBtn) disBtn.addEventListener('click', disconnectCloud);
+}
+
+// Periodically refresh the "X ago" labels while modal is open
+setInterval(() => {
+  if (document.getElementById('syncOverlay').classList.contains('open')) {
+    updateCloudPanel();
+  }
+  if (gistConfig && gistConfig.gistId && !isSyncing && !lastSyncError) {
+    setSyncStatus('synced'); // refresh title text
+  }
+}, 30000);
+
+// ═══════════════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════════════
+(async function init() {
+  await loadState();
+  loadGistConfig();
+  renderAll();
+  wireCloudButtons();
+  setSyncStatus(gistConfig && gistConfig.gistId ? 'synced' : 'idle');
+
+  // Auto-pull on load if cloud sync is configured
+  if (gistConfig && gistConfig.gistId) {
+    doPull(); // fire-and-forget; renders inside if it applies
+  }
+
+  checkUrlSync();
+})();
+</script>
+</body>
+</html>
