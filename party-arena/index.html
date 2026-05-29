@@ -145,6 +145,20 @@
         pointer-events: none;
       }
 
+      /* ─── Game Screen: override .screen to be true flex column ─── */
+      #screen-game {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 36px; /* leave room for status-bar */
+        padding: 0;
+        overflow: hidden;
+        align-items: stretch;
+        display: flex;
+        flex-direction: column;
+      }
+
       /* ─── Logo / Header ─── */
       .logo {
         font-family: var(--font-display);
@@ -540,10 +554,10 @@
 
       /* ─── Game Container ─── */
       #game-container {
-        position: absolute;
-        inset: 0;
-        display: flex;
-        flex-direction: column;
+        flex: 1;
+        position: relative;
+        overflow: hidden;
+        min-height: 0;
       }
 
       /* ─── Game Top Bar ─── */
@@ -868,7 +882,7 @@
     </div>
 
     <!-- ═══════════════ SCREEN: GAME ═══════════════ -->
-    <div id="screen-game" class="screen hidden" style="padding: 0">
+    <div id="screen-game" class="screen hidden">
       <div class="game-topbar">
         <h3 id="game-title">Game</h3>
         <span class="player-count" id="game-player-count"></span>
@@ -883,10 +897,7 @@
           ✕ Leave
         </button>
       </div>
-      <div
-        id="game-container"
-        style="flex: 1; position: relative; overflow: hidden"
-      ></div>
+      <div id="game-container"></div>
     </div>
 
     <!-- ═══════════════ STATUS BAR ═══════════════ -->
@@ -903,6 +914,17 @@
       //  GAME REGISTRY — add new games here
       // ════════════════════════════════════════════════
       const GAME_REGISTRY = [
+        {
+          id: "rc-soccer",
+          name: "RC Robot Soccer",
+          emoji: "⚽",
+          description:
+            "2–8 player octagon table football! Each player controls a goalie puck on one wall of the field. Slide to defend, bump to shoot. Host sets time limit and goal cap.",
+          minPlayers: 2,
+          maxPlayers: 8,
+          supportsLocal: true,
+          src: "./games/rc-soccer.js",
+        },
         {
           id: "deeper-talk",
           name: "Deeper Talk",
@@ -946,6 +968,28 @@
           maxPlayers: 2,
           supportsLocal: true,
           src: "./games/ultimate-ttt.js",
+        },
+        {
+          id: "dixit",
+          name: "Dixit",
+          emoji: "🌙",
+          description:
+            "Give a dreamy clue for your card. Others submit a matching one. Fool some but not all — the perfect clue is just mysterious enough.",
+          minPlayers: 3,
+          maxPlayers: 6,
+          supportsLocal: false,
+          src: "./games/dixit.js",
+        },
+        {
+          id: "bumper-cars",
+          name: "Bumper Cars",
+          emoji: "🚗",
+          description:
+            "FAO Schwarz RC bumper cars — everyone drives! Smash opponents, watch their driver cry, earn points. 2-minute chaos for 2–8 players.",
+          minPlayers: 2,
+          maxPlayers: 8,
+          supportsLocal: false,
+          src: "./games/bumper-cars.js",
         },
         // Add more games here — they'll auto-appear in the lobby
       ];
