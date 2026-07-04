@@ -73,11 +73,17 @@ export default {
     ensureGlobals();
     const me = api.getMe(), isHost = api.isHost(), isLocal = api.isLocal();
 
+    // Resume support: cars/positions are never worth restoring (live
+    // physics, same reasoning as RC Soccer — by the time a reconnect
+    // happens any saved x/y/vx/vy would be stale). scores and timeLeft are
+    // the only fields with lasting meaning, so that's all this restores.
+    const resumedBcars = isLocal ? null : api.getResumeState();
+
     // ── module state ───────────────────────────────────────────
     let W = 0, H = 0;
     let cars   = [];    // full car objects (host only builds, guests mirror)
-    let scores = {};
-    let timeLeft  = ROUND_SECS;
+    let scores = resumedBcars?.scores ?? {};
+    let timeLeft  = resumedBcars?.timeLeft ?? ROUND_SECS;
     let gameOver  = false;
     let rafId     = null;
     let tickTimer = null;
@@ -481,6 +487,7 @@ export default {
           cars: cars.map(c=>({ id:c.id, x:c.x, y:c.y, angle:c.angle, state:c.state, cryT:c.cryT, cooldown:c.cooldown })),
           scores, timeLeft, gameOver
         });
+        api.setResumeState({ scores, timeLeft });
       }
 
       // ── sidebar ────────────────────────────────────────────
@@ -789,6 +796,25 @@ export default {
       if (!isLocal) {
         // tell guests to show controller
         api.send('init', { players: players.map(p=>({id:p.id,name:p.name})) });
+        // A guest reconnecting mid-round has no controller UI yet (fresh
+        // create() call) — host resends 'init' so startController() runs
+        // again, then re-broadcasts state so their score/timer display is
+        // correct immediately rather than waiting for the next 1Hz tick.
+        function sendResyncTo(playerId) {
+          api.sendTo(playerId, 'init', { players: players.map(p=>({id:p.id,name:p.name})) });
+          api.send('state', {
+            cars: cars.map(c=>({ id:c.id, x:c.x, y:c.y, angle:c.angle, state:c.state, cryT:c.cryT, cooldown:c.cooldown })),
+            scores, timeLeft, gameOver
+          });
+        }
+        api.onPlayerRejoinedMidgame(({ playerId }) => sendResyncTo(playerId));
+        // onPlayerRejoinedMidgame can fire before the rejoining guest's own
+        // dynamic import finishes and registers its listeners — a push that
+        // arrives too early is silently dropped (no buffering/retry). The
+        // regular per-tick broadcastState() call already self-heals this
+        // within about a second either way, but guests also pull explicitly
+        // on startup to skip that brief delay.
+        api.on('bc-request-state', (_payload, fromPeer) => sendResyncTo(fromPeer));
       }
     } else {
       startController(players);
@@ -796,6 +822,7 @@ export default {
         const p = data.payload || data;
         startController(p.players || players);
       });
+      api.send('bc-request-state', {});
     }
 
     return {

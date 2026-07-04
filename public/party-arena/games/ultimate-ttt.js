@@ -41,14 +41,25 @@ export default {
     }
 
     // ── Game state ──
-    let boards = Array.from({ length: 9 }, () => Array(9).fill(null));
-    let meta = Array(9).fill(null); // winner per sub-board ('X','O','D',null)
-    let turn = 'X';
-    let activeBoard = null; // which sub-board is forced, or null = free
-    let moveCount = 0;
-    let history = [];
-    let gameOver = false;
-    let globalWinner = null;
+    // Resume support: if we're the host reconnecting mid-game, getResumeState()
+    // hands back our last snapshot — restore from it instead of starting fresh.
+    const resumed = api.getResumeState();
+    let boards = resumed?.boards ?? Array.from({ length: 9 }, () => Array(9).fill(null));
+    let meta = resumed?.meta ?? Array(9).fill(null); // winner per sub-board ('X','O','D',null)
+    let turn = resumed?.turn ?? 'X';
+    let activeBoard = resumed?.activeBoard ?? null; // which sub-board is forced, or null = free
+    let moveCount = resumed?.moveCount ?? 0;
+    let history = resumed?.history ?? [];
+    let gameOver = resumed?.gameOver ?? false;
+    let globalWinner = resumed?.globalWinner ?? null;
+
+    // Saves a full snapshot — call after every state-changing move so a
+    // reconnect (this device or, for guests, the host re-pushing on their
+    // behalf) has the latest position. Cheap: the throttle on the transport
+    // side coalesces rapid calls into at most one network send per 500ms.
+    function saveResumeState() {
+      api.setResumeState({ boards, meta, turn, activeBoard, moveCount, history, gameOver, globalWinner });
+    }
 
     // ── Derived helpers ──
     function getPlayableBoards() {
@@ -285,6 +296,7 @@ export default {
       activeBoard = nextActive;
       moveCount++;
 
+      saveResumeState();
       render();
     }
 
@@ -336,6 +348,7 @@ export default {
       if (!isLocal) {
         api.send('uttt-reset', {});
       }
+      saveResumeState();
       render();
     }
 
@@ -366,10 +379,53 @@ export default {
         gameOver = true;
         render();
       });
+
+      // A guest reconnecting mid-game has no state of its own to resume
+      // from (UTTT is host-authoritative for the canonical board) — so the
+      // host just re-sends the full current state instead of relying on
+      // incremental uttt-move messages the guest missed while disconnected.
+      //
+      // This is pull-based rather than purely push-based: onPlayerRejoinedMidgame
+      // fires on the host as soon as the server reports the reconnect, which can
+      // happen BEFORE the guest's own module has finished its dynamic import and
+      // registered its 'uttt-full-state' listener. A push that arrives before
+      // anyone is listening is silently dropped (fireGameEvent just iterates
+      // whatever listeners currently exist) — there's no buffering or retry.
+      // So the guest also explicitly asks for state once it's actually ready
+      // to receive it; the host answers both triggers with the same handler,
+      // and the second one (post-import) is the one that's actually guaranteed
+      // to land.
+      function sendFullStateTo(playerId) {
+        api.sendTo(playerId, 'uttt-full-state', {
+          boards, meta, turn, activeBoard, moveCount, gameOver, globalWinner,
+        });
+      }
+
+      if (isHost) {
+        api.onPlayerRejoinedMidgame(({ playerId }) => sendFullStateTo(playerId));
+        api.on('uttt-request-state', (_payload, fromPeer) => sendFullStateTo(fromPeer));
+      } else {
+        api.on('uttt-full-state', (s) => {
+          boards = s.boards;
+          meta = s.meta;
+          turn = s.turn;
+          activeBoard = s.activeBoard;
+          moveCount = s.moveCount;
+          gameOver = s.gameOver;
+          globalWinner = s.globalWinner;
+          history = []; // undo history isn't part of the resync — fresh start for undo purposes only
+          render();
+        });
+        // Ask the host to resend current state now that we're definitely
+        // listening. Harmless on a normal fresh game start too (host just
+        // echoes back the empty initial board).
+        api.send('uttt-request-state', {});
+      }
     }
 
     // ── Initial render ──
     render();
+    if (isHost && !isLocal) saveResumeState();
 
     // ── Destroy ──
     return {

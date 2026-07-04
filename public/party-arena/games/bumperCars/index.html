@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BOT BUMPER CARS — RC BATTLE</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Boogaloo&family=Nunito:wght@700;900&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --red: #e8312a;
+    --red-light: #ff6b63;
+    --red-dark: #9e1a15;
+    --blue: #3b8ecf;
+    --blue-light: #6bb8f5;
+    --blue-dark: #1a5c9e;
+    --green: #3bca5a;
+    --yellow: #f5c842;
+    --orange: #f57c28;
+    --purple: #9b5de5;
+    --bg: #1a1a2e;
+    --arena: #2d2d44;
+    --floor: #252538;
+    --ui-bg: rgba(10,10,20,0.92);
+    --font-game: 'Boogaloo', cursive;
+    --font-ui: 'Nunito', sans-serif;
+  }
+
+  html, body {
+    width: 100%; height: 100%;
+    background: var(--bg);
+    overflow: hidden;
+    font-family: var(--font-ui);
+    color: #fff;
+    user-select: none;
+  }
+
+  #gameContainer {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+
+  canvas {
+    display: block;
+    border-radius: 20px;
+    box-shadow: 0 0 60px rgba(0,0,0,0.8), 0 0 120px rgba(59,142,207,0.15);
+    image-rendering: pixelated;
+  }
+
+  /* ── HUD ── */
+  #hud {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 10px 16px;
+    pointer-events: none;
+    z-index: 10;
+  }
+
+  .hud-card {
+    background: var(--ui-bg);
+    border-radius: 14px;
+    padding: 8px 14px;
+    min-width: 120px;
+    backdrop-filter: blur(8px);
+    border: 2px solid rgba(255,255,255,0.08);
+  }
+
+  .hud-card .player-name {
+    font-family: var(--font-game);
+    font-size: 18px;
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+  }
+
+  .hud-card.red-card { border-color: rgba(232,49,42,0.5); }
+  .hud-card.blue-card { border-color: rgba(59,142,207,0.5); }
+  .hud-card.green-card { border-color: rgba(59,202,90,0.5); }
+  .hud-card.yellow-card { border-color: rgba(245,200,66,0.5); }
+  .hud-card.orange-card { border-color: rgba(245,124,40,0.5); }
+  .hud-card.purple-card { border-color: rgba(155,93,229,0.5); }
+
+  .player-name.red { color: var(--red-light); }
+  .player-name.blue { color: var(--blue-light); }
+  .player-name.green { color: var(--green); }
+  .player-name.yellow { color: var(--yellow); }
+  .player-name.orange { color: var(--orange); }
+  .player-name.purple { color: var(--purple); }
+
+  .hud-stat { font-size: 12px; color: rgba(255,255,255,0.7); line-height: 1.5; }
+  .hud-stat span { color: #fff; font-weight: 700; }
+
+  .alive-pip {
+    display: inline-block;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--green);
+    margin-right: 5px;
+    box-shadow: 0 0 6px var(--green);
+    animation: pulse 1.5s ease-in-out infinite;
+  }
+  .dead-pip { background: #555; box-shadow: none; animation: none; }
+
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+  #aliveCount {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-family: var(--font-game);
+    font-size: 14px;
+    color: rgba(255,255,255,0.5);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    pointer-events: none;
+    z-index: 10;
+    text-align: center;
+  }
+
+  /* ── SCREENS ── */
+  .screen {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    transition: opacity 0.4s;
+  }
+
+  .screen.hidden { opacity: 0; pointer-events: none; }
+
+  #startScreen {
+    background: radial-gradient(ellipse at 50% 30%, #1e3a5f 0%, #0d0d1a 70%);
+  }
+
+  .game-logo {
+    font-family: var(--font-game);
+    font-size: clamp(42px, 8vw, 80px);
+    line-height: 1;
+    text-align: center;
+    margin-bottom: 4px;
+    letter-spacing: 2px;
+    filter: drop-shadow(0 4px 20px rgba(59,142,207,0.4));
+  }
+
+  .game-logo .bot { color: #fff; }
+  .game-logo .bumper { color: var(--red-light); }
+  .game-logo .cars { color: var(--blue-light); }
+
+  .subtitle {
+    font-family: var(--font-ui);
+    font-size: 13px;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.4);
+    margin-bottom: 40px;
+  }
+
+  .start-cars-preview {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 40px;
+    align-items: flex-end;
+  }
+
+  .config-section {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 20px;
+    padding: 28px 36px;
+    margin-bottom: 28px;
+    width: min(500px, 90vw);
+  }
+
+  .config-section h3 {
+    font-family: var(--font-game);
+    font-size: 20px;
+    color: var(--blue-light);
+    margin-bottom: 18px;
+    letter-spacing: 1px;
+  }
+
+  .player-count-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .count-btn {
+    width: 40px; height: 40px;
+    border-radius: 10px;
+    border: 2px solid rgba(255,255,255,0.2);
+    background: rgba(255,255,255,0.08);
+    color: #fff;
+    font-size: 22px;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: var(--font-game);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .count-btn:hover { background: rgba(255,255,255,0.18); border-color: rgba(255,255,255,0.4); }
+
+  #playerCountDisplay {
+    font-family: var(--font-game);
+    font-size: 32px;
+    width: 50px;
+    text-align: center;
+  }
+
+  .players-setup {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 16px;
+  }
+
+  .player-setup-card {
+    background: rgba(255,255,255,0.05);
+    border-radius: 12px;
+    padding: 12px;
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+
+  .player-setup-card label {
+    font-size: 11px;
+    color: rgba(255,255,255,0.5);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    display: block;
+    margin-bottom: 6px;
+  }
+
+  .player-setup-card .color-dot {
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 6px;
+    vertical-align: middle;
+  }
+
+  .controls-hint {
+    font-size: 11px;
+    color: rgba(255,255,255,0.4);
+    margin-top: 6px;
+    line-height: 1.6;
+  }
+
+  .key-chip {
+    display: inline-block;
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 5px;
+    padding: 1px 6px;
+    font-family: monospace;
+    font-size: 10px;
+    color: rgba(255,255,255,0.7);
+  }
+
+  .btn-primary {
+    font-family: var(--font-game);
+    font-size: 24px;
+    letter-spacing: 3px;
+    padding: 16px 56px;
+    border-radius: 16px;
+    border: none;
+    background: linear-gradient(135deg, var(--red) 0%, #c02020 100%);
+    color: #fff;
+    cursor: pointer;
+    box-shadow: 0 8px 30px rgba(232,49,42,0.4);
+    transition: all 0.15s;
+    text-transform: uppercase;
+  }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 12px 40px rgba(232,49,42,0.5); }
+  .btn-primary:active { transform: translateY(0); }
+
+  /* ── EJECTION EFFECT ── */
+  .ejection-label {
+    position: absolute;
+    font-family: var(--font-game);
+    font-size: 32px;
+    pointer-events: none;
+    z-index: 50;
+    text-shadow: 0 2px 10px rgba(0,0,0,0.8);
+    animation: ejectAnim 1.5s ease-out forwards;
+  }
+
+  @keyframes ejectAnim {
+    0% { opacity: 1; transform: translateY(0) scale(1); }
+    50% { opacity: 1; transform: translateY(-60px) scale(1.3); }
+    100% { opacity: 0; transform: translateY(-120px) scale(0.8); }
+  }
+
+  /* ── RESULTS SCREEN ── */
+  #resultsScreen {
+    background: radial-gradient(ellipse at 50% 50%, #1a2a1a 0%, #0d0d1a 70%);
+  }
+
+  .trophy { font-size: 80px; margin-bottom: 10px; animation: trophyBounce 0.6s ease-out; }
+  @keyframes trophyBounce { 0%{transform:scale(0) rotate(-20deg)} 80%{transform:scale(1.15) rotate(3deg)} 100%{transform:scale(1) rotate(0deg)} }
+
+  .winner-label {
+    font-family: var(--font-game);
+    font-size: 16px;
+    letter-spacing: 4px;
+    color: rgba(255,255,255,0.5);
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+
+  .winner-name {
+    font-family: var(--font-game);
+    font-size: clamp(36px, 7vw, 60px);
+    margin-bottom: 6px;
+  }
+
+  .winner-sub {
+    font-size: 13px;
+    color: rgba(255,255,255,0.4);
+    margin-bottom: 36px;
+  }
+
+  .results-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 12px;
+    width: min(700px, 90vw);
+    margin-bottom: 32px;
+  }
+
+  .result-card {
+    background: rgba(255,255,255,0.06);
+    border-radius: 14px;
+    padding: 14px 16px;
+    border: 1px solid rgba(255,255,255,0.1);
+    text-align: center;
+  }
+
+  .result-card .rc-name {
+    font-family: var(--font-game);
+    font-size: 16px;
+    margin-bottom: 8px;
+  }
+
+  .result-stat {
+    font-size: 11px;
+    color: rgba(255,255,255,0.5);
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 3px;
+  }
+  .result-stat span { color: #fff; font-weight: 700; }
+
+  .medal { font-size: 24px; margin-bottom: 6px; }
+
+  /* ── COUNTDOWN ── */
+  #countdown {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%,-50%);
+    font-family: var(--font-game);
+    font-size: 120px;
+    z-index: 80;
+    pointer-events: none;
+    text-shadow: 0 0 60px rgba(255,200,0,0.6);
+    color: #fff;
+    animation: countPop 0.8s ease-out forwards;
+    display: none;
+  }
+  @keyframes countPop {
+    0% { transform: translate(-50%,-50%) scale(2); opacity: 0; }
+    30% { opacity: 1; }
+    80% { transform: translate(-50%,-50%) scale(1); opacity: 1; }
+    100% { transform: translate(-50%,-50%) scale(0.7); opacity: 0; }
+  }
+
+  /* ── KILL FEED ── */
+  #killFeed {
+    position: absolute;
+    bottom: 14px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 20;
+    pointer-events: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .kill-entry {
+    background: rgba(0,0,0,0.7);
+    border-radius: 8px;
+    padding: 5px 14px;
+    font-size: 13px;
+    font-family: var(--font-game);
+    letter-spacing: 1px;
+    animation: killFade 3s ease-out forwards;
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+  @keyframes killFade { 0%{opacity:0;transform:translateY(10px)} 15%{opacity:1;transform:translateY(0)} 75%{opacity:1} 100%{opacity:0} }
+
+  /* ── SPEEDLINES ── */
+  .speed-flash {
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse at center, transparent 40%, rgba(255,255,255,0.03) 100%);
+    pointer-events: none;
+    z-index: 5;
+  }
+</style>
+</head>
+<body>
+<div id="gameContainer">
+  <!-- ARENA CANVAS -->
+  <canvas id="gameCanvas"></canvas>
+  <div class="speed-flash"></div>
+
+  <!-- HUD -->
+  <div id="hud"></div>
+  <div id="aliveCount"></div>
+  <div id="killFeed"></div>
+  <div id="countdown"></div>
+
+  <!-- START SCREEN -->
+  <div class="screen" id="startScreen">
+    <div class="game-logo">
+      <div><span class="bot">BOT</span> <span class="bumper">BUMPER</span></div>
+      <div><span class="cars">CARS</span></div>
+    </div>
+    <div class="subtitle">RC Battle Arena — Last Driver Standing</div>
+
+    <div class="config-section">
+      <h3>⚙ PLAYERS</h3>
+      <div class="player-count-row">
+        <button class="count-btn" id="btnMinus">−</button>
+        <div id="playerCountDisplay">4</div>
+        <button class="count-btn" id="btnPlus">+</button>
+        <span style="font-size:13px;color:rgba(255,255,255,0.4);margin-left:8px;">players (2–6)</span>
+      </div>
+      <div class="players-setup" id="playersSetup"></div>
+    </div>
+
+    <button class="btn-primary" id="btnStart">START BATTLE</button>
+    <div style="margin-top:16px;font-size:11px;color:rgba(255,255,255,0.3);letter-spacing:1px;">RAM THE SIDES — EJECT YOUR ENEMIES</div>
+  </div>
+
+  <!-- RESULTS SCREEN -->
+  <div class="screen hidden" id="resultsScreen">
+    <div class="trophy">🏆</div>
+    <div class="winner-label">Winner</div>
+    <div class="winner-name" id="winnerName"></div>
+    <div class="winner-sub" id="winnerSub"></div>
+    <div class="results-grid" id="resultsGrid"></div>
+    <button class="btn-primary" id="btnPlayAgain">PLAY AGAIN</button>
+  </div>
+</div>
+
+<script src="game.js"></script>
+</body>
+</html>

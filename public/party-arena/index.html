@@ -581,6 +581,57 @@
         font-size: 0.8rem;
         color: var(--text-secondary);
       }
+      .game-topbar-meta {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-shrink: 0;
+      }
+      .game-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 4px 10px;
+        border-radius: var(--radius-pill);
+        font-size: 0.72rem;
+        font-weight: 700;
+        white-space: nowrap;
+        border: 1px solid var(--border-subtle);
+        background: var(--bg-card);
+        color: var(--text-secondary);
+      }
+      .game-pill .pill-label {
+        opacity: 0.65;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        font-size: 0.65rem;
+      }
+      .game-pill-code {
+        cursor: pointer;
+        color: var(--accent);
+        border-color: var(--border-glow);
+        background: var(--accent-soft);
+        font-family: var(--font-display);
+        letter-spacing: 1.5px;
+        user-select: all;
+      }
+      .game-pill-code:hover {
+        background: rgba(251, 191, 36, 0.22);
+      }
+      .game-pill-name {
+        color: var(--info);
+        border-color: rgba(96, 165, 250, 0.25);
+        background: rgba(96, 165, 250, 0.1);
+      }
+      @media (max-width: 480px) {
+        .game-pill .pill-label {
+          display: none;
+        }
+        .game-topbar h3 {
+          font-size: 0.85rem;
+        }
+      }
 
       /* ─── Speaker Toggle ─── */
       .speaker-toggle {
@@ -799,7 +850,15 @@
       <div class="card slide-up" style="animation-delay: 0.1s">
         <div class="card-title"><span class="emoji">🎯</span> Create Room</div>
         <button class="btn btn-primary btn-block" id="btn-create" disabled>
-          Create New Room
+          Create Room (P2P)
+        </button>
+        <button
+          class="btn btn-secondary btn-block"
+          id="btn-create-server"
+          disabled
+          style="margin-top: 8px"
+        >
+          Create Room (Server)
         </button>
         <div style="text-align: center; margin-top: 8px">
           <button
@@ -820,7 +879,7 @@
             type="text"
             id="room-code-input"
             placeholder="Room Code"
-            maxlength="4"
+            maxlength="5"
             style="
               text-transform: uppercase;
               text-align: center;
@@ -885,6 +944,16 @@
     <div id="screen-game" class="screen hidden">
       <div class="game-topbar">
         <h3 id="game-title">Game</h3>
+        <div class="game-topbar-meta">
+          <span
+            class="game-pill game-pill-code"
+            id="game-room-code"
+            title="Click to copy room code"
+          ><span class="pill-label">Room</span> <span id="game-room-code-value">—</span></span>
+          <span class="game-pill game-pill-name" id="game-player-name">
+            <span class="pill-label">You</span> <span id="game-player-name-value">—</span>
+          </span>
+        </div>
         <span class="player-count" id="game-player-count"></span>
         <button
           class="speaker-btn-mini"
@@ -1003,6 +1072,7 @@
         roomCode: "",
         isHost: false,
         isLocal: false,
+        transport: "p2p", // "p2p" | "cloudflare" — set by net.init() based on room code prefix
         players: [], // [{ id, name, isHost }]
         selectedGame: null,
         peer: null,
@@ -1011,6 +1081,7 @@
         listeners: {},
         speakerOn: false,
         selectedVoice: null,
+        _resumeState: null, // host-only game-state snapshot from welcome, consumed once by getResumeState()
       };
 
       // ════════════════════════════════════════════════
@@ -1019,12 +1090,28 @@
       const $ = (s) => document.querySelector(s);
       const $$ = (s) => document.querySelectorAll(s);
 
-      function genCode() {
+      // WORKER_URL is injected at build time by the Vite plugin in vite.config.ts
+      // (replaces __WORKER_URL__ with the value of VITE_WORKER_URL from .env.production).
+      // In local dev (npm run dev), the file is served raw from public/ without
+      // processing, so the token stays as-is — the check below detects that and
+      // falls back to localhost:8787 where `wrangler dev` is running concurrently.
+      const _rawWorkerUrl = '__WORKER_URL__';
+      const WORKER_URL = _rawWorkerUrl.startsWith('__') ? 'http://localhost:8787' : _rawWorkerUrl;
+
+      // Server-backed rooms are prefixed with "S" so a joiner's client
+      // can tell which transport to use just from the room code, with
+      // no extra UI step. P2P rooms keep the plain 4-letter code
+      // (backward compatible with any room created before this existed).
+      function genCode(serverBacked = false) {
         const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ";
         let c = "";
         for (let i = 0; i < 4; i++)
           c += chars[Math.floor(Math.random() * chars.length)];
-        return c;
+        return serverBacked ? "S" + c : c;
+      }
+
+      function isServerCode(code) {
+        return code.length === 5 && code[0] === "S";
       }
 
       function genId() {
@@ -1200,9 +1287,9 @@
       state.speakerOn = localStorage.getItem("pa-speaker") === "1";
 
       // ════════════════════════════════════════════════
-      //  PEER / NETWORK MANAGER
+      //  P2P TRANSPORT (PeerJS) — no server, host-authoritative
       // ════════════════════════════════════════════════
-      const net = {
+      const p2pTransport = {
         init(roomCode, isHost) {
           return new Promise((resolve, reject) => {
             const peerId = isHost
@@ -1224,7 +1311,17 @@
             peer.on("open", (id) => {
               console.log("[Net] Peer open:", id);
               setStatus("connected", isHost ? "Hosting room" : "Connected");
-              resolve(id);
+              // Resolve with the same shape cloudflareTransport uses, so the
+              // net.init() dispatcher gives callers one consistent contract
+              // regardless of transport. P2P has no server-side phase
+              // memory, so isHost/roomPhase just reflect what the caller
+              // already told us (createRoom/join already know this).
+              resolve({
+                playerId: id,
+                isHost,
+                roomPhase: "lobby",
+                selectedGame: null,
+              });
             });
 
             peer.on("error", (err) => {
@@ -1245,7 +1342,7 @@
             );
 
             if (isHost) {
-              peer.on("connection", (conn) => net.handleConnection(conn));
+              peer.on("connection", (conn) => p2pTransport.handleConnection(conn));
             }
           });
         },
@@ -1259,7 +1356,7 @@
 
             conn.on("open", () => {
               state.connections[conn.peer] = conn;
-              net.setupConn(conn);
+              p2pTransport.setupConn(conn);
               resolve(conn);
             });
 
@@ -1272,7 +1369,7 @@
         handleConnection(conn) {
           conn.on("open", () => {
             state.connections[conn.peer] = conn;
-            net.setupConn(conn);
+            p2pTransport.setupConn(conn);
 
             // Add player
             const player = {
@@ -1291,7 +1388,7 @@
             });
 
             // Notify others
-            net.broadcast(
+            p2pTransport.broadcast(
               {
                 type: "player-joined",
                 player,
@@ -1302,12 +1399,12 @@
         },
 
         setupConn(conn) {
-          conn.on("data", (data) => net.onMessage(data, conn.peer));
+          conn.on("data", (data) => p2pTransport.onMessage(data, conn.peer));
           conn.on("close", () => {
             delete state.connections[conn.peer];
             state.players = state.players.filter((p) => p.id !== conn.peer);
             renderPlayerList();
-            net.broadcast({ type: "player-left", playerId: conn.peer });
+            p2pTransport.broadcast({ type: "player-left", playerId: conn.peer });
             fireGameEvent("player-left", { playerId: conn.peer });
           });
         },
@@ -1339,7 +1436,7 @@
             case "player-kicked":
               // Am I the one being kicked?
               if (data.playerId === state.myId) {
-                net.destroy();
+                p2pTransport.destroy();
                 state.players = [];
                 state.selectedGame = null;
                 state.currentGame = null;
@@ -1381,7 +1478,7 @@
 
           // Host relays to everyone else
           if (state.isHost && data.type !== "room-sync") {
-            net.broadcast(data, fromPeer);
+            p2pTransport.broadcast(data, fromPeer);
           }
         },
 
@@ -1400,11 +1497,11 @@
         send(data) {
           if (state.isLocal) {
             // Local mode: simulate receiving own message
-            setTimeout(() => net.onMessage(data, state.myId), 10);
+            setTimeout(() => p2pTransport.onMessage(data, state.myId), 10);
             return;
           }
           if (state.isHost) {
-            net.broadcast(data);
+            p2pTransport.broadcast(data);
           } else {
             // Send to host
             const hostConn = Object.values(state.connections)[0];
@@ -1417,7 +1514,7 @@
 
           // Notify everyone (including the kicked player) before closing
           const kickMsg = { type: "player-kicked", playerId };
-          net.broadcast(kickMsg);
+          p2pTransport.broadcast(kickMsg);
 
           // Close connection to kicked player
           const conn = state.connections[playerId];
@@ -1453,6 +1550,367 @@
             state.peer.destroy();
             state.peer = null;
           }
+        },
+      };
+
+      // ════════════════════════════════════════════════
+      //  CLOUDFLARE TRANSPORT — WebSocket to the Worker/Durable Object.
+      //  Mirrors the p2pTransport method surface so the `net` dispatcher
+      //  below can route to either transport without callers caring.
+      // ════════════════════════════════════════════════
+      const cloudflareTransport = {
+        ws: null,
+
+        init(roomCode, isHost) {
+          return new Promise((resolve, reject) => {
+            if (!WORKER_URL) {
+              reject(new Error("WORKER_URL is not configured"));
+              return;
+            }
+
+            // Strip the "S" prefix for the actual DO room key.
+            const bareCode = roomCode.startsWith("S")
+              ? roomCode.slice(1)
+              : roomCode;
+
+            // Persist a playerId per (bareCode) so a later reconnect in
+            // this browser can re-attach — full state restore on the
+            // server side is a follow-up, but the client already keeps
+            // its half of the handshake ready.
+            const storageKey = `pa-playerid-${bareCode}`;
+            let playerId = localStorage.getItem(storageKey);
+            if (!playerId) {
+              playerId = genId();
+              localStorage.setItem(storageKey, playerId);
+            }
+            state.myId = playerId;
+
+            const wsUrl = WORKER_URL.replace(/^http/, "ws") +
+              `/room/${bareCode}/ws?playerId=${playerId}`;
+            const ws = new WebSocket(wsUrl);
+            cloudflareTransport.ws = ws;
+            cloudflareTransport._roomCode = bareCode;
+
+            ws.addEventListener("open", () => {
+              setStatus("connecting", "Negotiating room...");
+            });
+
+            ws.addEventListener("message", (event) => {
+              let msg;
+              try {
+                msg = JSON.parse(event.data);
+              } catch {
+                return;
+              }
+              cloudflareTransport.handleServerMessage(msg, isHost, resolve, reject);
+            });
+
+            ws.addEventListener("close", () => {
+              setStatus("disconnected", "Disconnected from server");
+            });
+
+            ws.addEventListener("error", (err) => {
+              console.error("[CloudflareTransport] WS error:", err);
+              setStatus("disconnected", "Connection error");
+              reject(err);
+            });
+
+            // If host, also tell the room which mode to run in.
+            // (Currently always "relay" — authoritative mode is a later step.)
+            if (isHost) {
+              fetch(`${WORKER_URL}/room/${bareCode}/init`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ mode: "relay" }),
+              }).catch((e) =>
+                console.warn("[CloudflareTransport] init call failed:", e),
+              );
+            }
+          });
+        },
+
+        handleServerMessage(msg, isHost, resolve, reject) {
+          switch (msg.type) {
+            case "welcome":
+              // Server is authoritative on host identity and room phase —
+              // trust it over whatever this client assumed when it called
+              // net.init() (important specifically for the reconnecting-host
+              // case: the client went through the "join" code path, which
+              // defaults isHost to false, but the server remembers the
+              // original host's playerId across reconnects).
+              state.isHost = !!msg.isHost;
+              cloudflareTransport._roomPhase = msg.roomPhase || "lobby";
+              if (msg.selectedGame) state.selectedGame = msg.selectedGame;
+              // Host-only game-state snapshot (see api.setResumeState/
+              // getResumeState) — stashed for createGameAPI() to hand back
+              // to the game module when it calls getResumeState() at startup.
+              state._resumeState = msg.resumeState || null;
+
+              setStatus("connected", isHost ? "Hosting room" : "Connected");
+              resolve({
+                playerId: state.myId,
+                isHost: state.isHost,
+                roomPhase: cloudflareTransport._roomPhase,
+                selectedGame: msg.selectedGame || null,
+              });
+              break;
+
+            case "peer-joined":
+            case "peer-reconnected": {
+              if (msg.playerId === state.myId) break;
+              const exists = state.players.find((p) => p.id === msg.playerId);
+              if (!exists) {
+                state.players.push({
+                  id: msg.playerId,
+                  name: "Player",
+                  isHost: false,
+                });
+                renderPlayerList();
+              }
+              // Host re-sends room-sync so the (re)joining peer gets full state.
+              if (state.isHost) {
+                cloudflareTransport.sendTo(msg.playerId, {
+                  type: "room-sync",
+                  players: state.players,
+                  selectedGame: state.selectedGame,
+                });
+                // Mid-game reconnect: let the active game module know it
+                // should re-push its current view to this specific player.
+                // Uniform across all games — see api.onPlayerRejoinedMidgame.
+                if (msg.type === "peer-reconnected" && cloudflareTransport._roomPhase === "in-game") {
+                  fireGameEvent("player-rejoined-midgame", { playerId: msg.playerId });
+                }
+              } else if (msg.type === "peer-reconnected") {
+                // The peer that just reconnected might be the host (e.g. host
+                // dropped mid-game and rejoined). The DO doesn't tell us that
+                // directly here, and the host's own room-sync above only
+                // covers cases where THIS client already knew it was host.
+                // So: every non-host client re-announces itself whenever
+                // anyone reconnects, cheaply rebuilding the host's player
+                // list without needing the DO to broadcast names it doesn't
+                // track. Harmless no-op if the reconnecting peer wasn't host.
+                cloudflareTransport.broadcast({
+                  type: "player-joined",
+                  player: { id: state.myId, name: state.myName, isHost: state.isHost },
+                });
+              }
+              break;
+            }
+
+            case "peer-disconnected":
+              // Kept intentionally soft for now: mark as disconnected rather
+              // than removing, so reconnect (follow-up work) has something
+              // to re-attach to. UI treatment of this is a follow-up too.
+              fireGameEvent("player-left", { playerId: msg.playerId });
+              break;
+
+            case "room-closed":
+              setStatus("disconnected", "Room closed (inactivity)");
+              break;
+
+            case "signal":
+              // Reserved for future WebRTC-over-Cloudflare-relay use; not
+              // used by the current room-sync / game-action protocol.
+              break;
+
+            case "message":
+              cloudflareTransport.onMessage(msg.payload, msg.from);
+              break;
+
+            default:
+              break;
+          }
+        },
+
+        onMessage(data, fromPeer) {
+          // Same application-level protocol as p2pTransport (room-sync,
+          // player-joined, game-action, etc.) but routed through this
+          // transport's own broadcast/destroy, not p2pTransport's.
+          switch (data.type) {
+            case "room-sync":
+              state.players = data.players;
+              if (data.selectedGame) state.selectedGame = data.selectedGame;
+              renderPlayerList();
+              renderGameGrid();
+              break;
+
+            case "player-joined": {
+              const idx = state.players.findIndex((p) => p.id === data.player.id);
+              if (idx === -1) {
+                state.players.push(data.player);
+              } else {
+                // Upsert rather than ignore — this is also how a reconnecting
+                // host's re-announce gets its corrected isHost:true picked up
+                // by clients that still have a stale pre-disconnect entry.
+                state.players[idx] = { ...state.players[idx], ...data.player };
+              }
+              renderPlayerList();
+              break;
+            }
+
+            case "player-left":
+              state.players = state.players.filter(
+                (p) => p.id !== data.playerId,
+              );
+              renderPlayerList();
+              fireGameEvent("player-left", { playerId: data.playerId });
+              break;
+
+            case "player-kicked":
+              if (data.playerId === state.myId) {
+                cloudflareTransport.destroy();
+                state.players = [];
+                state.selectedGame = null;
+                state.currentGame = null;
+                clearGameListeners();
+                setStatus("disconnected", "You were removed from the room");
+                showScreen("screen-home");
+                showKickedBanner();
+              } else {
+                state.players = state.players.filter(
+                  (p) => p.id !== data.playerId,
+                );
+                renderPlayerList();
+                fireGameEvent("player-left", { playerId: data.playerId });
+              }
+              break;
+
+            case "game-selected":
+              state.selectedGame = data.gameId;
+              renderGameGrid();
+              break;
+
+            case "game-start":
+              state.selectedGame = data.gameId;
+              cloudflareTransport._roomPhase = "in-game";
+              loadAndStartGame(data.gameId);
+              break;
+
+            case "game-end":
+              cloudflareTransport._roomPhase = "lobby";
+              backToLobby();
+              break;
+
+            case "game-action":
+              fireGameEvent(data.action, data.payload, fromPeer);
+              break;
+
+            default:
+              fireGameEvent(data.type, data, fromPeer);
+          }
+
+          // Host relays to everyone else (the DO already broadcasts to all
+          // sockets, so this would double-send on the wire — skip it here.
+          // Unlike p2pTransport, the relay step is handled server-side.)
+        },
+
+        broadcast(data) {
+          if (cloudflareTransport.ws?.readyState === WebSocket.OPEN) {
+            cloudflareTransport.ws.send(
+              JSON.stringify({ type: "message", payload: data }),
+            );
+          }
+        },
+
+        send(data) {
+          // The DO relay broadcasts to the whole room; the room-level
+          // onMessage handler (reused from p2pTransport) replicates the
+          // same host-relay logic, so guests effectively "send to host"
+          // by broadcasting and letting onMessage's host-only branches apply.
+          cloudflareTransport.broadcast(data);
+        },
+
+        sendTo(playerId, data) {
+          // Not yet supported as a true unicast by the relay-mode DO without
+          // a dedicated message type; falls back to broadcast for now.
+          cloudflareTransport.broadcast(data);
+        },
+
+        kickPlayer(playerId) {
+          if (!state.isHost) return;
+          cloudflareTransport.broadcast({ type: "player-kicked", playerId });
+          state.players = state.players.filter((p) => p.id !== playerId);
+          renderPlayerList();
+          fireGameEvent("player-left", { playerId });
+        },
+
+        // Host-only: persist a game-state snapshot to the DO so a future
+        // reconnect of THIS SAME host can restore it (see room.js
+        // lastResumeState / welcome.resumeState). Throttled to one send
+        // per 500ms — games may call this on every move/tick, and there's
+        // no need to hit the wire that often for something only read back
+        // on reconnect.
+        _resumeStateThrottle: null,
+        _pendingResumeState: undefined,
+        setResumeState(snapshot) {
+          cloudflareTransport._pendingResumeState = snapshot;
+          if (cloudflareTransport._resumeStateThrottle) return;
+          cloudflareTransport._resumeStateThrottle = setTimeout(() => {
+            cloudflareTransport._resumeStateThrottle = null;
+            if (cloudflareTransport.ws?.readyState === WebSocket.OPEN) {
+              cloudflareTransport.ws.send(
+                JSON.stringify({
+                  type: "message",
+                  payload: { type: "resume-state", snapshot: cloudflareTransport._pendingResumeState },
+                }),
+              );
+            }
+          }, 500);
+        },
+
+        destroy() {
+          if (cloudflareTransport.ws) {
+            cloudflareTransport.ws.close();
+            cloudflareTransport.ws = null;
+          }
+        },
+      };
+
+      // ════════════════════════════════════════════════
+      //  NET DISPATCHER — routes to whichever transport is active.
+      //  Everything else in this file (createGameAPI, button handlers,
+      //  etc.) calls `net.xxx` exactly as before; only this object needs
+      //  to know that two transports exist.
+      // ════════════════════════════════════════════════
+      const net = {
+        init(roomCode, isHost) {
+          state.transport = isServerCode(roomCode) ? "cloudflare" : "p2p";
+          const impl = state.transport === "cloudflare" ? cloudflareTransport : p2pTransport;
+          return impl.init(roomCode, isHost);
+        },
+        connectTo(hostCode) {
+          const impl = state.transport === "cloudflare" ? cloudflareTransport : p2pTransport;
+          // cloudflareTransport doesn't need a separate connect step —
+          // the WebSocket opened in init() already joins the room.
+          if (state.transport === "cloudflare") return Promise.resolve();
+          return impl.connectTo(hostCode);
+        },
+        send(data) {
+          const impl = state.transport === "cloudflare" ? cloudflareTransport : p2pTransport;
+          impl.send(data);
+        },
+        broadcast(data, excludePeer) {
+          const impl = state.transport === "cloudflare" ? cloudflareTransport : p2pTransport;
+          impl.broadcast(data, excludePeer);
+        },
+        sendTo(peerId, data) {
+          const impl = state.transport === "cloudflare" ? cloudflareTransport : p2pTransport;
+          impl.sendTo(peerId, data);
+        },
+        kickPlayer(playerId) {
+          const impl = state.transport === "cloudflare" ? cloudflareTransport : p2pTransport;
+          impl.kickPlayer(playerId);
+        },
+        setResumeState(snapshot) {
+          // Only cloudflareTransport has server-side memory to persist this
+          // into — P2P's "server" is the host's own browser tab, which is
+          // exactly what disconnects when the host reconnect problem
+          // happens, so there's nowhere durable to stash it. No-op there.
+          if (state.transport === "cloudflare") cloudflareTransport.setResumeState(snapshot);
+        },
+        destroy() {
+          const impl = state.transport === "cloudflare" ? cloudflareTransport : p2pTransport;
+          impl.destroy();
         },
       };
 
@@ -1535,7 +1993,44 @@
 
           endGame() {
             net.send({ type: "game-end" });
+            if (state.transport === "cloudflare") cloudflareTransport._roomPhase = "lobby";
             backToLobby();
+          },
+
+          // ── Game-state resume (host-only) ──────────────────────────
+          // Call setResumeState(snapshot) any time your authoritative state
+          // changes (same spot you already broadcast/render from). Pass a
+          // plain JSON-serializable object — whatever your game needs to
+          // fully reconstruct itself. Only meaningful for the host; guests
+          // never hold authoritative state in this codebase (the host
+          // re-pushes its current view to them on reconnect instead — see
+          // onGameEvent('player-rejoined-midgame') below).
+          //
+          // Call getResumeState() once at the top of create(): if it
+          // returns non-null, you're the host resuming after a reconnect —
+          // restore your local state from the snapshot instead of
+          // initializing fresh. Returns null for guests, local mode, P2P
+          // (not yet wired for P2P — see note on net.setResumeState), and
+          // any normal fresh game start.
+          setResumeState(snapshot) {
+            if (!state.isHost || state.isLocal) return;
+            net.setResumeState(snapshot);
+          },
+          getResumeState() {
+            const snap = state._resumeState;
+            state._resumeState = null; // consume once — avoid re-applying on a later in-game reconnect of a guest, etc.
+            return snap;
+          },
+
+          // Fires when ANY player (host or guest) reconnects mid-game.
+          // Host-side game modules should listen for this and re-send
+          // their current view to that player (most games already have a
+          // "push current state to everyone" function from their normal
+          // broadcast path — just call it here too). This is what makes
+          // guest-reconnect work uniformly: guests don't need their own
+          // resume logic since they're never authoritative.
+          onPlayerRejoinedMidgame(cb) {
+            onGameEvent("player-rejoined-midgame", cb);
           },
 
           // Host: kick a player from the room
@@ -1599,6 +2094,8 @@
         showScreen("screen-game");
         $("#game-title").textContent = `${reg.emoji} ${reg.name}`;
         $("#game-player-count").textContent = `${state.players.length} players`;
+        $("#game-room-code-value").textContent = state.roomCode || "—";
+        $("#game-player-name-value").textContent = state.myName || "—";
 
         const container = $("#game-container");
         container.innerHTML = `
@@ -1794,28 +2291,29 @@
 
       function updateBtnStates() {
         const hasName = nameInput.value.trim().length > 0;
-        const hasCode = codeInput.value.trim().length === 4;
+        const code = codeInput.value.trim();
+        const hasCode = code.length === 4 || (code.length === 5 && code[0] === "S");
         $("#btn-create").disabled = !hasName;
+        $("#btn-create-server").disabled = !hasName;
         $("#btn-local").disabled = !hasName;
         $("#btn-join").disabled = !hasName || !hasCode;
       }
 
-      // CREATE ROOM
-      $("#btn-create").addEventListener("click", async () => {
+      async function createRoom(serverBacked) {
         const name = nameInput.value.trim();
         if (!name) return;
 
         state.myName = name;
         state.isHost = true;
         state.isLocal = false;
-        state.roomCode = genCode();
+        state.roomCode = genCode(serverBacked);
         localStorage.setItem("pa-name", name);
 
         setStatus("connecting", "Creating room...");
 
         try {
-          await net.init(state.roomCode, true);
-          state.myId = state.peer.id;
+          const result = await net.init(state.roomCode, true);
+          state.myId = result.playerId;
           state.players = [{ id: state.myId, name, isHost: true }];
 
           $("#lobby-room-code").textContent = state.roomCode;
@@ -1823,11 +2321,11 @@
           renderGameGrid();
           showScreen("screen-lobby");
         } catch (e) {
-          // Try a different code
-          state.roomCode = genCode();
+          // Try a different code (only meaningful for P2P's id-collision case)
+          state.roomCode = genCode(serverBacked);
           try {
-            await net.init(state.roomCode, true);
-            state.myId = state.peer.id;
+            const result = await net.init(state.roomCode, true);
+            state.myId = result.playerId;
             state.players = [{ id: state.myId, name, isHost: true }];
             $("#lobby-room-code").textContent = state.roomCode;
             renderPlayerList();
@@ -1837,7 +2335,13 @@
             setStatus("disconnected", "Failed to create room");
           }
         }
-      });
+      }
+
+      // CREATE ROOM (P2P)
+      $("#btn-create").addEventListener("click", () => createRoom(false));
+
+      // CREATE ROOM (Server / Cloudflare)
+      $("#btn-create-server").addEventListener("click", () => createRoom(true));
 
       // LOCAL MODE
       $("#btn-local").addEventListener("click", () => {
@@ -1870,10 +2374,11 @@
       $("#btn-join").addEventListener("click", async () => {
         const name = nameInput.value.trim();
         const code = codeInput.value.trim().toUpperCase();
-        if (!name || code.length !== 4) return;
+        const validLength = code.length === 4 || (code.length === 5 && code[0] === "S");
+        if (!name || !validLength) return;
 
         state.myName = name;
-        state.isHost = false;
+        state.isHost = false; // provisional — corrected below from the server's answer
         state.isLocal = false;
         state.roomCode = code;
         localStorage.setItem("pa-name", name);
@@ -1881,20 +2386,35 @@
         setStatus("connecting", "Joining room...");
 
         try {
-          await net.init(code, false);
+          const result = await net.init(code, false);
           await net.connectTo(code);
-          state.myId = state.peer.id;
+          state.myId = result.playerId;
+          // Cloudflare rooms remember the original host's playerId across
+          // reconnects (see room.js hostPlayerId) — if this player created
+          // the room earlier, the server tells us isHost: true here even
+          // though we went through the "join" flow, not "create". P2P rooms
+          // have no such memory, so result.isHost just echoes what we passed in.
+          state.isHost = result.isHost;
+          if (result.selectedGame) state.selectedGame = result.selectedGame;
 
           // We'll get room-sync from host with player list
           if (!state.players.find((p) => p.id === state.myId)) {
-            state.players.push({ id: state.myId, name, isHost: false });
+            state.players.push({ id: state.myId, name, isHost: state.isHost });
           }
 
           $("#lobby-room-code").textContent = code;
           renderPlayerList();
           renderGameGrid();
-          showScreen("screen-lobby");
           setStatus("connected", "Connected to room");
+
+          // Resume mid-game instead of always dropping into the lobby —
+          // this is the fix for: host disconnects mid-game, rejoins, and
+          // used to get stuck in the lobby with no way back into the game.
+          if (result.roomPhase === "in-game" && result.selectedGame) {
+            loadAndStartGame(result.selectedGame);
+          } else {
+            showScreen("screen-lobby");
+          }
         } catch (e) {
           setStatus("disconnected", "Could not join room");
         }
@@ -1910,10 +2430,21 @@
           .catch(() => {});
       });
 
+      // COPY ROOM CODE (in-game pill)
+      $("#game-room-code").addEventListener("click", () => {
+        const code = state.roomCode;
+        if (!code || code === "LOCAL") return;
+        navigator.clipboard
+          ?.writeText(code)
+          .then(() => toast("Code copied!"))
+          .catch(() => {});
+      });
+
       // START GAME (host only)
       $("#btn-start-game").addEventListener("click", () => {
         if (!state.isHost || !state.selectedGame) return;
         net.send({ type: "game-start", gameId: state.selectedGame });
+        if (state.transport === "cloudflare") cloudflareTransport._roomPhase = "in-game";
         loadAndStartGame(state.selectedGame);
       });
 
@@ -1934,6 +2465,7 @@
         tts.stop();
         backToLobby();
         net.send({ type: "game-end" });
+        if (state.transport === "cloudflare") cloudflareTransport._roomPhase = "lobby";
       });
 
       // SPEAKER TOGGLE (lobby)
