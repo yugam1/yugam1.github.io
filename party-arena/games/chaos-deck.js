@@ -477,7 +477,12 @@ export default {
     const v = api.cssVars;
 
     // ── Game State ──
-    let gs = {
+    // Resume support: if we're the host reconnecting mid-game, this gives
+    // back our last snapshot. Only meaningful once gs.phase is "playing" or
+    // "done" — for "setup" there's nothing worth resuming (no harm either
+    // way, since setup has no persistent choices yet).
+    const resumedGs = api.getResumeState();
+    let gs = resumedGs ?? {
       phase: "setup",
       deck: [],
       currentPlayer: 0,
@@ -492,6 +497,13 @@ export default {
       bodyguard: null, // { for: playerId, guard: playerId, roundsLeft }
       king: null, // { playerId, roundsLeft }
     };
+
+    // Single chokepoint: call after any gs mutation that should survive a
+    // host reconnect. Throttled on the transport side, so calling this
+    // liberally (every draw/turn) is fine.
+    function saveResumeState() {
+      if (isHost && !isLocal) api.setResumeState(gs);
+    }
 
     // ── Styles ──
     const styles = document.createElement("style");
@@ -801,6 +813,7 @@ export default {
         gs.phase = "playing";
 
         api.send("cd-start", { deck: gs.deck });
+        saveResumeState();
         renderPlay();
       });
     }
@@ -975,6 +988,7 @@ export default {
         cardIndex: gs.cardsDrawn - 1,
         currentPlayer: gs.currentPlayer,
       });
+      saveResumeState();
 
       renderPlay();
 
@@ -1011,6 +1025,7 @@ export default {
         roundNumber: gs.roundNumber,
         activeRules: gs.activeRules,
       });
+      saveResumeState();
 
       if (gs.cardsDrawn >= gs.deck.length) {
         renderDone();
@@ -1088,9 +1103,45 @@ export default {
       else renderPlay();
     });
 
+    // A guest reconnecting mid-game missed whichever of cd-start/cd-draw/
+    // cd-next-turn happened while it was gone — rather than replaying that
+    // history, the host just ships the entire gs object once.
+    api.on("cd-full-sync", (data) => {
+      const d = data.payload || data;
+      gs = d.gs;
+      if (gs.phase === "done") renderDone();
+      else if (gs.phase === "playing") renderPlay();
+      else renderSetup();
+    });
+
+    if (isHost && !isLocal) {
+      api.onPlayerRejoinedMidgame(({ playerId }) => {
+        if (gs.phase === "setup") return; // nothing to resync yet
+        api.sendTo(playerId, "cd-full-sync", { gs });
+      });
+      // onPlayerRejoinedMidgame can fire before the rejoining guest's own
+      // dynamic import finishes and registers the "cd-full-sync" listener
+      // above — a push that arrives too early is silently dropped (no
+      // buffering/retry). Guests also pull explicitly once ready, closing
+      // that race; same setup guard applies.
+      api.on("cd-request-state", (_payload, fromPeer) => {
+        if (gs.phase === "setup") return;
+        api.sendTo(fromPeer, "cd-full-sync", { gs });
+      });
+    } else if (!isLocal) {
+      api.send("cd-request-state", {});
+    }
+
     // ── Init ──
     if (isHost || isLocal) {
-      renderSetup();
+      if (resumedGs && (resumedGs.phase === "playing" || resumedGs.phase === "done")) {
+        // Reconnecting host, mid-game or on the results screen — resume
+        // instead of restarting setup.
+        if (resumedGs.phase === "done") renderDone();
+        else renderPlay();
+      } else {
+        renderSetup();
+      }
     } else {
       wrap.innerHTML = `
         <div class="cd-done" style="padding-top:60px;">

@@ -141,23 +141,53 @@ export default {
       n = players.length;
     const cfg = QC[n] || QC[5];
 
-    let gs = {
-      phase: "setup",
-      roles: {},
-      roleInfo: {},
-      leader: 0,
-      qn: 0,
-      qr: [],
-      team: [],
-      votes: {},
-      qc: {},
-      rej: 0,
-      gw: 0,
-      ew: 0,
-      er: ["merlin", "assassin"],
-      aTarget: null,
-      nightAcks: new Set(),
-    };
+    // Resume support: only restores into the clean, named phases
+    // (team-build / vote / quest / kill / over) — see saveResumeState()
+    // for why night-phase and mid-discussion-gate moments are deliberately
+    // never snapshotted. If resumedGs is non-null, the host reconnected
+    // while in one of those clean phases.
+    const resumedGs = api.getResumeState();
+    let gs = resumedGs
+      ? {
+          ...resumedGs,
+          votedSet: new Set(resumedGs.votedSet || []),
+          qcSet: new Set(resumedGs.qcSet || []),
+          nightAcks: new Set(), // night phase is never resumed into; always start empty
+        }
+      : {
+          phase: "setup",
+          roles: {},
+          roleInfo: {},
+          leader: 0,
+          qn: 0,
+          qr: [],
+          team: [],
+          votes: {},
+          qc: {},
+          rej: 0,
+          gw: 0,
+          ew: 0,
+          er: ["merlin", "assassin"],
+          aTarget: null,
+          nightAcks: new Set(),
+        };
+
+    // Only call this from the clean phase-entry points listed above —
+    // NOT from inside night phase or while a disc() gate is showing.
+    // Those have no reliable re-entry point (night's step index lives in a
+    // closure, not on gs; disc()'s onNext is a callback, not data) — saving
+    // mid-way through either would resume into a half-built state, which is
+    // worse than not resuming at all. A host reconnecting during those
+    // moments falls back to the last clean phase saved before it.
+    function saveResumeState() {
+      if (!isHost) return;
+      api.setResumeState({
+        ...gs,
+        votedSet: [...(gs.votedSet || [])],
+        qcSet: [...(gs.qcSet || [])],
+        nightAcks: undefined, // never part of the snapshot — see above
+      });
+    }
 
     const sty = document.createElement("style");
     sty.textContent = `
@@ -779,6 +809,7 @@ export default {
     function renderTeamBuild() {
       gs.phase = "team-build";
       gs.team = [];
+      saveResumeState();
       const ldr = players[gs.leader % n];
       const sz = cfg.q[gs.qn];
       const amLeader = ldr.id === me.id;
@@ -849,6 +880,7 @@ export default {
       gs.phase = "vote";
       gs.votes = {};
       gs.votedSet = new Set();
+      saveResumeState();
       const names = gs.team.map((id) => pN(id)).join(", ");
       renderVoteUI(false);
     }
@@ -963,6 +995,7 @@ export default {
       gs.phase = "quest";
       gs.qc = {};
       gs.qcSet = new Set();
+      saveResumeState();
       const onT = gs.team.includes(me.id);
       renderQuestUI(onT, false);
     }
@@ -1107,6 +1140,7 @@ export default {
     }
     function renderKill() {
       gs.phase = "kill";
+      saveResumeState();
       const mId = Object.entries(gs.roles).find(([, r]) => r === "merlin")?.[0];
       const goodP = players.filter((p) => R[gs.roles[p.id]]?.team === "good");
       vib(HP.kill);
@@ -1143,6 +1177,9 @@ export default {
     // ════════════ GAME OVER ════════════
     function renderGO(winner, reason) {
       gs.phase = "over";
+      gs.winner = winner;
+      gs.reason = reason;
+      saveResumeState();
       const isG = winner === "good";
       vib(HP.end);
       api.speak(reason);
@@ -1161,6 +1198,7 @@ export default {
         <button class="av-b av-bg av-bl" id="av-exit">Back to Lobby</button></div>`;
       W.querySelector("#av-again")?.addEventListener("click", () => {
         gs.phase = "setup";
+        if (isHost) api.setResumeState(null);
         renderSetup();
       });
       W.querySelector("#av-exit")?.addEventListener("click", () =>
@@ -1316,9 +1354,87 @@ export default {
       renderGO(p.winner, p.reason);
     });
 
+    // A guest reconnecting mid-game has missed whatever av-* messages
+    // happened while it was gone. Rather than replaying that history, the
+    // host ships everything the guest's local gs needs in one shot —
+    // including their own roleInfo (safe to resend: it was always meant
+    // for this specific player, originally delivered via av-your-role).
+    // Skipped during night/setup for the same reason saveResumeState()
+    // skips them — there's no clean state to hand back yet.
+    api.on("av-full-sync", (d) => {
+      const p = d.payload || d;
+      gs = {
+        ...p.gs,
+        roleInfo: { ...gs.roleInfo, [me.id]: p.myRoleInfo || gs.roleInfo[me.id] },
+        votedSet: new Set(p.gs.votedSet || []),
+        qcSet: new Set(p.gs.qcSet || []),
+        nightAcks: new Set(),
+      };
+      const phaseRenderers = {
+        "team-build": renderTeamBuild,
+        vote: () => renderVoteUI(gs.votedSet?.has(me.id) ?? false),
+        quest: () => renderQuestUI(gs.team.includes(me.id), gs.qcSet?.has(me.id) ?? false),
+        kill: () => W.innerHTML = `<div class="av-s" style="text-align:center;padding-top:60px"><p style="color:${v.textSec}">Waiting for the assassin's choice...</p></div>`,
+        over: () => renderGO(gs.winner, gs.reason),
+      };
+      (phaseRenderers[gs.phase] || (() => {}))();
+    });
+
+    if (isHost) {
+      api.onPlayerRejoinedMidgame(({ playerId }) => {
+        if (gs.phase === "setup" || gs.phase === "night") return; // nothing safe to resync yet
+        api.sendTo(playerId, "av-full-sync", {
+          gs: {
+            ...gs,
+            votedSet: [...(gs.votedSet || [])],
+            qcSet: [...(gs.qcSet || [])],
+            nightAcks: undefined,
+          },
+          myRoleInfo: gs.roleInfo[playerId],
+        });
+      });
+      // onPlayerRejoinedMidgame fires as soon as the server reports the
+      // reconnect, which can race the rejoining guest's own dynamic import —
+      // if "av-full-sync" arrives before the guest's listener above is
+      // registered, fireGameEvent finds no listener and the message is
+      // silently dropped (no retry). So guests also explicitly ask for a
+      // resync once they're definitely ready to receive it; same guard
+      // applies (no resync mid setup/night), so the host just no-ops if asked
+      // too early.
+      api.on("av-request-sync", (_payload, fromPeer) => {
+        if (gs.phase === "setup" || gs.phase === "night") return;
+        api.sendTo(fromPeer, "av-full-sync", {
+          gs: {
+            ...gs,
+            votedSet: [...(gs.votedSet || [])],
+            qcSet: [...(gs.qcSet || [])],
+            nightAcks: undefined,
+          },
+          myRoleInfo: gs.roleInfo[fromPeer],
+        });
+      });
+    } else {
+      api.send("av-request-sync", {});
+    }
+
     // ════════════ INIT ════════════
-    if (isHost) renderSetup();
-    else
+    if (isHost) {
+      if (resumedGs) {
+        // Reconnecting host — resumedGs.phase is guaranteed to be one of
+        // the clean phases saveResumeState() snapshots from (never "setup",
+        // "night", or mid-disc()), so this switch is exhaustive in practice.
+        const phaseRenderers = {
+          "team-build": renderTeamBuild,
+          vote: () => renderVoteUI(gs.votedSet?.has(me.id) ?? false),
+          quest: () => renderQuestUI(gs.team.includes(me.id), gs.qcSet?.has(me.id) ?? false),
+          kill: renderKill,
+          over: () => renderGO(resumedGs.winner, resumedGs.reason),
+        };
+        (phaseRenderers[resumedGs.phase] || renderSetup)();
+      } else {
+        renderSetup();
+      }
+    } else
       W.innerHTML = `<div class="av-s" style="text-align:center;padding-top:60px"><div style="font-size:3.5rem;margin-bottom:16px">🏰</div><h3 style="font-family:${v.fontDisplay};font-size:1.3rem">Avalon</h3><p style="color:${v.textSec};margin-top:8px">Waiting for host...</p><div class="av-w" style="margin-top:20px"><div class="av-sp"></div></div></div>`;
 
     return {

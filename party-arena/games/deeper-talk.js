@@ -106,18 +106,34 @@ export default {
     const v = api.cssVars;
 
     // ── Game State ──
-    let gameState = {
-      phase: "setup", // setup | playing | reveal
-      categories: [],
-      questions: [], // shuffled question pool
-      currentQ: 0,
-      currentSpeaker: 0,
-      reactions: {}, // { peerId: emoji }
-      timer: 0,
-      timerInterval: null,
-      timerDuration: 60,
-      localPlayerIndex: 0, // for local pass-and-play
-    };
+    // Resume support: getResumeState() hands back our last snapshot if
+    // we're the host reconnecting mid-game. timerInterval is never part of
+    // the saved snapshot (it's a live setInterval handle, meaningless
+    // across a reload) — always starts at null and gets recreated by
+    // renderPlaying() if a timer is active.
+    const resumedGameState = api.getResumeState();
+    let gameState = resumedGameState
+      ? { ...resumedGameState, timerInterval: null }
+      : {
+          phase: "setup", // setup | playing | reveal
+          categories: [],
+          questions: [], // shuffled question pool
+          currentQ: 0,
+          currentSpeaker: 0,
+          reactions: {}, // { peerId: emoji }
+          timer: 0,
+          timerInterval: null,
+          timerDuration: 60,
+          localPlayerIndex: 0, // for local pass-and-play
+        };
+
+    // Single chokepoint, called after any state-changing action. Excludes
+    // timerInterval since setInterval handles aren't JSON-serializable.
+    function saveResumeState() {
+      if (!isHost || isLocal) return;
+      const { timerInterval, ...snapshot } = gameState;
+      api.setResumeState(snapshot);
+    }
 
     // ── Styles ──
     const styles = document.createElement("style");
@@ -380,6 +396,7 @@ export default {
           questions: pool,
           timerDuration: gameState.timerDuration,
         });
+        saveResumeState();
 
         renderPlaying();
       });
@@ -505,6 +522,7 @@ export default {
         currentQ: gameState.currentQ,
         currentSpeaker: gameState.currentSpeaker,
       });
+      saveResumeState();
 
       renderPlaying();
     }
@@ -600,6 +618,38 @@ export default {
       });
     });
 
+    // A guest reconnecting mid-session missed whatever dt-start/dt-advance
+    // happened while it was gone — host just ships the whole gameState once
+    // (minus the timer, which isn't meaningful to hand to someone else's
+    // client anyway; their renderPlaying() doesn't restart a timer it
+    // doesn't own — only the host's setInterval drives auto-advance).
+    api.on("dt-full-sync", (data) => {
+      const d = data.payload || data;
+      gameState = { ...d.gameState, timerInterval: null };
+      if (gameState.phase === "playing") renderPlaying();
+      else renderSetup();
+    });
+
+    if (isHost && !isLocal) {
+      api.onPlayerRejoinedMidgame(({ playerId }) => {
+        if (gameState.phase !== "playing") return;
+        const { timerInterval, ...snapshot } = gameState;
+        api.sendTo(playerId, "dt-full-sync", { gameState: snapshot });
+      });
+      // onPlayerRejoinedMidgame can fire before the rejoining guest's own
+      // dynamic import finishes and registers the "dt-full-sync" listener
+      // above — a push that arrives too early is silently dropped (no
+      // buffering/retry). Guests also pull explicitly once ready; same
+      // "playing" guard applies.
+      api.on("dt-request-state", (_payload, fromPeer) => {
+        if (gameState.phase !== "playing") return;
+        const { timerInterval, ...snapshot } = gameState;
+        api.sendTo(fromPeer, "dt-full-sync", { gameState: snapshot });
+      });
+    } else if (!isLocal) {
+      api.send("dt-request-state", {});
+    }
+
     function escHtml(s) {
       const d = document.createElement("div");
       d.textContent = s;
@@ -608,7 +658,12 @@ export default {
 
     // ── Init ──
     if (isHost || isLocal) {
-      renderSetup();
+      if (resumedGameState && resumedGameState.phase === "playing") {
+        // Reconnecting host, mid-game — resume instead of restarting setup.
+        renderPlaying();
+      } else {
+        renderSetup();
+      }
     } else {
       wrap.innerHTML = `
         <div class="dt-setup" style="text-align:center; padding-top:40px; animation: slideUp 0.5s ease both;">

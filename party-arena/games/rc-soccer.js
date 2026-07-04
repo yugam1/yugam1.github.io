@@ -230,11 +230,22 @@ export default {
 
     const me=api.getMe(), isHost=api.isHost(), isLocal=api.isLocal();
 
+    // Resume support: RC Soccer runs live physics independently on every
+    // client (positions/velocities are never networked, only joystick
+    // inputs are) — so there is no "frozen mid-motion" state worth
+    // restoring, and attempting to snapshot puck/ball positions would be
+    // stale the instant a reconnect happens anyway. What DOES carry
+    // meaning across a reconnect is the match config and the score/clock,
+    // matching exactly what the existing resize-preservation code below
+    // already does for a window resize (see `prev` in applySize) — reuse
+    // of the same idea, just triggered by reconnect instead of resize.
+    const resumedRcs = isLocal ? null : api.getResumeState();
+
     // ── module state
     let gs=null, animId=null, timerInt=null, lastT=0;
-    let goalLocked=false, myIdx=-1, myPovAngle=0, currentBS=0;
+    let goalLocked=false, myIdx=-1, myPovAngle=0, currentBS=0, appliedResume=false;
     const keys={}, inp=[];
-    let cfg={mode:'individual',gameSecs:180,goalWin:3};
+    let cfg=resumedRcs?.cfg ?? {mode:'individual',gameSecs:180,goalWin:3};
     const evCleaners=[];
 
     // root fills the game-container exactly
@@ -248,6 +259,20 @@ export default {
       clearInterval(timerInt);timerInt=null;
       evCleaners.splice(0).forEach(fn=>{try{fn();}catch(e){}});
       goalLocked=false;
+    }
+
+    // Host-only. Called whenever score/time changes (goal scored, timer
+    // tick) — NOT every animation frame, since live positions aren't part
+    // of what's saved (see note above cfg declaration). Throttled further
+    // on the transport side, so calling this on every goal/tick is cheap.
+    function saveResumeState(){
+      if(!isHost||isLocal||!gs) return;
+      api.setResumeState({
+        cfg,
+        scores:[...gs.scores],
+        teamScores:[...gs.teamScores],
+        gameTime:gs.gameTime,
+      });
     }
 
     // ════════════════════════════════════════
@@ -343,6 +368,7 @@ export default {
         const c={...cfg};
         if(!isLocal) api.broadcast('rcs-cfg',c);
         startGame(c, api.getPlayers());
+        if(!isLocal) saveResumeState();
       };
       card.appendChild(ko);
 
@@ -427,6 +453,14 @@ export default {
           gs.scores=prev.scores;gs.teamScores=prev.teamScores;
           gs.gameTime=prev.gameTime;gs.running=prev.running;
           gs.goalEvent=prev.goalEvent;
+        } else if(resumedRcs && !appliedResume){
+          // First build after a reconnect, before any resize has happened —
+          // apply the score/clock we resumed instead of resize's `prev`
+          // path (which only exists once gs already existed once before).
+          gs.scores=[...resumedRcs.scores];
+          gs.teamScores=[...resumedRcs.teamScores];
+          gs.gameTime=resumedRcs.gameTime;
+          appliedResume=true;
         }
         renderHUD(hud,gs,cfg);
       }
@@ -466,6 +500,7 @@ export default {
               if(!gs?.running)return;
               gs.gameTime=Math.max(0,gs.gameTime-1);
               renderHUD(hud,gs,cfg);
+              saveResumeState();
               if(gs.gameTime<=0){gs.running=false;clearInterval(timerInt);timerInt=null;showWinner(winEl,gs,doRematch,doLeave);}
             },1000);
           }
@@ -541,6 +576,7 @@ export default {
           const{playerIdx,team}=gs.goalEvent;
           const conceded=gs.scores[playerIdx];
           if(!isLocal) api.broadcast('rcs-goal-ev',{playerIdx,team,scores:[...gs.scores],teamScores:[...gs.teamScores]});
+          saveResumeState();
           showFlash(flashEl,gs.pucks[playerIdx],cfg.mode==='teams'?TEAM_NAMES[team]:null);
           renderHUD(hud,gs,cfg);
           if(conceded>=gs.goalWin){
@@ -686,7 +722,65 @@ export default {
     // non-host receives config
     if(!isLocal) api.on('rcs-cfg',(c)=>startGame({...c},api.getPlayers()));
 
-    showConfig();
+    // A guest reconnecting mid-match has no running game at all yet (fresh
+    // create() call) — host resends cfg plus the current score/clock so
+    // their fresh startGame() lands at the right score instead of 0-0.
+    if(isHost && !isLocal){
+      api.onPlayerRejoinedMidgame(({playerId})=>{
+        if(!gs) return; // still on config screen — nothing to resync
+        api.sendTo(playerId,'rcs-cfg-resume',{
+          cfg,
+          scores:[...gs.scores],
+          teamScores:[...gs.teamScores],
+          gameTime:gs.gameTime,
+        });
+      });
+      // onPlayerRejoinedMidgame can fire before the rejoining guest's own
+      // dynamic import finishes and registers the 'rcs-cfg-resume' listener
+      // below — a push that arrives too early is silently dropped (no
+      // buffering/retry). Guests also pull explicitly once ready; same gs
+      // guard applies (host just no-ops if asked before a match exists).
+      api.on('rcs-request-state',(_payload,fromPeer)=>{
+        if(!gs) return;
+        api.sendTo(fromPeer,'rcs-cfg-resume',{
+          cfg,
+          scores:[...gs.scores],
+          teamScores:[...gs.teamScores],
+          gameTime:gs.gameTime,
+        });
+      });
+    }
+    // Guest has no gs at all until it receives cfg from the host (fresh
+    // create() call, nothing built yet) — so unlike other games there's no
+    // local guard to check before asking; always request once ready to
+    // listen. Harmless on a normal fresh game start: the host just hasn't
+    // called startGame() yet, so the guard above no-ops and the guest's
+    // normal 'rcs-cfg' broadcast (sent when the host actually starts) still
+    // arrives separately.
+    if(!isLocal) api.send('rcs-request-state',{});
+    if(!isLocal) api.on('rcs-cfg-resume',(d)=>{
+      const p=d.payload||d;
+      startGame({...p.cfg},api.getPlayers());
+      // Patch the score/clock in after startGame's own buildState runs —
+      // same timing as the resumedRcs path on the host side.
+      const apply=()=>{
+        if(!gs){requestAnimationFrame(apply);return;}
+        gs.scores=[...p.scores];
+        gs.teamScores=[...p.teamScores];
+        gs.gameTime=p.gameTime;
+      };
+      requestAnimationFrame(apply);
+    });
+
+    if(isHost && resumedRcs){
+      // Reconnecting host with an in-progress match — skip the config
+      // screen and rebuild the field at the resumed score/clock instead of
+      // a fresh 0-0 game. Positions still start fresh (see note above);
+      // only score/time/config carry over.
+      startGame(resumedRcs.cfg, api.getPlayers());
+    } else {
+      showConfig();
+    }
 
     return{
       destroy(){
