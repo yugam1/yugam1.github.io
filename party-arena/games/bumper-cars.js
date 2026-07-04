@@ -1,833 +1,692 @@
-// ═══════════════════════════════════════════════════════════════
-//  🚗 FAO SCHWARZ BOT BUMPER CARS — Party Arena  v1
-//  RC Bumper Car arena — every player drives their own car!
-//  Host renders the arena & simulates physics
-//  Each player's device = RC remote (same joystick as RC Soccer)
-//  2–8 players | Host-authoritative physics | 2-min rounds
-// ═══════════════════════════════════════════════════════════════
+// ─── BOT BUMPER CARS — Party Arena (3D TPP port of FPG) ──────────────────────
+// Physics: exact port of server/index.js  |  Renderer: Three.js TPP on every device
 
-const RAIL        = 18;
-const CAR_RX      = 22, CAR_RY = 15, BUMP_R = 27;
-const SPEED       = 115;
-const TURN_SPEED  = 2.8;
-const FRICTION    = 0.87;
-const COOLDOWN    = 2.0;   // seconds after a hit before car re-enters play
-const RESET_DUR   = 0.45;  // seconds to slide back to spawn
-const ROUND_SECS  = 120;
-const TICK_MS     = 33;
-
-const CAR_DEFS = [
-  { col:'#ff3b30', dark:'#aa2010', led:'#ff7060', name:'Red Rocket'    },
-  { col:'#007aff', dark:'#004eaa', led:'#60aaff', name:'Blue Blaze'    },
-  { col:'#ffd000', dark:'#aa8800', led:'#ffe860', name:'Gold Glider'   },
-  { col:'#34c759', dark:'#1a8030', led:'#70ee80', name:'Green Goblin'  },
-  { col:'#af52de', dark:'#6a2090', led:'#d090ff', name:'Purple Plum'   },
-  { col:'#ff9500', dark:'#aa5500', led:'#ffcc60', name:'Orange Outlaw' },
-  { col:'#ff2d55', dark:'#aa0030', led:'#ff80a0', name:'Pink Panther'  },
-  { col:'#5ac8fa', dark:'#1a80cc', led:'#a0e8ff', name:'Cyan Cyclone'  },
+const ARENA = { w:1400, h:900, bumpers:[{x:350,y:450,r:55},{x:700,y:450,r:65},{x:1050,y:450,r:55}] };
+const CAR_COLORS = [
+  {name:'Red',    body:'#e8312a',light:'#ff7a72',dark:'#9e1a15'},
+  {name:'Blue',   body:'#3b8ecf',light:'#6bb8f5',dark:'#1a5c9e'},
+  {name:'Green',  body:'#2eaa4a',light:'#55dd77',dark:'#1a7030'},
+  {name:'Yellow', body:'#d4a824',light:'#f5d04a',dark:'#9e7510'},
+  {name:'Orange', body:'#d45a18',light:'#f5824a',dark:'#9e3a08'},
+  {name:'Purple', body:'#7b3dbf',light:'#b06ae0',dark:'#4e2080'},
 ];
+const SPEED=6, TURN_SPEED=0.055, FRICTION=0.87, ANG_FRICTION=0.78;
+const CW=1.0, CH=0.45, CL=1.6, SCALE=0.01;
+const TPP_BEHIND=3.2, TPP_HEIGHT=1.6, CAM_LERP=0.12, LOOK_LERP=0.18;
 
-function spawnPositions(n, W, H) {
-  const positions = [];
-  const slots = [
-    { x: W * 0.28, y: H * 0.30 }, { x: W * 0.72, y: H * 0.30 },
-    { x: W * 0.28, y: H * 0.70 }, { x: W * 0.72, y: H * 0.70 },
-    { x: W * 0.50, y: H * 0.18 }, { x: W * 0.50, y: H * 0.82 },
-    { x: W * 0.10, y: H * 0.50 }, { x: W * 0.90, y: H * 0.50 },
-  ];
-  for (let i = 0; i < n; i++) {
-    const s = slots[i % slots.length];
-    const cx = W / 2, cy = H / 2;
-    positions.push({ x: s.x, y: s.y, angle: Math.atan2(cy - s.y, cx - s.x) });
-  }
-  return positions;
+function ensureThree() {
+  if (window.THREE) return Promise.resolve(window.THREE);
+  return new Promise((res, rej) => {
+    const s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js';
+    s.onload = () => res(window.THREE); s.onerror = rej;
+    document.head.appendChild(s);
+  });
 }
 
-function easeOut(t) { return 1 - (1 - t) * (1 - t); }
-function lerp(a, b, t) { return a + (b - a) * t; }
-function springPop(t) {
-  if (t >= 1) return 1;
-  const c = 2 * Math.PI / 3;
-  return Math.pow(2, -8 * t) * Math.sin((t * 8 - .75) * c) + 1;
-}
-
-// ── one-time global CSS ────────────────────────────────────────
-function ensureGlobals() {
-  if (document.getElementById('bcar-fonts')) return;
-  const l = document.createElement('link');
-  l.id = 'bcar-fonts'; l.rel = 'stylesheet';
-  l.href = 'https://fonts.googleapis.com/css2?family=Fredoka+One&family=Quicksand:wght@600;700&display=swap';
-  document.head.appendChild(l);
-  const s = document.createElement('style');
-  s.id = 'bcar-css';
-  s.textContent = '@keyframes bcPop{from{transform:scale(.3);opacity:0}to{transform:scale(1);opacity:1}}@keyframes bcFade{from{opacity:1}to{opacity:0}}';
+function ensureCSS() {
+  if (document.getElementById('bc3-css')) return;
+  const lnk = document.createElement('link'); lnk.rel='stylesheet';
+  lnk.href='https://fonts.googleapis.com/css2?family=Boogaloo&family=Nunito:wght@700;900&display=swap';
+  document.head.appendChild(lnk);
+  const s = document.createElement('style'); s.id='bc3-css';
+  s.textContent=`
+.bc3{position:absolute;inset:0;background:#0d0d1a;overflow:hidden;font-family:'Nunito',sans-serif;color:#fff;user-select:none;-webkit-user-select:none;touch-action:none;}
+.bc3-scr{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;padding:24px;overflow-y:auto;z-index:10;}
+.bc3-scr.on{display:flex;}
+.bc3-scr[data-s=game].on{display:block;padding:0;}
+.bc3-logo{font-family:'Boogaloo',cursive;font-size:clamp(32px,10vw,64px);text-align:center;letter-spacing:2px;margin-bottom:8px;}
+.bc3-sub{font-size:14px;color:rgba(255,255,255,0.5);text-align:center;line-height:1.5;}
+.bc3-btn{font-family:'Boogaloo',cursive;font-size:22px;letter-spacing:2px;padding:14px 44px;border-radius:14px;border:none;background:linear-gradient(135deg,#e8312a,#b01a14);color:#fff;cursor:pointer;box-shadow:0 6px 24px rgba(232,49,42,0.4);text-transform:uppercase;touch-action:manipulation;margin-top:12px;}
+.bc3-btn:active{transform:scale(0.96);}
+.bc3-plist{width:100%;max-width:340px;display:flex;flex-direction:column;gap:8px;margin:12px 0;}
+.bc3-prow{display:flex;align-items:center;gap:12px;background:rgba(255,255,255,0.06);border-radius:12px;padding:10px 14px;border:1px solid rgba(255,255,255,0.08);}
+.bc3-dot{width:14px;height:14px;border-radius:50%;flex-shrink:0;}
+.bc3-pname{font-family:'Boogaloo',cursive;font-size:18px;flex:1;}
+.bc3-you{font-size:11px;color:rgba(255,255,255,0.4);background:rgba(255,255,255,0.08);padding:2px 8px;border-radius:6px;}
+.bc3-hchip{font-size:11px;background:rgba(255,200,0,0.2);color:#ffd700;padding:2px 8px;border-radius:6px;}
+.bc3-bo-row{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:8px;font-size:13px;color:rgba(255,255,255,0.5);}
+.bc3-bo-btn{font-family:'Boogaloo',cursive;font-size:16px;padding:6px 16px;border-radius:10px;border:2px solid rgba(255,255,255,0.2);background:transparent;color:rgba(255,255,255,0.5);cursor:pointer;touch-action:manipulation;}
+.bc3-bo-btn.on{border-color:#6bb8f5;color:#6bb8f5;background:rgba(107,184,245,0.12);}
+.bc3-mp{font-size:13px;color:rgba(255,255,255,0.5);margin-bottom:4px;text-align:center;}
+.bc3-mpdot{width:10px;height:10px;border-radius:50%;border:2px solid rgba(255,255,255,0.3);display:inline-block;margin:0 2px;}
+.bc3-mpdot.f{border-color:transparent;}
+.bc3-badge{width:80px;height:80px;border-radius:50%;margin:0 auto 12px;display:flex;align-items:center;justify-content:center;font-size:36px;border:3px solid rgba(255,255,255,0.2);}
+.bc3-cd{font-family:'Boogaloo',cursive;font-size:140px;line-height:1;text-shadow:0 0 60px rgba(255,200,0,0.5);}
+@keyframes bc3pop{0%{transform:scale(2);opacity:0}40%{opacity:1}100%{transform:scale(1);opacity:1}}
+.bc3-pop{animation:bc3pop 0.7s ease-out;}
+.bc3-cvs{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none;}
+.bc3-hud{position:absolute;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:flex-start;padding:10px 12px;pointer-events:none;z-index:20;}
+.bc3-hbox{background:rgba(0,0,0,0.55);backdrop-filter:blur(8px);border-radius:10px;padding:6px 10px;}
+.bc3-hctr{text-align:center;}
+.bc3-slbl{font-size:9px;letter-spacing:1px;opacity:0.5;}
+.bc3-sval{font-family:'Boogaloo',cursive;font-size:22px;}
+.bc3-alive{font-family:'Boogaloo',cursive;font-size:16px;}
+.bc3-rnd{font-family:'Boogaloo',cursive;font-size:12px;letter-spacing:1px;opacity:0.75;margin-top:2px;}
+.bc3-stats{font-size:11px;line-height:1.8;text-align:right;}
+.bc3-stats b{font-size:14px;}
+.bc3-kf{position:absolute;bottom:175px;left:50%;transform:translateX(-50%);z-index:20;pointer-events:none;display:flex;flex-direction:column;align-items:center;gap:4px;width:90%;}
+.bc3-ke{background:rgba(0,0,0,0.72);backdrop-filter:blur(4px);border-radius:8px;padding:5px 14px;font-family:'Boogaloo',cursive;font-size:14px;letter-spacing:0.5px;border:1px solid rgba(255,255,255,0.07);text-align:center;animation:bc3kf 3.2s ease-out forwards;}
+@keyframes bc3kf{0%{opacity:0;transform:translateY(6px)}12%{opacity:1;transform:translateY(0)}75%{opacity:1}100%{opacity:0}}
+.bc3-touch{position:absolute;bottom:0;left:0;right:0;height:155px;z-index:20;pointer-events:none;display:flex;align-items:flex-end;justify-content:space-between;padding:0 16px 14px;}
+.bc3-gl{display:flex;flex-direction:column;gap:8px;pointer-events:all;}
+.bc3-gr{display:flex;flex-direction:row;gap:8px;align-items:flex-end;pointer-events:all;}
+.bc3-db{width:66px;height:66px;border-radius:16px;border:2px solid rgba(255,255,255,0.18);background:rgba(0,0,0,0.58);backdrop-filter:blur(6px);color:rgba(255,255,255,0.88);font-size:26px;cursor:pointer;touch-action:manipulation;display:flex;align-items:center;justify-content:center;user-select:none;-webkit-user-select:none;transition:background .06s,transform .06s;}
+.bc3-db.pr,.bc3-db:active{background:rgba(255,255,255,0.22);transform:scale(0.91);}
+.bc3-cam{position:absolute;top:10px;left:12px;z-index:30;width:38px;height:38px;border-radius:10px;border:1px solid rgba(255,255,255,0.15);background:rgba(0,0,0,0.55);backdrop-filter:blur(8px);color:rgba(255,255,255,0.75);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;touch-action:manipulation;}
+.bc3-sens{position:absolute;top:10px;right:12px;z-index:25;display:flex;align-items:center;gap:7px;background:rgba(0,0,0,0.55);backdrop-filter:blur(8px);border-radius:10px;padding:6px 10px;border:1px solid rgba(255,255,255,0.13);}
+.bc3-sens input{width:80px;accent-color:rgba(107,184,245,0.9);cursor:pointer;}
+.bc3-cm .bc3-touch,.bc3-cm .bc3-hud,.bc3-cm .bc3-sens{display:none!important;}
+.bc3-ej{background:radial-gradient(ellipse at 50% 40%,#3a1010,#0d0d1a 70%);}
+@keyframes bc3bnc{0%{transform:scale(0) rotate(-15deg)}70%{transform:scale(1.2) rotate(5deg)}100%{transform:scale(1) rotate(0)}}
+.bc3-res{background:radial-gradient(ellipse at 50% 30%,#102a10,#0d0d1a 70%);}
+.bc3-lb{width:100%;max-width:360px;display:flex;flex-direction:column;gap:8px;margin-top:16px;}
+.bc3-lbr{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,0.06);border-radius:12px;padding:10px 14px;border:1px solid rgba(255,255,255,0.08);}
+.bc3-lbm{font-size:22px;width:28px;text-align:center;}
+.bc3-lbn{font-family:'Boogaloo',cursive;font-size:18px;flex:1;}
+.bc3-lbs{font-size:11px;text-align:right;color:rgba(255,255,255,0.6);line-height:1.6;}
+.bc3-lbs b{color:#fff;}
+.bc3-msbar{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin:6px 0 12px;}
+.bc3-mse{display:flex;flex-direction:column;align-items:center;gap:4px;}
+.bc3-msn{font-family:'Boogaloo',cursive;font-size:13px;}
+.bc3-msdots{display:flex;gap:4px;}
+.bc3-msd{width:12px;height:12px;border-radius:50%;border:2px solid rgba(255,255,255,0.3);}
+.bc3-msd.f{border-color:transparent;}
+`;
   document.head.appendChild(s);
 }
 
-// ═══════════════════════════════════════════════════════════════
+function getSpawn(index, total) {
+  const cx=ARENA.w/2, cy=ARENA.h/2, r=Math.min(ARENA.w,ARENA.h)*0.3, n=Math.max(total,2);
+  const a=(index/n)*Math.PI*2-Math.PI/2;
+  return { x:cx+Math.cos(a)*r, y:cy+Math.sin(a)*r, angle:a+Math.PI };
+}
+
+function makeCarMesh(col, T) {
+  const g=new T.Group();
+  const bm=new T.MeshLambertMaterial({color:new T.Color(col.body)});
+  const dm=new T.MeshLambertMaterial({color:new T.Color(col.dark)});
+  const wm=new T.MeshBasicMaterial({color:0x222222});
+  const hlm=new T.MeshBasicMaterial({color:0xffffcc});
+  const tlm=new T.MeshBasicMaterial({color:0xff2200});
+  const body=new T.Mesh(new T.BoxGeometry(CW,CH,CL),bm); body.position.y=CH/2+0.08; g.add(body);
+  const ck=new T.Mesh(new T.CylinderGeometry(0.28,0.34,0.30,8),dm); ck.position.set(0,CH+0.22,-0.15); g.add(ck);
+  const hlg=new T.SphereGeometry(0.07,5,4);
+  [-0.36,0.36].forEach(hx=>{const h=new T.Mesh(hlg,hlm);h.position.set(hx,CH*0.4+0.08,-CL/2-0.04);g.add(h);});
+  const tlg=new T.BoxGeometry(0.18,0.09,0.05);
+  [-0.36,0.36].forEach(tx=>{const t=new T.Mesh(tlg,tlm);t.position.set(tx,CH*0.5+0.08,CL/2+0.03);g.add(t);});
+  const wg=new T.CylinderGeometry(0.18,0.18,0.14,10);
+  const fw=[];
+  [[-CW/2-0.07,0.18,-CL*0.35],[CW/2+0.07,0.18,-CL*0.35]].forEach(([wx,wy,wz])=>{
+    const sg=new T.Group(); sg.position.set(wx,wy,wz); g.add(sg);
+    const w=new T.Mesh(wg,wm); w.rotation.z=Math.PI/2; sg.add(w); fw.push(sg);
+  });
+  [[-CW/2-0.07,0.18,CL*0.35],[CW/2+0.07,0.18,CL*0.35]].forEach(([wx,wy,wz])=>{
+    const w=new T.Mesh(wg,wm); w.rotation.z=Math.PI/2; w.position.set(wx,wy,wz); g.add(w);
+  });
+  return {group:g, frontWheels:fw};
+}
+
+function buildArena(scene, T) {
+  const fl=new T.Mesh(new T.PlaneGeometry(ARENA.w*SCALE*1.5,ARENA.h*SCALE*1.5),new T.MeshBasicMaterial({color:0x1a1a2e}));
+  fl.rotation.x=-Math.PI/2; scene.add(fl);
+  scene.add(new T.GridHelper(ARENA.w*SCALE,14,0x252538,0x252538));
+  const wm=new T.MeshBasicMaterial({color:0x3a3a5a}), wh=0.6;
+  [{w:ARENA.w*SCALE,d:0.1,x:0,z:-ARENA.h*SCALE*0.5},{w:ARENA.w*SCALE,d:0.1,x:0,z:ARENA.h*SCALE*0.5},
+   {w:0.1,d:ARENA.h*SCALE,x:-ARENA.w*SCALE*0.5,z:0},{w:0.1,d:ARENA.h*SCALE,x:ARENA.w*SCALE*0.5,z:0}].forEach(wd=>{
+    const m=new T.Mesh(new T.BoxGeometry(wd.w,wh,wd.d),wm); m.position.set(wd.x,wh/2,wd.z); scene.add(m);
+    const e=new T.Mesh(new T.BoxGeometry(wd.w+0.01,0.06,wd.d+0.01),new T.MeshBasicMaterial({color:0xe8312a}));
+    e.position.set(wd.x,wh-0.03,wd.z); scene.add(e);
+  });
+  const bms=[];
+  ARENA.bumpers.forEach(b=>{
+    const bx=(b.x-ARENA.w/2)*SCALE, bz=(b.y-ARENA.h/2)*SCALE, r=b.r*SCALE;
+    const m=new T.Mesh(new T.CylinderGeometry(r,r*1.1,0.7,10),new T.MeshLambertMaterial({color:0x4a4a7a}));
+    m.position.set(bx,0.35,bz); scene.add(m); bms.push(m);
+    const c=new T.Mesh(new T.CylinderGeometry(r*0.6,r*0.6,0.08,10),new T.MeshBasicMaterial({color:0x6b9fff}));
+    c.position.set(bx,0.74,bz); scene.add(c);
+  });
+  scene.add(new T.AmbientLight(0x404060,1.2));
+  const dir=new T.DirectionalLight(0xffffff,0.6); dir.position.set(5,10,5); scene.add(dir);
+  return bms;
+}
+
+// ── physics helpers ───────────────────────────────────────────────────────────
+function tickPhysics(players) {
+  const ejectEvents=[];
+  for (const p of players) {
+    if (p.ejecting) {
+      p.ejectProgress++;
+      if (p.ejectProgress>90) { p.ejecting=false; p.alive=false; }
+      continue;
+    }
+    if (!p.alive) continue;
+    if (p.hitCooldown>0) p.hitCooldown--;
+    const {up,down,steer=0}=p.input||{};
+    const cos=Math.cos(p.angle), sin=Math.sin(p.angle);
+    const thrust=up?SPEED:down?-SPEED*0.6:0;
+    if (thrust!==0) { p.vx+=cos*thrust*0.2; p.vy+=sin*thrust*0.2; }
+    if (steer!==0) { const sp=Math.hypot(p.vx,p.vy),sf=0.25+Math.min(0.75,sp*0.28); p.va+=steer*TURN_SPEED*sf; }
+    p.va*=ANG_FRICTION; p.angle+=p.va;
+    p.vx*=FRICTION; p.vy*=FRICTION;
+    const sp=Math.hypot(p.vx,p.vy),mx=SPEED*1.3;
+    if (sp>mx) { p.vx=p.vx/sp*mx; p.vy=p.vy/sp*mx; }
+    p.x+=p.vx; p.y+=p.vy;
+    const mg=60;
+    if(p.x<mg){p.x=mg;p.vx*=-0.6;} if(p.x>ARENA.w-mg){p.x=ARENA.w-mg;p.vx*=-0.6;}
+    if(p.y<mg){p.y=mg;p.vy*=-0.6;} if(p.y>ARENA.h-mg){p.y=ARENA.h-mg;p.vy*=-0.6;}
+    for(let ps=0;ps<3;ps++) {
+      for(const b of ARENA.bumpers) {
+        const dx=p.x-b.x,dy=p.y-b.y,dist=Math.hypot(dx,dy),md=b.r+58;
+        if(dist<md&&dist>0){const push=(md-dist)/dist;p.x+=dx*push;p.y+=dy*push;
+          if(ps===0){const dot=p.vx*dx/dist+p.vy*dy/dist;if(dot<0){p.vx-=2*dot*dx/dist;p.vy-=2*dot*dy/dist;p.vx*=0.5;p.vy*=0.5;}}}
+      }
+    }
+  }
+  const active=players.filter(p=>p.alive&&!p.ejecting);
+  for(let ps=0;ps<2;ps++) for(let i=0;i<active.length;i++) for(let j=i+1;j<active.length;j++) {
+    const ev=resolveCollision(active[i],active[j]); if(ev) ejectEvents.push(ev);
+  }
+  return ejectEvents;
+}
+
+function resolveCollision(a,b) {
+  const dx=b.x-a.x,dy=b.y-a.y,dist=Math.hypot(dx,dy),md=90;
+  if(dist>=md||dist<0.01) return null;
+  const nx=dx/dist,ny=dy/dist,ov=md-dist;
+  a.x-=nx*ov*0.5;a.y-=ny*ov*0.5;b.x+=nx*ov*0.5;b.y+=ny*ov*0.5;
+  const rv=((a.vx-b.vx)*nx+(a.vy-b.vy)*ny);
+  if(rv>0){const imp=rv*0.65;a.vx-=imp*nx;a.vy-=imp*ny;b.vx+=imp*nx;b.vy+=imp*ny;}
+  if(a.hitCooldown===0&&b.hitCooldown===0){
+    const aS=Math.hypot(a.vx,a.vy),bS=Math.hypot(b.vx,b.vy);
+    const relX=a.x-b.x,relY=a.y-b.y;
+    const bC=Math.cos(b.angle),bSn=Math.sin(b.angle);
+    const bFwd=relX*bC+relY*bSn,bLat=-relX*bSn+relY*bC;
+    if(Math.abs(bLat)>Math.abs(bFwd)*0.7&&Math.abs(bFwd)<56&&aS>2.5){
+      if(b.ejecting||!b.alive)return null;
+      b.ejecting=true;b.ejectProgress=0;b.hitsTaken++;a.kills++;b.hitCooldown=120;a.hitCooldown=60;
+      return {victimSlot:b.slot,killerSlot:a.slot};
+    }
+    const aC=Math.cos(a.angle),aSn=Math.sin(a.angle);
+    const aFwd=-(relX*aC+relY*aSn),aLat=relX*aSn-relY*aC;
+    if(Math.abs(aLat)>Math.abs(aFwd)*0.7&&Math.abs(aFwd)<56&&bS>2.5){
+      if(a.ejecting||!a.alive)return null;
+      a.ejecting=true;a.ejectProgress=0;a.hitsTaken++;b.kills++;a.hitCooldown=120;b.hitCooldown=60;
+      return {victimSlot:a.slot,killerSlot:b.slot};
+    }
+  }
+  return null;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 export default {
   id: 'bumper-cars',
   name: 'Bumper Cars',
 
   create(container, api) {
-    ensureGlobals();
-    const me = api.getMe(), isHost = api.isHost(), isLocal = api.isLocal();
+    ensureCSS();
+    const me=api.getMe(), isHost=api.isHost(), isLocal=api.isLocal();
+    const evCleaners=[];
+    let matchCfg={bestOf:3}, matchScores={}, currentRound=1;
 
-    // Resume support: cars/positions are never worth restoring (live
-    // physics, same reasoning as RC Soccer — by the time a reconnect
-    // happens any saved x/y/vx/vy would be stale). scores and timeLeft are
-    // the only fields with lasting meaning, so that's all this restores.
-    const resumedBcars = isLocal ? null : api.getResumeState();
+    // ── root & screen manager ─────────────────────────────────────────────────
+    const root=document.createElement('div'); root.className='bc3'; container.appendChild(root);
+    const screens={};
+    function mkScr(id,extra=''){
+      const el=document.createElement('div');
+      el.className='bc3-scr'+(extra?' '+extra:''); el.dataset.s=id;
+      root.appendChild(el); screens[id]=el; return el;
+    }
+    function show(id){Object.values(screens).forEach(s=>s.classList.remove('on'));screens[id]?.classList.add('on');}
 
-    // ── module state ───────────────────────────────────────────
-    let W = 0, H = 0;
-    let cars   = [];    // full car objects (host only builds, guests mirror)
-    let scores = resumedBcars?.scores ?? {};
-    let timeLeft  = resumedBcars?.timeLeft ?? ROUND_SECS;
-    let gameOver  = false;
-    let rafId     = null;
-    let tickTimer = null;
-    let cdTimer   = null;
-    let lastTs    = 0;
-    let particles = [], shockwaves = [];
-    const inputMap = {};   // { [playerId]: { axisX, axisY, boost } }
-    const evCleaners = [];
+    // ── Three.js state ────────────────────────────────────────────────────────
+    let T3=null, renderer=null, scene=null, camera=null;
+    let carMeshes={}, bumperMeshes=[], rafId=null;
+    let camP, lookV, _cT, _lT;
+    let yawOff=0, camTouch=false, camRmb=false, steerSens=5, prevA={};
+    let snap=[], mySlot=-1, myEjected=false;
 
-    // ── root ───────────────────────────────────────────────────
-    const root = document.createElement('div');
-    root.style.cssText = 'width:100%;height:100%;position:relative;background:#0d0d0d;overflow:hidden;font-family:Quicksand,sans-serif;';
-    container.appendChild(root);
+    // ── lobby screen ──────────────────────────────────────────────────────────
+    const lobbyScr=mkScr('lobby');
+    lobbyScr.style.background='radial-gradient(ellipse at 50% 20%,#1a2a3f,#0d0d1a 70%)';
+    lobbyScr.innerHTML=`
+      <div class="bc3-logo"><span style="color:#fff">BOT</span> <span style="color:#ff7a72">BUMPER</span><br><span style="color:#6bb8f5">CARS</span></div>
+      <div class="bc3-badge" id="bc3-badge">🚗</div>
+      <div class="bc3-sub" style="margin-bottom:12px">You're in the arena!</div>
+      <div class="bc3-plist" id="bc3-pl"></div>
+      <div class="bc3-mp" id="bc3-mp"></div>
+      <div id="bc3-la"></div>
+      <div class="bc3-sub" id="bc3-ls" style="margin-top:12px;font-size:12px;opacity:0.4">Waiting for host to start…</div>`;
 
-    function stopAll() {
-      cancelAnimationFrame(rafId); rafId = null;
-      clearInterval(tickTimer); tickTimer = null;
-      clearTimeout(cdTimer); cdTimer = null;
-      evCleaners.splice(0).forEach(fn => { try { fn(); } catch(e) {} });
+    function renderLobby(players, slot) {
+      const badge=document.getElementById('bc3-badge');
+      if(badge&&slot>=0) badge.style.background=CAR_COLORS[slot%6].body;
+      const pl=document.getElementById('bc3-pl');
+      if(pl) pl.innerHTML=players.map((p,i)=>{
+        const c=CAR_COLORS[i%6];
+        return `<div class="bc3-prow">
+          <div class="bc3-dot" style="background:${c.body};box-shadow:0 0 8px ${c.body}"></div>
+          <div class="bc3-pname" style="color:${c.light}">${p.name}</div>
+          ${p.id===me.id?'<div class="bc3-you">YOU</div>':''}
+          ${i===0?'<div class="bc3-hchip">HOST</div>':''}
+        </div>`;
+      }).join('');
+      const mp=document.getElementById('bc3-mp');
+      if(mp){
+        const has=Object.values(matchScores).some(v=>v>0);
+        mp.innerHTML=has?`<span style="opacity:0.4">Round ${currentRound-1} done &nbsp;|&nbsp;</span>`
+          +players.map((p,i)=>{const c=CAR_COLORS[i%6],w=matchScores[i]||0;
+            return `<span style="color:${c.light}">${c.name}</span> ${Array.from({length:matchCfg.bestOf},(_,di)=>`<span class="bc3-mpdot${di<w?' f':''}" style="${di<w?`background:${c.body}`:''}"></span>`).join('')}`;
+          }).join(' &nbsp; '):'';
+      }
+      const la=document.getElementById('bc3-la');
+      if(la&&isHost){
+        const bo=matchCfg.bestOf, has=Object.values(matchScores).some(v=>v>0);
+        la.innerHTML=`<div class="bc3-bo-row"><span>Best of:</span>
+          <button class="bc3-bo-btn${bo===3?' on':''}" id="bc3-bo3">3</button>
+          <button class="bc3-bo-btn${bo===5?' on':''}" id="bc3-bo5">5</button></div>`;
+        document.getElementById('bc3-bo3')?.addEventListener('click',()=>{matchCfg.bestOf=3;api.send('cfg-sync',{matchCfg,matchScores,currentRound});renderLobby(players,slot);});
+        document.getElementById('bc3-bo5')?.addEventListener('click',()=>{matchCfg.bestOf=5;api.send('cfg-sync',{matchCfg,matchScores,currentRound});renderLobby(players,slot);});
+        if(players.length>=2||isLocal){
+          const btn=document.createElement('button'); btn.className='bc3-btn';
+          btn.textContent=has?`ROUND ${currentRound} — FIGHT`:'START BATTLE';
+          btn.onclick=()=>hostStart(players); la.appendChild(btn);
+          const ls=document.getElementById('bc3-ls'); if(ls) ls.textContent='Tap Start when everyone is ready!';
+        }
+      }
     }
 
-    // ════════════════════════════════════════
-    //  HOST ARENA VIEW
-    // ════════════════════════════════════════
-    function startArena(players) {
-      stopAll();
-      root.innerHTML = '';
+    // ── countdown screen ──────────────────────────────────────────────────────
+    const cdScr=mkScr('countdown'); cdScr.style.background='#0d0d1a';
+    cdScr.innerHTML=`<div class="bc3-cd bc3-pop" id="bc3-cdn">3</div><div class="bc3-sub">Get ready!</div>`;
+    function showCD(n){
+      show('countdown');
+      const el=document.getElementById('bc3-cdn');
+      if(el){el.style.animation='none';void el.offsetWidth;el.style.animation='bc3pop 0.7s ease-out';el.textContent=n;}
+    }
 
-      // canvas
-      const canvas = document.createElement('canvas');
-      canvas.style.cssText = 'position:absolute;display:block;';
-      root.appendChild(canvas);
-      const ctx = canvas.getContext('2d');
+    // ── game screen ───────────────────────────────────────────────────────────
+    const gameScr=mkScr('game');
+    gameScr.innerHTML=`
+      <canvas class="bc3-cvs" id="bc3-cvs"></canvas>
+      <div class="bc3-hud">
+        <div class="bc3-hbox"><div class="bc3-slbl">SPEED</div><div class="bc3-sval" id="bc3-spd">0</div></div>
+        <div class="bc3-hbox bc3-hctr"><div class="bc3-alive" id="bc3-alive">🏁 — left</div><div class="bc3-rnd" id="bc3-rnd">R1</div></div>
+        <div class="bc3-hbox"><div class="bc3-stats" id="bc3-stats">💀 0 kills<br>🌀 0 dodges</div></div>
+      </div>
+      <div class="bc3-kf" id="bc3-kf"></div>
+      <div class="bc3-touch">
+        <div class="bc3-gl"><button class="bc3-db" id="bc3-u">▲</button><button class="bc3-db" id="bc3-d">▼</button></div>
+        <div class="bc3-gr"><button class="bc3-db" id="bc3-l">◀</button><button class="bc3-db" id="bc3-r">▶</button></div>
+      </div>
+      <button class="bc3-cam" id="bc3-cam">👁</button>
+      <div class="bc3-sens"><span style="font-size:14px">↔</span><input type="range" id="bc3-sns" min="1" max="10" value="5"></div>`;
+    document.getElementById('bc3-cam').onclick=()=>gameScr.classList.toggle('bc3-cm');
+    document.getElementById('bc3-sns').addEventListener('input',e=>steerSens=+e.target.value);
 
-      // sidebar
-      const sb = document.createElement('div');
-      sb.style.cssText = 'position:absolute;right:0;top:0;bottom:0;width:130px;background:rgba(8,8,18,.96);border-left:1px solid #1e1e1e;padding:10px 8px;overflow-y:auto;z-index:10;display:flex;flex-direction:column;gap:0;';
-      root.appendChild(sb);
+    // ── ejected screen ────────────────────────────────────────────────────────
+    const ejScr=mkScr('ejected','bc3-ej');
+    ejScr.innerHTML=`
+      <div style="font-size:80px;animation:bc3bnc 0.5s ease-out">💥</div>
+      <div class="bc3-logo" style="font-size:40px;color:#ff6b63">EJECTED!</div>
+      <div class="bc3-sub" id="bc3-ejby"></div>
+      <div class="bc3-sub" style="margin-top:24px;opacity:0.5">Watching the rest of the battle…</div>
+      <canvas id="bc3-spec" style="margin-top:20px;border-radius:12px;max-width:90%;max-height:38vh;display:block"></canvas>`;
 
-      // hud timer
-      const hud = document.createElement('div');
-      hud.style.cssText = 'position:absolute;top:8px;left:50%;transform:translateX(-50%);z-index:20;background:rgba(0,0,0,.72);border:1px solid #2a2a2a;border-radius:20px;padding:4px 16px;pointer-events:none;';
-      hud.innerHTML = '<span id="bcar-timer" style="font-family:Fredoka One,sans-serif;font-size:1.1rem;color:#fff;">2:00</span>';
-      root.appendChild(hud);
+    let specRdr=null;
+    function initSpectate(){
+      const cv=document.getElementById('bc3-spec');
+      if(!cv||specRdr||!scene) return;
+      specRdr=new T3.WebGLRenderer({canvas:cv,antialias:false});
+      cv.width=Math.min(window.innerWidth*0.85,480); cv.height=cv.width*0.6;
+      specRdr.setSize(cv.width,cv.height);
+      const sc=new T3.PerspectiveCamera(60,cv.width/cv.height,0.1,50);
+      sc.position.set(0,12,0); sc.lookAt(0,0,0);
+      (function l(){requestAnimationFrame(l);if(scene)specRdr.render(scene,sc);})();
+    }
 
-      // countdown overlay
-      const cdEl = document.createElement('div');
-      cdEl.style.cssText = 'position:absolute;inset:0;z-index:40;display:flex;align-items:center;justify-content:center;pointer-events:none;';
-      root.appendChild(cdEl);
+    // ── results screen ────────────────────────────────────────────────────────
+    const resScr=mkScr('results','bc3-res');
+    function showResults(res){
+      if(rafId){cancelAnimationFrame(rafId);rafId=null;}
+      show('results');
+      if(res.matchScores) res.matchScores.forEach(e=>{matchScores[e.slot]=e.wins;});
+      if(res.bestOf) matchCfg.bestOf=res.bestOf;
+      if(res.currentRound) currentRound=res.currentRound;
+      const dw=res.matchOver?res.matchWinner:res.winner;
+      const wc=dw?CAR_COLORS[dw.slot%6]:null;
+      const medals=['🥇','🥈','🥉','💀','💀','💀'];
+      const msbar=(res.matchScores||[]).map(p=>{const c=CAR_COLORS[p.slot%6];
+        return `<div class="bc3-mse"><div class="bc3-msn" style="color:${c.light}">${c.name}</div><div class="bc3-msdots">${Array.from({length:res.bestOf},(_,i)=>`<span class="bc3-msd${i<p.wins?' f':''}" style="${i<p.wins?`background:${c.body}`:''}"></span>`).join('')}</div></div>`;
+      }).join('');
+      const lb=(res.leaderboard||[]).map((p,i)=>{const c=CAR_COLORS[p.slot%6];
+        return `<div class="bc3-lbr"><span class="bc3-lbm">${medals[i]}</span><span class="bc3-lbn" style="color:${c.light}">${c.name} Driver</span><span class="bc3-lbs">Kills <b>${p.kills}</b><br>Dodges <b>${p.dodges}</b></span></div>`;
+      }).join('');
+      resScr.innerHTML=`
+        <div style="font-size:60px;margin-bottom:4px;animation:bc3bnc 0.6s ease-out">${res.matchOver?'🏆':'🏁'}</div>
+        <div class="bc3-sub" style="letter-spacing:3px;text-transform:uppercase;opacity:0.5;margin-bottom:2px">${res.matchOver?`Match Over — Best of ${res.bestOf}`:`Round ${res.currentRound} of ${res.bestOf}`}</div>
+        <div class="bc3-sub" style="opacity:0.4;font-size:11px;text-transform:uppercase;letter-spacing:2px">Winner</div>
+        <div class="bc3-logo" style="font-size:36px;margin-bottom:8px;${wc?`color:${wc.light}`:''}">${dw?`${wc.name} Driver`:''}</div>
+        <div class="bc3-msbar">${msbar}</div>
+        <div class="bc3-lb">${lb}</div>
+        <button class="bc3-btn" id="bc3-pa">${res.matchOver?'NEW MATCH':'NEXT ROUND →'}</button>`;
+      document.getElementById('bc3-pa').onclick=()=>{
+        if(isHost) hostPlayAgain(res.matchOver);
+        else { api.send('play-again',{}); show('lobby'); }
+      };
+    }
 
-      // win overlay
-      const winEl = document.createElement('div');
-      winEl.style.cssText = 'position:absolute;inset:0;z-index:35;background:rgba(0,0,0,.88);display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px;';
-      root.appendChild(winEl);
-
-      function applySize() {
-        const cw = (container.offsetWidth || container.getBoundingClientRect().width || 500);
-        const ch = (container.offsetHeight || container.getBoundingClientRect().height || 340);
-        W = cw - 130; H = ch;
-        canvas.width = W; canvas.height = H;
-        canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
-        canvas.style.left = '0'; canvas.style.top = '0';
-        initCars(players);
+    // ── HUD + kill feed ───────────────────────────────────────────────────────
+    function updateHUD(snapshot, slot){
+      const m=snapshot.find(s=>s.slot===slot);
+      const alive=snapshot.filter(s=>s.alive||s.ejecting);
+      const ae=document.getElementById('bc3-alive'); if(ae) ae.innerHTML=`🏁 <b>${alive.length}</b> left`;
+      const re=document.getElementById('bc3-rnd');   if(re) re.textContent=`R${currentRound}/${matchCfg.bestOf}`;
+      if(m){
+        const spd=document.getElementById('bc3-spd'); if(spd) spd.textContent=Math.round(Math.hypot(m.vx||0,m.vy||0)*10);
+        const st=document.getElementById('bc3-stats'); if(st) st.innerHTML=`💀 <b>${m.kills||0}</b> kills<br>🌀 <b>${m.dodges||0}</b> dodges`;
       }
+    }
+    function addKill(killerSlot, victimSlot){
+      const kf=document.getElementById('bc3-kf'); if(!kf) return;
+      const kc=killerSlot!=null?CAR_COLORS[killerSlot%6]:null, vc=CAR_COLORS[victimSlot%6];
+      const d=document.createElement('div'); d.className='bc3-ke';
+      d.innerHTML=kc?`<span style="color:${kc.light}">${kc.name}</span> ejected <span style="color:${vc.light}">${vc.name}</span> 💥`:`<span style="color:${vc.light}">${vc.name}</span> ejected 💥`;
+      kf.appendChild(d); setTimeout(()=>d.remove(),3200);
+    }
 
-      const ro = new ResizeObserver(() => applySize());
-      ro.observe(container);
-      evCleaners.push(() => ro.disconnect());
-      requestAnimationFrame(applySize);
-
-      // ── init cars ──────────────────────────────────────────
-      function initCars(pls) {
-        const spawns = spawnPositions(pls.length, W, H);
-        cars = pls.map((p, i) => {
-          const d = CAR_DEFS[i % CAR_DEFS.length];
-          scores[p.id] = scores[p.id] || 0;
-          return {
-            id: p.id, name: p.name, i,
-            ...d,
-            x: spawns[i].x, y: spawns[i].y,
-            spawnX: spawns[i].x, spawnY: spawns[i].y,
-            vx: 0, vy: 0, angle: spawns[i].angle,
-            state: 'alive',   // alive | resetting | cooldown
-            cooldown: 0,
-            resetT: 0,
-            resetFromX: spawns[i].x, resetFromY: spawns[i].y,
-            cryT: 0,
-            popT: -i * 0.14,
-          };
-        });
+    // ── Three.js init ─────────────────────────────────────────────────────────
+    async function startThree() {
+      T3=await ensureThree();
+      if(renderer){renderer.dispose();scene=null;carMeshes={};}
+      camP=new T3.Vector3(0,TPP_HEIGHT,TPP_BEHIND); lookV=new T3.Vector3();
+      _cT=new T3.Vector3(); _lT=new T3.Vector3();
+      yawOff=0; camTouch=false; camRmb=false; prevA={};
+      const cv=document.getElementById('bc3-cvs'); if(!cv) return;
+      renderer=new T3.WebGLRenderer({canvas:cv,antialias:window.devicePixelRatio<=1});
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio,1.5));
+      scene=new T3.Scene(); scene.background=new T3.Color(0x0d0d1a);
+      camera=new T3.PerspectiveCamera(68,1,0.05,50); // safe placeholder aspect; applySize() sets the real one
+      bumperMeshes=buildArena(scene,T3);
+      // Size from the canvas, guarding against a 0×0 first-paint measurement
+      // (which would make aspect NaN and blank the first frames). Never divide by zero.
+      function applySize(){
+        if(!cv||!renderer||!camera) return;
+        const w=Math.max(1,Math.floor(cv.clientWidth||cv.getBoundingClientRect().width||window.innerWidth));
+        const h=Math.max(1,Math.floor(cv.clientHeight||cv.getBoundingClientRect().height||window.innerHeight));
+        renderer.setSize(w,h,false); // false = don't touch the CSS 100%/100%, only the drawing buffer
+        camera.aspect=w/h;
+        camera.updateProjectionMatrix();
       }
+      const ro=new ResizeObserver(()=>applySize());
+      ro.observe(cv); evCleaners.push(()=>ro.disconnect());
+      applySize();                      // best-effort immediate
+      requestAnimationFrame(applySize); // and once more after the layout flush
+      setupOrbit(cv);
+      threeLoop();
+    }
 
-      // ── physics ────────────────────────────────────────────
-      function physStep(dt) {
-        cars.forEach((c, ci) => {
-          c.popT = Math.min(1, c.popT + dt * 2.5);
-
-          if (c.state === 'resetting') {
-            c.resetT = Math.min(1, c.resetT + dt / RESET_DUR);
-            const t = easeOut(c.resetT);
-            c.x = lerp(c.resetFromX, c.spawnX, t);
-            c.y = lerp(c.resetFromY, c.spawnY, t);
-            c.vx = 0; c.vy = 0;
-            if (c.resetT >= 1) { c.state = 'cooldown'; c.cooldown = COOLDOWN; c.cryT = COOLDOWN; }
-            return;
-          }
-          if (c.state === 'cooldown') {
-            c.cooldown = Math.max(0, c.cooldown - dt);
-            c.cryT     = Math.max(0, c.cryT - dt);
-            if (c.cooldown <= 0) c.state = 'alive';
-            return;
-          }
-
-          // apply input
-          const inp = inputMap[c.id] || {};
-          const axisX = inp.axisX || 0, axisY = inp.axisY || 0;
-          const mag = Math.hypot(axisX, axisY);
-          const boost = inp.boost ? 1.7 : 1;
-
-          if (mag > 0.1) {
-            const targetAngle = Math.atan2(axisY, axisX);
-            let da = targetAngle - c.angle;
-            while (da > Math.PI) da -= Math.PI * 2;
-            while (da < -Math.PI) da += Math.PI * 2;
-            c.angle += Math.sign(da) * Math.min(Math.abs(da), TURN_SPEED * dt);
-            const sp = mag * SPEED * boost;
-            c.vx += Math.cos(c.angle) * sp * dt;
-            c.vy += Math.sin(c.angle) * sp * dt;
-          }
-
-          c.vx *= FRICTION; c.vy *= FRICTION;
-          const sp = Math.hypot(c.vx, c.vy), maxV = SPEED * 1.6 * boost;
-          if (sp > maxV) { c.vx = c.vx / sp * maxV; c.vy = c.vy / sp * maxV; }
-
-          c.x += c.vx * dt; c.y += c.vy * dt;
-
-          // wall bounce
-          const pad = RAIL + 4;
-          if (c.x < pad + CAR_RX)       { c.x = pad + CAR_RX;         c.vx =  Math.abs(c.vx) * .6; }
-          if (c.x > W - pad - CAR_RX)   { c.x = W - pad - CAR_RX;     c.vx = -Math.abs(c.vx) * .6; }
-          if (c.y < pad + CAR_RY)        { c.y = pad + CAR_RY;         c.vy =  Math.abs(c.vy) * .6; }
-          if (c.y > H - pad - CAR_RY)   { c.y = H - pad - CAR_RY;     c.vy = -Math.abs(c.vy) * .6; }
-        });
-
-        // car-car collisions
-        for (let i = 0; i < cars.length; i++) {
-          for (let j = i + 1; j < cars.length; j++) {
-            const a = cars[i], b = cars[j];
-            if (a.state !== 'alive' || b.state !== 'alive') continue;
-            const dx = b.x - a.x, dy = b.y - a.y, d = Math.hypot(dx, dy), minD = BUMP_R * 2;
-            if (d < minD && d > 0.01) {
-              const nx = dx / d, ny = dy / d, ov = (minD - d) / 2;
-              a.x -= nx * ov; a.y -= ny * ov;
-              b.x += nx * ov; b.y += ny * ov;
-              const relV = (b.vx - a.vx) * nx + (b.vy - a.vy) * ny;
-              if (relV < 0) {
-                const imp = relV * 1.2;
-                a.vx += imp * nx; a.vy += imp * ny;
-                b.vx -= imp * nx; b.vy -= imp * ny;
-                if (Math.abs(relV) > 20) {
-                  const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
-                  spawnFX(mx, my, a.col, b.col);
-                  const spA = Math.hypot(a.vx, a.vy), spB = Math.hypot(b.vx, b.vy);
-                  if (spA > spB + 8) { scores[a.id] = (scores[a.id] || 0) + 1; }
-                  else if (spB > spA + 8) { scores[b.id] = (scores[b.id] || 0) + 1; }
-                  a.cryT = COOLDOWN; b.cryT = COOLDOWN;
-                  a.resetFromX = a.x; a.resetFromY = a.y; a.resetT = 0; a.state = 'resetting'; a.vx = 0; a.vy = 0;
-                  b.resetFromX = b.x; b.resetFromY = b.y; b.resetT = 0; b.state = 'resetting'; b.vx = 0; b.vy = 0;
-                  updateSidebar(sb, cars, scores);
-                  broadcastState();
-                }
-              }
-            }
-          }
+    function syncWorld(snapshot){
+      if(!scene) return;
+      for(const s of snapshot){
+        if(!carMeshes[s.slot]){
+          const c=CAR_COLORS[s.slot%6], m=makeCarMesh(c,T3);
+          const ax=(s.x-ARENA.w/2)*SCALE, az=(s.y-ARENA.h/2)*SCALE, ta=-(s.angle+Math.PI/2);
+          m.group.position.set(ax,0,az); m.group.rotation.set(0,ta,0); scene.add(m.group);
+          carMeshes[s.slot]={group:m.group,frontWheels:m.frontWheels,steerA:0,tx:ax,tz:az,ta,ej:false};
         }
-
-        particles = particles.filter(p => {
-          p.life -= dt * (p.type === 'text' ? 1.1 : 1.8);
-          p.x += p.vx * dt; p.y += p.vy * dt;
-          if (p.type !== 'text') p.vy += 90 * dt;
-          return p.life > 0;
-        });
-        shockwaves = shockwaves.filter(s => {
-          s.r += s.maxR * dt * 3; s.life = Math.max(0, 1 - s.r / s.maxR);
-          return s.life > 0;
-        });
-      }
-
-      function spawnFX(x, y, c1, c2) {
-        shockwaves.push({ x, y, r: 0, maxR: 65, life: 1, col: c1 });
-        for (let i = 0; i < 20; i++) {
-          const a = Math.random() * Math.PI * 2, sp = 80 + Math.random() * 160;
-          particles.push({ x, y, vx: Math.cos(a)*sp, vy: Math.sin(a)*sp, life: 1, r: 2+Math.random()*3.5, col: Math.random()<.5?c1:c2, type: Math.random()<.28?'star':'dot' });
-        }
-        particles.push({ x, y: y-10, vx: (Math.random()-.5)*14, vy: -55, life: 1, type: 'text', text: '😭' });
-      }
-
-      // ── draw ───────────────────────────────────────────────
-      function drawFloor() {
-        ctx.fillStyle = '#1c1c1c'; ctx.fillRect(0, 0, W, H);
-        ctx.strokeStyle = '#232323'; ctx.lineWidth = .6;
-        for (let gx = 0; gx < W; gx += 28) { ctx.beginPath(); ctx.moveTo(gx,0); ctx.lineTo(gx,H); ctx.stroke(); }
-        for (let gy = 0; gy < H; gy += 28) { ctx.beginPath(); ctx.moveTo(0,gy); ctx.lineTo(W,gy); ctx.stroke(); }
-        ctx.strokeStyle = '#2b2b2b'; ctx.lineWidth = 1.4; ctx.setLineDash([7,5]);
-        ctx.beginPath(); ctx.moveTo(W/2, RAIL+10); ctx.lineTo(W/2, H-RAIL-10); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(RAIL+10, H/2); ctx.lineTo(W-RAIL-10, H/2); ctx.stroke();
-        ctx.beginPath(); ctx.arc(W/2, H/2, Math.min(W,H)*.18, 0, Math.PI*2); ctx.stroke();
-        ctx.beginPath(); ctx.arc(W/2, H/2, 5, 0, Math.PI*2); ctx.stroke();
-        ctx.setLineDash([]);
-        const arrs = [[W/2,RAIL+22,'d'],[W/2,H-RAIL-22,'u'],[RAIL+22,H/2,'r'],[W-RAIL-22,H/2,'l']];
-        ctx.strokeStyle='#2e2e2e'; ctx.lineWidth=2; ctx.lineCap='round'; ctx.lineJoin='round';
-        arrs.forEach(([ax,ay,dir]) => {
-          ctx.beginPath();
-          if(dir==='d'){ctx.moveTo(ax-8,ay-7);ctx.lineTo(ax,ay+7);ctx.lineTo(ax+8,ay-7);}
-          if(dir==='u'){ctx.moveTo(ax-8,ay+7);ctx.lineTo(ax,ay-7);ctx.lineTo(ax+8,ay+7);}
-          if(dir==='r'){ctx.moveTo(ax-7,ay-8);ctx.lineTo(ax+7,ay);ctx.lineTo(ax-7,ay+8);}
-          if(dir==='l'){ctx.moveTo(ax+7,ay-8);ctx.lineTo(ax-7,ay);ctx.lineTo(ax+7,ay+8);}
-          ctx.stroke();
-        });
-        cars.forEach(c => {
-          ctx.strokeStyle = c.col + '25'; ctx.lineWidth = 1;
-          ctx.beginPath(); ctx.arc(c.spawnX, c.spawnY, 30, 0, Math.PI*2); ctx.stroke();
-        });
-      }
-
-      function drawRail() {
-        const t = Date.now() / 1000;
-        ctx.fillStyle = '#0f0f0f';
-        ctx.fillRect(0,0,W,RAIL); ctx.fillRect(0,H-RAIL,W,RAIL);
-        ctx.fillRect(0,RAIL,RAIL,H-RAIL*2); ctx.fillRect(W-RAIL,RAIL,RAIL,H-RAIL*2);
-        ctx.strokeStyle = '#1e1e1e'; ctx.lineWidth = .8;
-        const seg = 22;
-        for(let x=RAIL;x<W-RAIL;x+=seg){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,RAIL);ctx.stroke();ctx.beginPath();ctx.moveTo(x,H-RAIL);ctx.lineTo(x,H);ctx.stroke();}
-        for(let y=RAIL;y<H-RAIL;y+=seg){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(RAIL,y);ctx.stroke();ctx.beginPath();ctx.moveTo(W-RAIL,y);ctx.lineTo(W,y);ctx.stroke();}
-        const leds = [];
-        for(let x=RAIL+seg*.5;x<W-RAIL;x+=seg){leds.push([x,RAIL/2,leds.length]);leds.push([x,H-RAIL/2,leds.length]);}
-        for(let y=RAIL+seg*.5;y<H-RAIL;y+=seg){leds.push([RAIL/2,y,leds.length]);leds.push([W-RAIL/2,y,leds.length]);}
-        leds.forEach(([lx,ly,idx]) => {
-          const isR=idx%2===0, br=.35+.65*Math.abs(Math.sin(t*1.9+idx*.6));
-          ctx.globalAlpha=br*.9; ctx.fillStyle=isR?'#ff2020':'#2255ff';
-          ctx.beginPath(); ctx.arc(lx,ly,2.8,0,Math.PI*2); ctx.fill();
-          ctx.globalAlpha=br*.28; ctx.fillStyle=isR?'#ff4040':'#3366ff';
-          ctx.beginPath(); ctx.arc(lx,ly,5.5,0,Math.PI*2); ctx.fill();
-          ctx.globalAlpha=1;
-        });
-        [[0,0],[W-RAIL*2,0],[0,H-RAIL*2],[W-RAIL*2,H-RAIL*2]].forEach(([ox,oy],ci) => {
-          ctx.fillStyle='#121212'; ctx.fillRect(ox,oy,RAIL*2,RAIL*2);
-          const cx2=ox+RAIL, cy2=oy+RAIL;
-          [['#ff2020',-5],['#2255ff',5]].forEach(([col,ddx]) => {
-            const br=.4+.6*Math.abs(Math.sin(t*2.1+ci));
-            ctx.globalAlpha=br; ctx.fillStyle=col; ctx.beginPath(); ctx.arc(cx2+ddx,cy2,3,0,Math.PI*2); ctx.fill();
-            ctx.globalAlpha=.2*br; ctx.beginPath(); ctx.arc(cx2+ddx,cy2,6,0,Math.PI*2); ctx.fill();
-            ctx.globalAlpha=1;
-          });
-        });
-      }
-
-      function drawFace(cx, cy, size, mode, cryT) {
-        const s = size, isCry = mode === 'cry';
-        ctx.fillStyle = '#f5c870';
-        ctx.beginPath(); ctx.arc(cx,cy,s,0,Math.PI*2); ctx.fill();
-        ctx.strokeStyle = '#d4930a'; ctx.lineWidth = s*.1;
-        ctx.beginPath(); ctx.arc(cx,cy,s,0,Math.PI*2); ctx.stroke();
-        if (isCry) {
-          ctx.fillStyle='#111';
-          ctx.beginPath(); ctx.ellipse(cx-s*.3,cy-s*.2,s*.18,s*.12,-.4,0,Math.PI*2); ctx.fill();
-          ctx.beginPath(); ctx.ellipse(cx+s*.3,cy-s*.2,s*.18,s*.12,.4,0,Math.PI*2); ctx.fill();
-          ctx.strokeStyle='#555'; ctx.lineWidth=s*.1;
-          ctx.beginPath(); ctx.moveTo(cx-s*.45,cy-s*.42); ctx.lineTo(cx-s*.15,cy-s*.3); ctx.stroke();
-          ctx.beginPath(); ctx.moveTo(cx+s*.45,cy-s*.42); ctx.lineTo(cx+s*.15,cy-s*.3); ctx.stroke();
-          ctx.strokeStyle='#111'; ctx.lineWidth=s*.11; ctx.lineCap='round';
-          ctx.beginPath(); ctx.arc(cx,cy+s*.28,s*.25,Math.PI*.1,Math.PI*.9); ctx.stroke();
-          const tearProg = Math.min(1, 1 - cryT / COOLDOWN);
-          const tearH = s*1.2*tearProg;
-          [cx-s*.28, cx+s*.28].forEach(tx => {
-            const g = ctx.createLinearGradient(tx,cy+s*.12,tx,cy+s*.12+tearH);
-            g.addColorStop(0,'rgba(100,180,255,.9)'); g.addColorStop(1,'rgba(100,180,255,0)');
-            ctx.fillStyle=g;
-            ctx.beginPath(); ctx.moveTo(tx-s*.07,cy+s*.12); ctx.quadraticCurveTo(tx-s*.13,cy+s*.12+tearH*.5,tx,cy+s*.12+tearH); ctx.quadraticCurveTo(tx+s*.13,cy+s*.12+tearH*.5,tx+s*.07,cy+s*.12); ctx.closePath(); ctx.fill();
-          });
+        const cm=carMeshes[s.slot], g=cm.group;
+        const ax=(s.x-ARENA.w/2)*SCALE, az=(s.y-ARENA.h/2)*SCALE;
+        if(s.ejecting){
+          cm.ej=true; const t=s.ejectProgress/90;
+          g.position.set(ax,Math.sin(t*Math.PI)*2.5,az);
+          g.rotation.y=s.angle+Math.PI/2+t*Math.PI*4; g.rotation.z=t*Math.PI*2;
+          g.scale.setScalar(Math.max(0,1-t*0.8)); g.visible=true;
+        } else if(!s.alive){
+          g.visible=false;
         } else {
-          ctx.fillStyle='#111';
-          ctx.beginPath(); ctx.arc(cx-s*.3,cy-s*.18,s*.15,0,Math.PI*2); ctx.fill();
-          ctx.beginPath(); ctx.arc(cx+s*.3,cy-s*.18,s*.15,0,Math.PI*2); ctx.fill();
-          ctx.fillStyle='rgba(255,255,255,.65)';
-          ctx.beginPath(); ctx.arc(cx-s*.22,cy-s*.24,s*.055,0,Math.PI*2); ctx.fill();
-          ctx.beginPath(); ctx.arc(cx+s*.36,cy-s*.24,s*.055,0,Math.PI*2); ctx.fill();
-          ctx.strokeStyle='#333'; ctx.lineWidth=s*.11; ctx.lineCap='round';
-          ctx.beginPath(); ctx.arc(cx,cy+s*.1,s*.3,Math.PI*.15,Math.PI*.85); ctx.stroke();
-          ctx.fillStyle='rgba(255,100,100,.3)';
-          ctx.beginPath(); ctx.arc(cx-s*.43,cy+s*.05,s*.09,0,Math.PI*2); ctx.fill();
-          ctx.beginPath(); ctx.arc(cx+s*.43,cy+s*.05,s*.09,0,Math.PI*2); ctx.fill();
+          cm.ej=false; cm.tx=ax; cm.tz=az; cm.ta=-(s.angle+Math.PI/2);
+          g.scale.setScalar(1); g.visible=true;
+          const pa=prevA[s.slot]??s.angle; let da=s.angle-pa;
+          if(da>Math.PI)da-=2*Math.PI; if(da<-Math.PI)da+=2*Math.PI;
+          cm.steerA=cm.steerA*0.65+Math.max(-0.52,Math.min(0.52,da*9))*0.35;
+          cm.frontWheels.forEach(w=>{w.rotation.y=-cm.steerA;});
         }
+        prevA[s.slot]=s.angle;
       }
+      for(const sl of Object.keys(carMeshes)) if(!snapshot.find(s=>s.slot==sl)){scene.remove(carMeshes[sl].group);delete carMeshes[sl];}
+    }
 
-      function drawCar(c) {
-        const sc = c.popT < 0 ? 0 : Math.min(1, springPop(Math.min(1, c.popT)));
-        if (sc <= 0.02) return;
-        const isCool = c.state === 'cooldown', isReset = c.state === 'resetting';
-        const faceMode = c.cryT > 0 ? 'cry' : 'happy';
-
-        ctx.save();
-        ctx.translate(c.x, c.y);
-        if (isReset) ctx.globalAlpha = Math.sin(Date.now()/60) > .2 ? .9 : .4;
-        if (isCool)  ctx.globalAlpha = .45 + .35*Math.sin(Date.now()/120);
-
-        ctx.rotate(c.angle + Math.PI/2);
-        ctx.scale(sc, sc);
-
-        // shadow
-        ctx.fillStyle='rgba(0,0,0,.38)';
-        ctx.beginPath(); ctx.ellipse(3,CAR_RY+5,CAR_RX*.9,6,0,0,Math.PI*2); ctx.fill();
-
-        // bumper ring
-        ctx.strokeStyle=c.col; ctx.lineWidth=5;
-        const prevAlpha = ctx.globalAlpha;
-        ctx.globalAlpha=prevAlpha*.55;
-        ctx.beginPath(); ctx.ellipse(0,0,BUMP_R,BUMP_R*.76,0,0,Math.PI*2); ctx.stroke();
-        ctx.globalAlpha=isCool||isReset ? prevAlpha*.6 : 1;
-
-        // body
-        ctx.fillStyle=c.dark; ctx.beginPath(); ctx.ellipse(0,1,CAR_RX,CAR_RY,0,0,Math.PI*2); ctx.fill();
-        ctx.fillStyle=c.col;  ctx.beginPath(); ctx.ellipse(0,-1,CAR_RX,CAR_RY,0,0,Math.PI*2); ctx.fill();
-        ctx.fillStyle='rgba(255,255,255,.14)';
-        ctx.beginPath(); ctx.ellipse(-4,-6,CAR_RX*.5,CAR_RY*.38,-.2,0,Math.PI*2); ctx.fill();
-
-        ctx.globalAlpha=1;
-        drawFace(2, -1, 5.2, faceMode, c.cryT);
-
-        // LED strip
-        const ledY = CAR_RY - 2;
-        for(let li=-3;li<=3;li++){
-          const br = isCool ? .25 : .6+.4*Math.abs(Math.sin(Date.now()/200+li*.5));
-          ctx.globalAlpha=br; ctx.fillStyle=c.led;
-          ctx.beginPath(); ctx.arc(li*3.2,ledY,1.6,0,Math.PI*2); ctx.fill();
-        }
-        ctx.globalAlpha=1;
-
-        // headlights
-        ctx.fillStyle='rgba(255,255,220,.9)';
-        ctx.beginPath(); ctx.ellipse(CAR_RX-4,-5,4,2.8,-.25,0,Math.PI*2); ctx.fill();
-        ctx.beginPath(); ctx.ellipse(CAR_RX-4,5,4,2.8,.25,0,Math.PI*2); ctx.fill();
-
-        // cooldown bar
-        if (isCool) {
-          const bW=36, bH=4, fill=c.cooldown/COOLDOWN;
-          ctx.fillStyle='rgba(0,0,0,.55)'; ctx.beginPath(); ctx.roundRect(-bW/2,-CAR_RY-14,bW,bH,2); ctx.fill();
-          ctx.fillStyle='#60aaff';         ctx.beginPath(); ctx.roundRect(-bW/2,-CAR_RY-14,bW*fill,bH,2); ctx.fill();
-        }
-
-        ctx.restore();
-
-        // name tag
-        if (sc > .5 && !isReset) {
-          ctx.save();
-          ctx.font='bold 10px Quicksand,sans-serif'; ctx.textAlign='center';
-          const label = isCool ? c.name+' 😭' : c.name;
-          const tw = ctx.measureText(label).width+10;
-          ctx.fillStyle='rgba(0,0,0,.72)';
-          ctx.beginPath(); if(ctx.roundRect) ctx.roundRect(c.x-tw/2,c.y-CAR_RY*sc-18,tw,14,3); else ctx.rect(c.x-tw/2,c.y-CAR_RY*sc-18,tw,14);
-          ctx.fill();
-          ctx.fillStyle = isCool ? '#888' : c.col;
-          ctx.fillText(label, c.x, c.y-CAR_RY*sc-7);
-          ctx.restore();
-        }
-      }
-
-      function drawFX() {
-        shockwaves.forEach(s => {
-          ctx.globalAlpha=s.life*.45; ctx.strokeStyle=s.col; ctx.lineWidth=3;
-          ctx.beginPath(); ctx.arc(s.x,s.y,s.r,0,Math.PI*2); ctx.stroke();
-          ctx.globalAlpha=s.life*.18; ctx.strokeStyle='#fff'; ctx.lineWidth=1.5;
-          ctx.beginPath(); ctx.arc(s.x,s.y,s.r*.65,0,Math.PI*2); ctx.stroke();
-          ctx.globalAlpha=1;
-        });
-        particles.forEach(p => {
-          const al=Math.max(0,p.life);
-          if(p.type==='text'){
-            ctx.globalAlpha=al; ctx.font=`bold ${Math.round(13+al*6)}px sans-serif`; ctx.textAlign='center';
-            ctx.strokeStyle='#000'; ctx.lineWidth=3; ctx.strokeText(p.text,p.x,p.y);
-            ctx.fillStyle='#fff'; ctx.fillText(p.text,p.x,p.y);
-            ctx.globalAlpha=1; return;
-          }
-          ctx.globalAlpha=al*.88; ctx.fillStyle=p.col;
-          if(p.type==='star'){
-            ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.life*9);
-            ctx.beginPath();
-            for(let si=0;si<5;si++){const a1=si*2*Math.PI/5-Math.PI/2,a2=(si+.5)*2*Math.PI/5-Math.PI/2;ctx.lineTo(Math.cos(a1)*p.r,Math.sin(a1)*p.r);ctx.lineTo(Math.cos(a2)*p.r*.42,Math.sin(a2)*p.r*.42);}
-            ctx.closePath(); ctx.fill(); ctx.restore();
-          } else {
-            ctx.beginPath(); ctx.arc(p.x,p.y,p.r*Math.max(.2,al),0,Math.PI*2); ctx.fill();
-          }
-          ctx.globalAlpha=1;
-        });
-      }
-
-      // ── broadcast ──────────────────────────────────────────
-      function broadcastState() {
-        if (!isHost || isLocal) return;
-        api.send('state', {
-          cars: cars.map(c=>({ id:c.id, x:c.x, y:c.y, angle:c.angle, state:c.state, cryT:c.cryT, cooldown:c.cooldown })),
-          scores, timeLeft, gameOver
-        });
-        api.setResumeState({ scores, timeLeft });
-      }
-
-      // ── sidebar ────────────────────────────────────────────
-      function updateSidebar(sbEl, crs, sc) {
-        const sorted = [...crs].sort((a,b)=>(sc[b.id]||0)-(sc[a.id]||0));
-        sbEl.innerHTML = `<div style="font-family:Fredoka One,sans-serif;color:#e8e0d0;font-size:.82rem;text-align:center;margin-bottom:8px;letter-spacing:.5px;">SCORES</div>`
-          + sorted.map(c=>`<div style="display:flex;align-items:center;gap:5px;padding:4px 5px;margin-bottom:3px;border-radius:6px;background:#161616;border-left:3px solid ${c.col};">
-              <div style="color:${c.col};font-size:.7rem;font-weight:700;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${c.name}</div>
-              <div style="color:#ffd700;font-size:.8rem;font-weight:700;">${sc[c.id]||0}</div>
-            </div>`).join('')
-          + `<div style="margin-top:10px;border-top:1px solid #1e1e1e;padding-top:7px;text-align:center;">
-              <div style="color:#444;font-size:.6rem;letter-spacing:1px;margin-bottom:2px;">ROOM</div>
-              <div style="color:#e8e0d0;font-size:.95rem;letter-spacing:3px;font-weight:700;">BUMP</div>
-            </div>`;
-      }
-
-      // ── timer ─────────────────────────────────────────────
-      function updateTimerEl() {
-        const el = document.getElementById('bcar-timer'); if (!el) return;
-        const m = Math.floor(timeLeft/60), s = timeLeft%60;
-        el.textContent = `${m}:${String(s).padStart(2,'0')}`;
-        el.style.color = timeLeft <= 10 ? '#ff3b30' : '#fff';
-      }
-
-      // ── countdown ─────────────────────────────────────────
-      function runCD(n, onDone) {
-        cdEl.innerHTML = '';
-        if (n === 0) {
-          cdEl.innerHTML='<div style="font-family:Fredoka One,sans-serif;font-size:clamp(40px,12vw,90px);color:#00e676;text-shadow:0 0 50px #00e676;animation:bcPop .5s both;">GO!</div>';
-          cdTimer=setTimeout(()=>{ cdEl.innerHTML=''; onDone(); },700); return;
-        }
-        cdEl.innerHTML=`<div style="font-family:Fredoka One,sans-serif;font-size:clamp(50px,15vw,110px);color:#fff;text-shadow:0 0 50px rgba(255,255,255,.4);animation:bcPop .7s both;">${n}</div>`;
-        cdTimer=setTimeout(()=>runCD(n-1,onDone), 900);
-      }
-
-      // ── game loop ──────────────────────────────────────────
-      function loop(ts) {
-        rafId = requestAnimationFrame(loop);
-        if (!W || !H) return;
-        const dt = Math.min((ts - lastTs) / 1000, .05); lastTs = ts;
-        if (!gameOver && isHost) physStep(dt);
-        ctx.clearRect(0,0,W,H);
-        drawFloor(); drawRail();
-        cars.forEach(drawCar);
-        drawFX();
-      }
-      lastTs = performance.now();
-      rafId = requestAnimationFrame(loop);
-
-      // ── timer tick (host only) ─────────────────────────────
-      if (isHost) {
-        runCD(3, () => {
-          tickTimer = setInterval(() => {
-            if (gameOver) return;
-            timeLeft = Math.max(0, timeLeft - 1);
-            updateTimerEl();
-            updateSidebar(sb, cars, scores);
-            broadcastState();
-            if (timeLeft <= 0) {
-              gameOver = true;
-              clearInterval(tickTimer);
-              broadcastState();
-              showWin(winEl, cars, scores);
-            }
-          }, 1000);
-        });
-      }
-
-      // ── network ────────────────────────────────────────────
-      api.on('input', (data, from) => {
-        if (!isHost) return;
-        const p = data.payload || data;
-        inputMap[from] = p;
-      });
-
-      api.on('state', (data) => {
-        if (isHost) return;
-        const s = data.payload || data;
-        if (s.cars) {
-          s.cars.forEach(sc2 => {
-            const c = cars.find(x=>x.id===sc2.id); if(!c) return;
-            c.x=sc2.x; c.y=sc2.y; c.angle=sc2.angle; c.state=sc2.state; c.cryT=sc2.cryT; c.cooldown=sc2.cooldown;
-          });
-        }
-        if (s.scores) Object.assign(scores, s.scores);
-        if (s.timeLeft !== undefined) { timeLeft = s.timeLeft; updateTimerEl(); }
-        if (s.gameOver && !gameOver) { gameOver=true; showWin(winEl,cars,scores); }
-        updateSidebar(sb, cars, scores);
-      });
-
-      function showWin(el, crs, sc) {
-        const sorted=[...crs].sort((a,b)=>(sc[b.id]||0)-(sc[a.id]||0));
-        const top=sorted[0], medals=['🥇','🥈','🥉'];
-        el.style.display='flex';
-        el.innerHTML=`<div style="font-family:Fredoka One,sans-serif;font-size:clamp(22px,6vw,52px);color:${top.col};text-shadow:0 0 40px ${top.col}88;text-align:center;">🏆 ${top.name} WINS!</div>`
-          +`<div style="display:flex;gap:7px;flex-wrap:wrap;justify-content:center;">`
-          +sorted.map((c,ri)=>`<div style="padding:4px 10px;border-radius:8px;background:${c.col}22;border:1px solid ${c.col}44;color:${c.col};font-size:.75rem;font-weight:700;">${medals[ri]||`${ri+1}.`} ${c.name} — ${sc[c.id]||0} pts</div>`).join('')
-          +`</div>`;
+    function lerpCars(){
+      const L=0.3;
+      for(const cm of Object.values(carMeshes)){
+        if(cm.ej||!cm.group.visible||cm.tx===undefined) continue;
+        cm.group.position.x+=(cm.tx-cm.group.position.x)*L;
+        cm.group.position.z+=(cm.tz-cm.group.position.z)*L;
+        let da=cm.ta-cm.group.rotation.y;
+        if(da>Math.PI)da-=Math.PI*2; if(da<-Math.PI)da+=Math.PI*2;
+        cm.group.rotation.y+=da*L;
       }
     }
 
-    // ════════════════════════════════════════
-    //  GUEST CONTROLLER VIEW  — full-screen phone layout
-    //  Matches RC Soccer: joystick left, bump right, info centre
-    // ════════════════════════════════════════
-    function startController(players) {
-      stopAll();
-      root.innerHTML = '';
-
-      const myIdx = players.findIndex(p => p.id === me.id);
-      const def   = CAR_DEFS[myIdx >= 0 ? myIdx % CAR_DEFS.length : 0];
-      const col   = def.col;
-
-      // ── root becomes the full controller screen ────────────
-      root.style.cssText = [
-        'width:100%;height:100%;position:relative;overflow:hidden;',
-        'background:#070710;',
-        'display:flex;flex-direction:column;',
-        'font-family:Quicksand,sans-serif;',
-        'user-select:none;-webkit-user-select:none;',
-      ].join('');
-
-      // ── top info bar ───────────────────────────────────────
-      const topBar = document.createElement('div');
-      topBar.style.cssText = [
-        'display:flex;align-items:center;justify-content:space-between;',
-        'padding:10px 18px 6px;flex-shrink:0;',
-        'background:rgba(0,0,0,.6);backdrop-filter:blur(10px);',
-        'border-bottom:1px solid rgba(255,255,255,.06);',
-      ].join('');
-
-      // car colour pill + name
-      const carLabel = document.createElement('div');
-      carLabel.style.cssText = [
-        `color:${col};font-family:Fredoka One,sans-serif;font-size:1rem;`,
-        'display:flex;align-items:center;gap:8px;',
-      ].join('');
-      carLabel.innerHTML = `<div style="width:11px;height:11px;border-radius:50%;background:${col};box-shadow:0 0 8px ${col}88;flex-shrink:0;"></div>${def.name}`;
-
-      // live rank / timer
-      const rankEl = document.createElement('div');
-      rankEl.id    = 'bcar-rank';
-      rankEl.style.cssText = 'font-size:.8rem;color:#555;font-weight:700;text-align:right;';
-      rankEl.textContent   = 'Waiting for host…';
-
-      topBar.appendChild(carLabel);
-      topBar.appendChild(rankEl);
-      root.appendChild(topBar);
-
-      // ── controller area — fills remaining height ───────────
-      const ctrlArea = document.createElement('div');
-      ctrlArea.style.cssText = [
-        'flex:1;display:flex;align-items:center;justify-content:space-between;',
-        'padding:0 28px;gap:0;position:relative;',
-      ].join('');
-      root.appendChild(ctrlArea);
-
-      // ── LEFT: joystick (identical sizing logic to RC Soccer) ─
-      const JOY_S  = 90;   // outer circle diameter
-      const KNOB_S = 36;   // knob diameter
-      const MAX_D  = 28;   // max drag pixels
-
-      const joyWrap = document.createElement('div');
-      joyWrap.style.cssText = [
-        `width:${JOY_S}px;height:${JOY_S}px;border-radius:50%;`,
-        'background:radial-gradient(circle at 35% 30%,#2a2a2a,#0c0c0c);',
-        'border:2px solid #333;position:relative;cursor:pointer;touch-action:none;',
-        'flex-shrink:0;box-shadow:0 4px 18px rgba(0,0,0,.8);',
-      ].join('');
-
-      const knob = document.createElement('div');
-      knob.style.cssText = [
-        `width:${KNOB_S}px;height:${KNOB_S}px;border-radius:50%;`,
-        'background:radial-gradient(circle at 35% 30%,#666,#1e1e1e);',
-        'border:1px solid #444;position:absolute;top:50%;left:50%;',
-        'transform:translate(-50%,-50%);pointer-events:none;transition:transform .07s;',
-      ].join('');
-      joyWrap.appendChild(knob);
-
-      // ── CENTRE: player dot + label ─────────────────────────
-      const centreInfo = document.createElement('div');
-      centreInfo.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:6px;flex-shrink:0;';
-      centreInfo.innerHTML = [
-        `<div style="width:14px;height:14px;border-radius:50%;background:${col};`,
-        `box-shadow:0 0 12px ${col}99;"></div>`,
-        `<div style="color:${col};font-size:.65rem;font-weight:700;letter-spacing:1.5px;">P${myIdx + 1}</div>`,
-      ].join('');
-
-      // ── RIGHT: boost button (same raised-disc style as RC Soccer bump) ─
-      const BTN_S = 80;
-      const boostBtn = document.createElement('div');
-      boostBtn.style.cssText = [
-        `width:${BTN_S}px;height:${BTN_S}px;border-radius:50%;`,
-        `background:radial-gradient(circle at 38% 32%,${col}ee,${col}66);`,
-        `border:2px solid ${col}44;`,
-        `box-shadow:0 6px 0 rgba(0,0,0,.65),0 0 22px ${col}44;`,
-        'cursor:pointer;flex-shrink:0;touch-action:none;',
-        'transition:transform .06s,box-shadow .06s;',
-        'display:flex;align-items:center;justify-content:center;',
-        'font-size:1.8rem;',
-      ].join('');
-      boostBtn.textContent = '🚀';
-
-      ctrlArea.appendChild(joyWrap);
-      ctrlArea.appendChild(centreInfo);
-      ctrlArea.appendChild(boostBtn);
-
-      // ── hint strip at very bottom ──────────────────────────
-      const hint = document.createElement('div');
-      hint.style.cssText = [
-        'text-align:center;font-size:.62rem;color:#2a2a2a;',
-        'padding:6px 0 10px;flex-shrink:0;',
-      ].join('');
-      hint.textContent = 'drag joystick to steer  ·  tap 🚀 for boost';
-      root.appendChild(hint);
-
-      // ── joystick interaction ───────────────────────────────
-      let drag = false, ox = 0, oy = 0;
-      const inp = { axisX: 0, axisY: 0, boost: false };
-
-      function sendInp() { api.send('input', { ...inp }); }
-
-      function startDrag(cx, cy) {
-        drag = true;
-        const r = joyWrap.getBoundingClientRect();
-        ox = r.left + r.width  / 2;
-        oy = r.top  + r.height / 2;
-        moveDrag(cx, cy);
-      }
-      function moveDrag(cx, cy) {
-        if (!drag) return;
-        let dx = cx - ox, dy = cy - oy;
-        const d = Math.sqrt(dx * dx + dy * dy);
-        if (d > MAX_D) { dx = dx / d * MAX_D; dy = dy / d * MAX_D; }
-        knob.style.transform = `translate(calc(-50% + ${dx}px),calc(-50% + ${dy}px))`;
-        inp.axisX = dx / MAX_D;
-        inp.axisY = dy / MAX_D;
-        sendInp();
-      }
-      function endDrag() {
-        drag = false;
-        knob.style.transform = 'translate(-50%,-50%)';
-        inp.axisX = 0; inp.axisY = 0;
-        sendInp();
-      }
-
-      joyWrap.addEventListener('mousedown',  e => { e.preventDefault(); startDrag(e.clientX, e.clientY); });
-      joyWrap.addEventListener('touchstart', e => { e.preventDefault(); startDrag(e.touches[0].clientX, e.touches[0].clientY); }, { passive: false });
-
-      const onMM = e => moveDrag(e.clientX, e.clientY);
-      const onTM = e => { e.preventDefault(); moveDrag(e.touches[0].clientX, e.touches[0].clientY); };
-      document.addEventListener('mousemove',  onMM);
-      document.addEventListener('touchmove',  onTM, { passive: false });
-      document.addEventListener('mouseup',    endDrag);
-      document.addEventListener('touchend',   endDrag);
-      evCleaners.push(() => {
-        document.removeEventListener('mousemove',  onMM);
-        document.removeEventListener('touchmove',  onTM);
-        document.removeEventListener('mouseup',    endDrag);
-        document.removeEventListener('touchend',   endDrag);
-      });
-
-      // ── boost button interaction ───────────────────────────
-      const boostDown = () => {
-        inp.boost = true;
-        boostBtn.style.transform   = 'translateY(5px)';
-        boostBtn.style.boxShadow   = `0 1px 0 rgba(0,0,0,.65),0 0 8px ${col}44`;
-        sendInp();
-      };
-      const boostUp = () => {
-        inp.boost = false;
-        boostBtn.style.transform   = '';
-        boostBtn.style.boxShadow   = `0 6px 0 rgba(0,0,0,.65),0 0 22px ${col}44`;
-        sendInp();
-      };
-      boostBtn.addEventListener('mousedown',  e => { e.preventDefault(); boostDown(); });
-      boostBtn.addEventListener('touchstart', e => { e.preventDefault(); boostDown(); }, { passive: false });
-      boostBtn.addEventListener('mouseup',    boostUp);
-      boostBtn.addEventListener('touchend',   boostUp);
-      boostBtn.addEventListener('mouseleave', boostUp);
-
-      // ── receive host state — update rank strip ─────────────
-      api.on('state', (data) => {
-        const s = data.payload || data;
-        if (!s.scores || !s.cars) return;
-        const sorted = [...s.cars].sort((a, b) => (s.scores[b.id] || 0) - (s.scores[a.id] || 0));
-        const rank   = sorted.findIndex(c => c.id === me.id) + 1;
-        const myPts  = s.scores[me.id] || 0;
-        const tl     = s.timeLeft !== undefined ? s.timeLeft : 0;
-        const mm     = Math.floor(tl / 60), ss = tl % 60;
-        rankEl.style.color = '#aaa';
-        rankEl.textContent = `#${rank}  ·  ${myPts} pts  ·  ${mm}:${String(ss).padStart(2, '0')}`;
-        if (s.gameOver) {
-          carLabel.textContent = '🏁 Game Over!';
-          carLabel.style.color = '#888';
-        }
-      });
+    function updateCam(){
+      const ms=snap.find(s=>s.slot===mySlot);
+      if(!ms||(!ms.alive&&!ms.ejecting&&myEjected)) return;
+      if(!camTouch&&!camRmb) yawOff*=0.94;
+      const cm=carMeshes[mySlot];
+      const mx=cm?cm.group.position.x:(ms.x-ARENA.w/2)*SCALE;
+      const mz=cm?cm.group.position.z:(ms.y-ARENA.h/2)*SCALE;
+      const ang=(cm?cm.group.rotation.y:-(ms.angle+Math.PI/2))+yawOff;
+      _cT.set(mx+Math.sin(ang)*TPP_BEHIND,TPP_HEIGHT,mz+Math.cos(ang)*TPP_BEHIND);
+      _lT.set(mx,CH+0.3,mz);
+      camP.lerp(_cT,CAM_LERP); lookV.lerp(_lT,LOOK_LERP);
+      camera.position.copy(camP); camera.lookAt(lookV);
     }
 
-    // ════════════════════════════════════════
-    //  ENTRY POINT
-    // ════════════════════════════════════════
-    const players = api.getPlayers();
-    if (isHost || isLocal) {
-      startArena(players);
-      if (!isLocal) {
-        // tell guests to show controller
-        api.send('init', { players: players.map(p=>({id:p.id,name:p.name})) });
-        // A guest reconnecting mid-round has no controller UI yet (fresh
-        // create() call) — host resends 'init' so startController() runs
-        // again, then re-broadcasts state so their score/timer display is
-        // correct immediately rather than waiting for the next 1Hz tick.
-        function sendResyncTo(playerId) {
-          api.sendTo(playerId, 'init', { players: players.map(p=>({id:p.id,name:p.name})) });
-          api.send('state', {
-            cars: cars.map(c=>({ id:c.id, x:c.x, y:c.y, angle:c.angle, state:c.state, cryT:c.cryT, cooldown:c.cooldown })),
-            scores, timeLeft, gameOver
+    function threeLoop(){
+      rafId=requestAnimationFrame(threeLoop);
+      if(!scene||!renderer||!camera) return;
+      lerpCars(); updateCam();
+      const t=Date.now()/1000;
+      bumperMeshes.forEach((b,i)=>b.material.color.setHSL(0.6+Math.sin(t+i)*0.1,0.6,0.35));
+      renderer.render(scene,camera);
+    }
+
+    function setupOrbit(cv){
+      let tid=null,lx=0;
+      cv.addEventListener('touchstart',e=>{if(tid!==null)return;const t=e.changedTouches[0];tid=t.identifier;lx=t.clientX;camTouch=true;},{passive:true});
+      cv.addEventListener('touchmove',e=>{if(tid===null)return;for(const t of e.changedTouches)if(t.identifier===tid){yawOff+=(t.clientX-lx)*0.003;lx=t.clientX;break;}},{passive:true});
+      const te=e=>{for(const t of e.changedTouches)if(t.identifier===tid){tid=null;camTouch=false;break;}};
+      cv.addEventListener('touchend',te,{passive:true}); cv.addEventListener('touchcancel',te,{passive:true});
+      cv.addEventListener('contextmenu',e=>e.preventDefault());
+      let rlx=0;
+      cv.addEventListener('mousedown',e=>{if(e.button===2){camRmb=true;rlx=e.clientX;}});
+      const mm=e=>{if(!camRmb)return;yawOff+=(e.clientX-rlx)*0.003;rlx=e.clientX;};
+      const mu=e=>{if(e.button===2)camRmb=false;};
+      window.addEventListener('mousemove',mm); window.addEventListener('mouseup',mu);
+      evCleaners.push(()=>{window.removeEventListener('mousemove',mm);window.removeEventListener('mouseup',mu);});
+    }
+
+    // ── input ─────────────────────────────────────────────────────────────────
+    const keys={up:false,down:false,left:false,right:false};
+    function setupInput(sendFn){
+      [['bc3-u','up'],['bc3-d','down'],['bc3-l','left'],['bc3-r','right']].forEach(([id,k])=>{
+        const b=document.getElementById(id); if(!b) return;
+        const pr=()=>{keys[k]=true;b.classList.add('pr');};
+        const rl=()=>{keys[k]=false;b.classList.remove('pr');};
+        b.addEventListener('touchstart',e=>{e.preventDefault();pr();},{passive:false});
+        b.addEventListener('touchend',  e=>{e.preventDefault();rl();},{passive:false});
+        b.addEventListener('touchcancel',rl);
+        b.addEventListener('mousedown',e=>{e.preventDefault();pr();}); b.addEventListener('mouseup',rl); b.addEventListener('mouseleave',rl);
+      });
+      const kd=e=>{
+        if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key)) e.preventDefault();
+        if(e.key==='ArrowUp'||e.key==='w')keys.up=true;
+        if(e.key==='ArrowDown'||e.key==='s')keys.down=true;
+        if(e.key==='ArrowLeft'||e.key==='a')keys.left=true;
+        if(e.key==='ArrowRight'||e.key==='d')keys.right=true;
+      };
+      const ku=e=>{
+        if(e.key==='ArrowUp'||e.key==='w')keys.up=false;
+        if(e.key==='ArrowDown'||e.key==='s')keys.down=false;
+        if(e.key==='ArrowLeft'||e.key==='a')keys.left=false;
+        if(e.key==='ArrowRight'||e.key==='d')keys.right=false;
+      };
+      window.addEventListener('keydown',kd); window.addEventListener('keyup',ku);
+      evCleaners.push(()=>{window.removeEventListener('keydown',kd);window.removeEventListener('keyup',ku);});
+      const iv=setInterval(()=>sendFn({up:keys.up,down:keys.down,steer:keys.right?steerSens*0.1:keys.left?-steerSens*0.1:0}),50);
+      evCleaners.push(()=>clearInterval(iv));
+    }
+
+    // ── HOST path ─────────────────────────────────────────────────────────────
+    let hPlayers=[], hInputs={}, physIv=null, lastBcast=0, roundDone=false;
+
+    function mkHPlayer(p, i, total){
+      const sp=getSpawn(i,total);
+      return {id:p.id,slot:i,name:p.name,input:{},alive:true,ejecting:false,ejectProgress:0,kills:0,dodges:0,hitsTaken:0,hitCooldown:0,x:sp.x,y:sp.y,angle:sp.angle,vx:0,vy:0,va:0};
+    }
+
+    function hostStart(players){
+      if(physIv){clearInterval(physIv);physIv=null;}
+      hPlayers=players.map((p,i)=>mkHPlayer(p,i,players.length));
+      hInputs={}; roundDone=false;
+      mySlot=hPlayers.find(p=>p.id===me.id)?.slot??0;
+      myEjected=false;
+      const gi={players:hPlayers.map(p=>({id:p.id,slot:p.slot,name:p.name})),matchCfg,matchScores,currentRound};
+      let cv=3;
+      api.send('countdown',{n:cv,gi});
+      showCD(cv);
+      const ci=setInterval(()=>{
+        cv--;
+        if(cv>0){api.send('countdown',{n:cv});showCD(cv);}
+        else{
+          clearInterval(ci);
+          api.send('game-go',gi);
+          show('game');
+          startThree().catch(err=>console.error('[bumper-cars] Three init failed (host):',err)).then(()=>{
+            if(!renderer) return; // init failed — don't start the physics loop against a dead renderer
+            setupInput(inp=>{hInputs[me.id]=inp;});
+            lastBcast=0;
+            physIv=setInterval(()=>{
+              for(const p of hPlayers) if(hInputs[p.id]) p.input=hInputs[p.id];
+              const active=hPlayers.filter(p=>p.alive||p.ejecting);
+              const evs=tickPhysics(active);
+              for(const ev of evs){
+                hPlayers.filter(p=>p.alive&&!p.ejecting&&p.slot!==ev.victimSlot&&p.slot!==ev.killerSlot).forEach(p=>p.dodges++);
+                api.send('eject',{victimSlot:ev.victimSlot,killerSlot:ev.killerSlot});
+                addKill(ev.killerSlot,ev.victimSlot);
+                if(ev.victimSlot===mySlot){
+                  myEjected=true;
+                  setTimeout(()=>{show('ejected');const kc=ev.killerSlot!=null?CAR_COLORS[ev.killerSlot%6]:null;const el=document.getElementById('bc3-ejby');if(el)el.textContent=kc?`Ejected by ${kc.name} Driver!`:'You were ejected!';initSpectate();},1200);
+                }
+                if(!roundDone){const surv=hPlayers.filter(p=>p.alive&&!p.ejecting),ej=hPlayers.filter(p=>p.ejecting);if(surv.length<=1&&ej.length===0){roundDone=true;setTimeout(()=>endRound(),800);}}
+              }
+              const snapshot=hPlayers.map(p=>({slot:p.slot,id:p.id,x:Math.round(p.x*10)/10,y:Math.round(p.y*10)/10,angle:Math.round(p.angle*1000)/1000,vx:Math.round(p.vx*10)/10,vy:Math.round(p.vy*10)/10,alive:p.alive,ejecting:p.ejecting,ejectProgress:p.ejectProgress,kills:p.kills,dodges:p.dodges}));
+              snap=snapshot;
+              if(T3&&scene) syncWorld(snapshot);
+              updateHUD(snapshot,mySlot);
+              const now=Date.now();
+              if(now-lastBcast>=50){api.send('state',snapshot);api.setResumeState({matchCfg,matchScores,currentRound});lastBcast=now;}
+            },1000/60);
           });
         }
-        api.onPlayerRejoinedMidgame(({ playerId }) => sendResyncTo(playerId));
-        // onPlayerRejoinedMidgame can fire before the rejoining guest's own
-        // dynamic import finishes and registers its listeners — a push that
-        // arrives too early is silently dropped (no buffering/retry). The
-        // regular per-tick broadcastState() call already self-heals this
-        // within about a second either way, but guests also pull explicitly
-        // on startup to skip that brief delay.
-        api.on('bc-request-state', (_payload, fromPeer) => sendResyncTo(fromPeer));
-      }
+      },1000);
+    }
+
+    function endRound(){
+      if(physIv){clearInterval(physIv);physIv=null;}
+      const winner=hPlayers.find(p=>p.alive)||[...hPlayers].sort((a,b)=>b.kills-a.kills)[0];
+      if(winner) matchScores[winner.slot]=(matchScores[winner.slot]||0)+1;
+      const wn=Math.ceil(matchCfg.bestOf/2);
+      const mwe=Object.entries(matchScores).find(([,w])=>w>=wn);
+      let matchWinner=null;
+      if(mwe){const ws=parseInt(mwe[0]),wp=hPlayers.find(p=>p.slot===ws);if(wp)matchWinner={slot:wp.slot,wins:mwe[1]};}
+      const sorted=[...hPlayers].sort((a,b)=>(b.kills*3+b.dodges)-(a.kills*3+a.dodges));
+      const res={
+        winner:winner?{slot:winner.slot}:null,
+        leaderboard:sorted.map(p=>({slot:p.slot,kills:p.kills,dodges:p.dodges})),
+        matchScores:hPlayers.map(p=>({slot:p.slot,wins:matchScores[p.slot]||0})),
+        matchOver:!!matchWinner,matchWinner,bestOf:matchCfg.bestOf,currentRound
+      };
+      api.send('results',res);
+      showResults(res);
+    }
+
+    function hostPlayAgain(resetMatch){
+      if(resetMatch){matchScores={};currentRound=1;}else currentRound++;
+      const players=api.getPlayers();
+      const gi={players:players.map((p,i)=>({id:p.id,slot:i,name:p.name})),matchCfg,matchScores,currentRound};
+      api.send('lobby-back',gi);
+      renderLobby(players, players.findIndex(p=>p.id===me.id));
+      show('lobby');
+    }
+
+    // ── GUEST path ────────────────────────────────────────────────────────────
+    if(!isHost){
+      api.on('countdown',(data)=>{const d=data?.payload??data;showCD(d.n);});
+      api.on('game-go',(data)=>{
+        const d=data?.payload??data;
+        mySlot=d.players?.find(p=>p.id===me.id)?.slot??0;
+        if(d.matchCfg)matchCfg=d.matchCfg; if(d.matchScores)matchScores=d.matchScores; if(d.currentRound)currentRound=d.currentRound;
+        myEjected=false; show('game');
+        startThree()
+          .then(()=>{ if(renderer) setupInput(inp=>api.send('input',inp)); })
+          .catch(err=>console.error('[bumper-cars] Three init failed (guest):',err));
+      });
+      api.on('state',(data)=>{
+        const s=data?.payload??data;
+        if(!Array.isArray(s)) return;
+        snap=s;
+        if(T3&&scene) syncWorld(s);
+        updateHUD(s,mySlot);
+      });
+      api.on('eject',(data)=>{
+        const d=data?.payload??data;
+        addKill(d.killerSlot,d.victimSlot);
+        if(d.victimSlot===mySlot){
+          myEjected=true;
+          setTimeout(()=>{show('ejected');const kc=d.killerSlot!=null?CAR_COLORS[d.killerSlot%6]:null;const el=document.getElementById('bc3-ejby');if(el)el.textContent=kc?`Ejected by ${kc.name} Driver!`:'You were ejected!';initSpectate();},1200);
+        }
+      });
+      api.on('results',(data)=>{const d=data?.payload??data;setTimeout(()=>showResults(d),800);});
+      api.on('lobby-back',(data)=>{
+        const d=data?.payload??data;
+        if(d.matchCfg)matchCfg=d.matchCfg; if(d.matchScores)matchScores=d.matchScores; if(d.currentRound)currentRound=d.currentRound;
+        const players=api.getPlayers();
+        renderLobby(players,d.players?.findIndex(p=>p.id===me.id)??0);
+        show('lobby');
+      });
+      api.on('cfg-sync',(data)=>{
+        const d=data?.payload??data;
+        if(d.matchCfg)matchCfg=d.matchCfg; if(d.matchScores)matchScores=d.matchScores; if(d.currentRound)currentRound=d.currentRound;
+      });
+      api.send('bc-request-state',{});
     } else {
-      startController(players);
-      api.on('init', (data) => {
-        const p = data.payload || data;
-        startController(p.players || players);
+      api.on('input',(data,from)=>{const p=data?.payload??data;hInputs[from]=p;});
+      api.on('play-again',()=>hostPlayAgain(false));
+      api.on('cfg-sync',()=>{});  // host is source of truth, ignore echoes
+      api.on('bc-request-state',(_,from)=>{
+        const gi={players:api.getPlayers().map((p,i)=>({id:p.id,slot:i,name:p.name})),matchCfg,matchScores,currentRound};
+        api.sendTo(from,'lobby-back',gi);
       });
-      api.send('bc-request-state', {});
+      api.onPlayerRejoinedMidgame(({playerId})=>{
+        const gi={players:api.getPlayers().map((p,i)=>({id:p.id,slot:i,name:p.name})),matchCfg,matchScores,currentRound};
+        api.sendTo(playerId,'lobby-back',gi);
+      });
     }
+
+    // ── init ──────────────────────────────────────────────────────────────────
+    const allP=api.getPlayers();
+    mySlot=allP.findIndex(p=>p.id===me.id);
+    renderLobby(allP,mySlot);
+    show('lobby');
 
     return {
-      destroy() {
-        stopAll();
+      destroy(){
+        if(physIv){clearInterval(physIv);physIv=null;}
+        if(rafId){cancelAnimationFrame(rafId);rafId=null;}
+        if(renderer){renderer.dispose();renderer=null;}
+        evCleaners.splice(0).forEach(fn=>{try{fn();}catch(e){}});
         root.remove();
       }
     };
