@@ -2,6 +2,11 @@ import { DurableObject } from "cloudflare:workers";
 
 const INACTIVITY_TTL_MS = 15 * 60 * 1000; // 15 min — covers empty room AND disconnected player grace period
 const TICK_INTERVAL_MS = 50; // 20Hz simulation tick for authoritative rooms
+// Don't rewrite the TTL alarm on every single message. Relayed gameplay runs at
+// ~20Hz, and setAlarm is a storage write — pushing the 15-min deadline forward
+// at most once per minute keeps the room-alive semantics intact (a room is
+// "active" if it saw traffic in the last minute) while cutting writes ~1200x.
+const ALARM_MIN_INTERVAL_MS = 60 * 1000;
 
 /**
  * One instance of this Durable Object = one game room.
@@ -79,6 +84,7 @@ export class RoomSignaling extends DurableObject {
     this.roomPhase = "lobby"; // "lobby" | "in-game"
     this.selectedGame = null; // gameId, mirrors client's GAME_REGISTRY ids
     this.lastResumeState = null; // opaque blob from the host's game module; see header comment
+    this._lastAlarmAt = 0; // in-memory throttle for resetInactivityAlarm (see ALARM_MIN_INTERVAL_MS)
 
     // Restore state after hibernation/restart.
     this.ctx.blockConcurrencyWhile(async () => {
@@ -159,7 +165,7 @@ export class RoomSignaling extends DurableObject {
       state.connected = true;
     }
     await this.persistPlayers();
-    this.resetInactivityAlarm();
+    this.resetInactivityAlarm(true); // connect is rare + significant — keep TTL exact
 
     server.send(
       JSON.stringify({
@@ -317,9 +323,20 @@ export class RoomSignaling extends DurableObject {
   // (ctx.storage.setAlarm), since alarms persist even if the DO is evicted and
   // survive across hibernation — a plain setTimeout would not.
 
-  resetInactivityAlarm() {
-    // Fire-and-forget; no need to block message handling on this.
-    this.ctx.storage.setAlarm(Date.now() + INACTIVITY_TTL_MS);
+  resetInactivityAlarm(force = false) {
+    // Throttled: skip the storage write if we pushed the deadline forward
+    // recently, UNLESS force=true (used for rare, significant events like a
+    // connect/disconnect, where we want the TTL to be exact). The hot path —
+    // per-message relaying at ~20Hz — passes no arg and is throttled.
+    //
+    // Safe against hibernation: this._lastAlarmAt is in-memory and resets to 0
+    // when the DO is reconstructed, so the first message after a restart always
+    // writes. The alarm itself persists in storage across hibernation, so no
+    // cleanup is ever missed — throttling only affects how often we *refresh* it.
+    const now = Date.now();
+    if (!force && now - this._lastAlarmAt < ALARM_MIN_INTERVAL_MS) return;
+    this._lastAlarmAt = now;
+    this.ctx.storage.setAlarm(now + INACTIVITY_TTL_MS);
   }
 
   async alarm() {
