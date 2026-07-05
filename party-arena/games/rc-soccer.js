@@ -65,7 +65,7 @@ function buildState(bs,nP,mode,gameSecs,goalWin){
     running:false,goalEvent:null,_stuck:null,_flash:0};
 }
 function launchBall(gs){
-  const ang=Math.random()*Math.PI*2,spd=gs.bs*0.0038;
+  const ang=Math.random()*Math.PI*2,spd=gs.bs*0.0046; // was 0.0038 — faster kickoff
   gs.ball.vx=Math.cos(ang)*spd;gs.ball.vy=Math.sin(ang)*spd;gs.running=true;
 }
 function resetAfterGoal(gs){
@@ -83,7 +83,7 @@ function resetAfterGoal(gs){
 function stepGame(gs,inp,dt){
   if(!gs.running||gs.goalEvent)return;
   const{bs,puckR,goalHW,sides}=gs;
-  const br=bs*0.026,pSp=bs*0.0058,maxB=bs*0.015,jB=bs*0.020;
+  const br=bs*0.026,pSp=bs*0.0058,maxB=bs*0.018,jB=bs*0.024; // maxB/jB raised ~20% for a livelier ball
   gs.pucks.forEach((p,i)=>{
     const s=sides[p.sideIdx],a=inp[i]?.axis??0;
     p.t=Math.max(p.minT,Math.min(p.maxT,p.t+a*pSp/s.len));
@@ -129,7 +129,7 @@ function stepGame(gs,inp,dt){
 function capB(b,m){const s=Math.sqrt(b.vx**2+b.vy**2);if(s>m){b.vx=b.vx/s*m;b.vy=b.vy/s*m;}}
 function antiStuck(gs,dt){
   const{bs,puckR,pucks,ball,cx,cy}=gs;
-  const br=bs*0.026,mn=bs*0.003,mx=bs*0.015,es=mx*1.5;
+  const br=bs*0.026,mn=bs*0.003,mx=bs*0.018,es=mx*1.5; // mx matches raised maxB in stepGame
   const sp=Math.sqrt(ball.vx**2+ball.vy**2);
   if(sp<0.0001){const a=Math.random()*Math.PI*2;ball.vx=Math.cos(a)*mn;ball.vy=Math.sin(a)*mn;}
   else if(sp<mn){ball.vx=ball.vx/sp*mn;ball.vy=ball.vy/sp*mn;}
@@ -407,6 +407,7 @@ export default {
       myPovAngle=(isLocal||mySide<0)?0:povAngle(mySide);
 
       const CTRL_H=88; // height of bottom controller strip
+      const HUD_H=42;  // reserved space above canvas so the score bar never sits over the top goal mouth
 
       // ── canvas (explicit px size set after first layout)
       const canvas=document.createElement('canvas');
@@ -444,15 +445,15 @@ export default {
       function applySize(){
         const W=container.offsetWidth||container.getBoundingClientRect().width||400;
         const H=container.offsetHeight||container.getBoundingClientRect().height||400;
-        const availH=hasCtrl?H-CTRL_H:H;
+        const availH=H-(hasCtrl?CTRL_H:0)-HUD_H;
         const bs=Math.max(100,Math.floor(Math.min(W,availH)));
         if(bs===currentBS) return;
         currentBS=bs;
 
         canvas.width=bs;canvas.height=bs;
-        // center the square canvas in the container
+        // center the square canvas in the container, below the reserved HUD strip
         const left=Math.floor((W-bs)/2);
-        const top=hasCtrl?0:Math.floor((H-bs)/2);
+        const top=HUD_H+(hasCtrl?0:Math.floor((H-HUD_H-bs)/2));
         canvas.style.left=left+'px';
         canvas.style.top=top+'px';
         canvas.style.width=bs+'px';

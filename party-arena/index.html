@@ -1420,6 +1420,18 @@
             case "room-sync":
               state.players = data.players;
               if (data.selectedGame) state.selectedGame = data.selectedGame;
+              // Room-sync replaces the whole player list wholesale, which can
+              // race with our own player-joined name announcement (sent right
+              // after connecting — see btn-join handler): if this room-sync
+              // was built by the host before it received our real name, it
+              // still has us listed under the "Player" placeholder, and
+              // applying it here would stomp our own already-correct local
+              // entry. Always re-assert our own known name afterward so we
+              // never show ourselves as "Player", regardless of race outcome.
+              {
+                const meIdx = state.players.findIndex((p) => p.id === state.myId);
+                if (meIdx !== -1 && state.myName) state.players[meIdx].name = state.myName;
+              }
               renderPlayerList();
               renderGameGrid();
               break;
@@ -1736,6 +1748,13 @@
             case "room-sync":
               state.players = data.players;
               if (data.selectedGame) state.selectedGame = data.selectedGame;
+              // Same self-name-stomp race as p2pTransport.onMessage — see the
+              // comment there. Re-assert our own known name after any
+              // wholesale room-sync replacement.
+              {
+                const meIdx = state.players.findIndex((p) => p.id === state.myId);
+                if (meIdx !== -1 && state.myName) state.players[meIdx].name = state.myName;
+              }
               renderPlayerList();
               renderGameGrid();
               break;
