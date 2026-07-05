@@ -73,10 +73,11 @@ function ensureCSS() {
 .bc3-gr{display:flex;flex-direction:row;gap:8px;align-items:flex-end;pointer-events:all;}
 .bc3-db{width:66px;height:66px;border-radius:16px;border:2px solid rgba(255,255,255,0.18);background:rgba(0,0,0,0.58);backdrop-filter:blur(6px);color:rgba(255,255,255,0.88);font-size:26px;cursor:pointer;touch-action:manipulation;display:flex;align-items:center;justify-content:center;user-select:none;-webkit-user-select:none;transition:background .06s,transform .06s;}
 .bc3-db.pr,.bc3-db:active{background:rgba(255,255,255,0.22);transform:scale(0.91);}
-.bc3-cam{position:absolute;top:10px;left:12px;z-index:30;width:38px;height:38px;border-radius:10px;border:1px solid rgba(255,255,255,0.15);background:rgba(0,0,0,0.55);backdrop-filter:blur(8px);color:rgba(255,255,255,0.75);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;touch-action:manipulation;}
-.bc3-sens{position:absolute;top:10px;right:12px;z-index:25;display:flex;align-items:center;gap:7px;background:rgba(0,0,0,0.55);backdrop-filter:blur(8px);border-radius:10px;padding:6px 10px;border:1px solid rgba(255,255,255,0.13);}
+.bc3-ctrls{position:absolute;top:58px;right:12px;z-index:25;display:flex;align-items:center;gap:8px;}
+.bc3-cam,.bc3-full{flex-shrink:0;width:38px;height:38px;border-radius:10px;border:1px solid rgba(255,255,255,0.15);background:rgba(0,0,0,0.55);backdrop-filter:blur(8px);color:rgba(255,255,255,0.75);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;touch-action:manipulation;}
+.bc3-sens{flex-shrink:0;display:flex;align-items:center;gap:7px;background:rgba(0,0,0,0.55);backdrop-filter:blur(8px);border-radius:10px;padding:6px 10px;border:1px solid rgba(255,255,255,0.13);}
 .bc3-sens input{width:80px;accent-color:rgba(107,184,245,0.9);cursor:pointer;}
-.bc3-cm .bc3-touch,.bc3-cm .bc3-hud,.bc3-cm .bc3-sens{display:none!important;}
+.bc3-cm .bc3-touch,.bc3-cm .bc3-hud,.bc3-cm .bc3-sens,.bc3-cm .bc3-full{display:none!important;}
 .bc3-ej{background:radial-gradient(ellipse at 50% 40%,#3a1010,#0d0d1a 70%);}
 @keyframes bc3bnc{0%{transform:scale(0) rotate(-15deg)}70%{transform:scale(1.2) rotate(5deg)}100%{transform:scale(1) rotate(0)}}
 .bc3-res{background:radial-gradient(ellipse at 50% 30%,#102a10,#0d0d1a 70%);}
@@ -319,10 +320,21 @@ export default {
         <div class="bc3-gl"><button class="bc3-db" id="bc3-u">▲</button><button class="bc3-db" id="bc3-d">▼</button></div>
         <div class="bc3-gr"><button class="bc3-db" id="bc3-l">◀</button><button class="bc3-db" id="bc3-r">▶</button></div>
       </div>
-      <button class="bc3-cam" id="bc3-cam">👁</button>
-      <div class="bc3-sens"><span style="font-size:14px">↔</span><input type="range" id="bc3-sns" min="1" max="10" value="5"></div>`;
+      <div class="bc3-ctrls">
+        <button class="bc3-cam" id="bc3-cam">👁</button>
+        <div class="bc3-sens"><span style="font-size:14px">↔</span><input type="range" id="bc3-sns" min="1" max="10" value="5"></div>
+        <button class="bc3-full" id="bc3-full">⛶</button>
+      </div>`;
     document.getElementById('bc3-cam').onclick=()=>gameScr.classList.toggle('bc3-cm');
     document.getElementById('bc3-sns').addEventListener('input',e=>steerSens=+e.target.value);
+    const fullBtn=document.getElementById('bc3-full');
+    fullBtn.onclick=()=>{
+      if(!document.fullscreenElement) container.requestFullscreen?.().catch(()=>{});
+      else document.exitFullscreen?.();
+    };
+    const onFsChange=()=>{fullBtn.textContent=document.fullscreenElement?'⤢':'⛶';};
+    document.addEventListener('fullscreenchange',onFsChange);
+    evCleaners.push(()=>document.removeEventListener('fullscreenchange',onFsChange));
 
     // ── ejected screen ────────────────────────────────────────────────────────
     const ejScr=mkScr('ejected','bc3-ej');
