@@ -35,7 +35,9 @@ function darken(h,a) {const[r,g,b]=[parseInt(h.slice(1,3),16),parseInt(h.slice(3
 
 // ── game state ─────────────────────────────────────────────────
 function buildState(bs,nP,mode,gameSecs,goalWin){
-  const cx=bs/2,cy=bs/2,fieldR=bs*0.368,puckR=bs*0.052,goalHW=bs*0.092;
+  // Tuned for easier scoring: field ~7% bigger (more room to maneuver),
+  // puck ~15% smaller (less blocking surface), goal ~12% wider.
+  const cx=bs/2,cy=bs/2,fieldR=bs*0.395,puckR=bs*0.044,goalHW=bs*0.103;
   const verts=octVerts(cx,cy,fieldR),sides=octSides(verts),sideIdx=pickSides(nP);
   const pucks=sideIdx.map((si,pi)=>{
     const s=sides[si];
@@ -554,9 +556,29 @@ export default {
             if(Math.abs(proj)>0.1)inp[i].axis=proj;
           });
         }
-        // send input to host
+        // send input to host — throttled to ~30Hz (was every rAF, up to
+        // 60Hz); a 1D constrained puck doesn't need 60 axis updates/sec.
         if(!isLocal&&!isHost&&myIdx>=0&&inp[myIdx]){
-          api.send('rcs-inp',{pi:myIdx,axis:inp[myIdx].axis,axisX:inp[myIdx].axisX,axisY:inp[myIdx].axisY,bump:inp[myIdx].bump});
+          if(!loop._lastInp||ts-loop._lastInp>33){
+            loop._lastInp=ts;
+            api.send('rcs-inp',{pi:myIdx,axis:inp[myIdx].axis,axisX:inp[myIdx].axisX,axisY:inp[myIdx].axisY,bump:inp[myIdx].bump});
+          }
+        }
+
+        // ease toward the last host-authoritative state (guest only). We
+        // interpolate p.t (track position), not x/y directly, because
+        // stepGame() below recomputes x/y from t every frame anyway —
+        // smoothing t is what actually removes the visible snap.
+        if(!isHost&&!isLocal&&gs._net){
+          const net=gs._net,k=Math.min(1,dt*8);
+          gs.ball.x+=(net.bx-gs.ball.x)*k;
+          gs.ball.y+=(net.by-gs.ball.y)*k;
+          gs.ball.vx=net.bvx;gs.ball.vy=net.bvy;
+          net.pt.forEach((t,i)=>{
+            if(t==null)return; // myIdx — left alone, driven by local input
+            const p=gs.pucks[i];
+            if(p) p.t+=(t-p.t)*k;
+          });
         }
 
         stepGame(gs,inp,dt);
@@ -606,8 +628,16 @@ export default {
         api.on('rcs-state',({bx,by,bvx,bvy,px,scores:sc,teamScores:ts2,gameTime:gt,bs:rbs})=>{
           if(isHost||!gs)return;
           const sc2=gs.bs/(rbs||gs.bs);
-          gs.ball.x=bx*sc2;gs.ball.y=by*sc2;gs.ball.vx=bvx;gs.ball.vy=bvy;
-          px.forEach((rp,i)=>{if(gs.pucks[i]){gs.pucks[i].x=rp.x*sc2;gs.pucks[i].y=rp.y*sc2;gs.pucks[i].t=rp.t;}});
+          // Soft-correction target, applied via interpolation in the loop
+          // instead of a hard snap here. myIdx is stored as null on purpose:
+          // the local player's own puck is driven by their own real-time
+          // input, and overwriting it with a ~100ms-stale echo of itself
+          // is exactly what produced the visible rubber-band/lag. Remote
+          // pucks and the ball ease toward this target each frame instead.
+          gs._net={
+            bx:bx*sc2,by:by*sc2,bvx,bvy,
+            pt:px.map((rp,i)=>i===myIdx?null:rp.t)
+          };
           gs.scores=[...sc];gs.teamScores=[...ts2];gs.gameTime=gt;
         });
         api.on('rcs-goal-ev',({playerIdx,team,scores:sc,teamScores:ts2})=>{

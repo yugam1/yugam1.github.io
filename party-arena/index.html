@@ -1096,7 +1096,13 @@
       // processing, so the token stays as-is — the check below detects that and
       // falls back to localhost:8787 where `wrangler dev` is running concurrently.
       const _rawWorkerUrl = 'https://party-signaling.yugam1.workers.dev';
-      const WORKER_URL = _rawWorkerUrl.startsWith('__') ? 'http://localhost:8787' : _rawWorkerUrl;
+      // In dev, fall back to the hostname the page itself was loaded from
+      // (not a hardcoded "localhost") so a phone on the same LAN — which
+      // loads the page via the dev machine's LAN IP — talks to that same
+      // IP for the Worker instead of resolving "localhost" to itself.
+      const WORKER_URL = _rawWorkerUrl.startsWith('__')
+        ? `http://${location.hostname}:8787`
+        : _rawWorkerUrl;
 
       // Server-backed rooms are prefixed with "S" so a joiner's client
       // can tell which transport to use just from the room code, with

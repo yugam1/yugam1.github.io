@@ -333,16 +333,24 @@ export default {
       <div class="bc3-sub" style="margin-top:24px;opacity:0.5">Watching the rest of the battle…</div>
       <canvas id="bc3-spec" style="margin-top:20px;border-radius:12px;max-width:90%;max-height:38vh;display:block"></canvas>`;
 
-    let specRdr=null;
+    let specRdr=null, specRaf=null;
     function initSpectate(){
-      const cv=document.getElementById('bc3-spec');
-      if(!cv||specRdr||!scene) return;
+      const oldCv=document.getElementById('bc3-spec');
+      if(!oldCv||specRdr||!scene) return;
+      const cv=oldCv.cloneNode(false); oldCv.parentNode.replaceChild(cv,oldCv); // fresh canvas
       specRdr=new T3.WebGLRenderer({canvas:cv,antialias:false});
       cv.width=Math.min(window.innerWidth*0.85,480); cv.height=cv.width*0.6;
       specRdr.setSize(cv.width,cv.height);
       const sc=new T3.PerspectiveCamera(60,cv.width/cv.height,0.1,50);
       sc.position.set(0,12,0); sc.lookAt(0,0,0);
-      (function l(){requestAnimationFrame(l);if(scene)specRdr.render(scene,sc);})();
+      (function l(){specRaf=requestAnimationFrame(l);if(scene&&specRdr)specRdr.render(scene,sc);})();
+    }
+    // Second WebGL context rendering the same scene — must die on every round
+    // boundary (startThree) and on destroy, or it fights the next round's renderer.
+    function stopSpectate(){
+      if(specRaf){cancelAnimationFrame(specRaf);specRaf=null;}
+      if(specRdr){try{specRdr.forceContextLoss();}catch(e){}
+        try{specRdr.dispose();}catch(e){} specRdr=null;}
     }
 
     // ── results screen ────────────────────────────────────────────────────────

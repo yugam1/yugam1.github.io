@@ -90,7 +90,10 @@ const QUESTIONS = {
   ],
 };
 
-const REACTIONS = ["🔥", "😂", "🤔", "❤️", "😮", "👏"];
+const REACTIONS = [
+  "🔥", "😂", "🤔", "❤️", "😮", "👏",
+  "😢", "👎", "😭", "😍", "😳", "💀",
+];
 
 const CATEGORY_KEYS = Object.keys(QUESTIONS);
 
