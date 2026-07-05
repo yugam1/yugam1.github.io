@@ -41,9 +41,19 @@ function buildState(bs,nP,mode,gameSecs,goalWin){
   const verts=octVerts(cx,cy,fieldR),sides=octSides(verts),sideIdx=pickSides(nP);
   const pucks=sideIdx.map((si,pi)=>{
     const s=sides[si];
+    // Keyboard-only sign fix: octSides() walks the octagon in one
+    // consistent rotational direction, so "t increasing" moves left→right
+    // on a top-ish edge but right→left on the directly-opposite bottom-ish
+    // edge (same reason opposite sides of a loop mirror). Without this,
+    // two players on opposite sides (e.g. 2-player mode) get their
+    // "positive" key mapped to opposite screen directions. dirSign makes
+    // the raw keyboard axis consistent with screen space regardless of
+    // which side a player sits on. Joystick input is unaffected — it
+    // already derives direction from the real screen-space stick delta.
+    const dirSign=(Math.abs(s.axX)>=Math.abs(s.axY))?(s.axX<0?-1:1):(s.axY<0?-1:1);
     return{x:s.mx+s.nx*puckR*1.35,y:s.my+s.ny*puckR*1.35,vx:0,vy:0,
       sideIdx:si,playerIdx:pi,team:mode==='teams'?pi%2:pi,
-      color:PLAYER_COLORS[pi%8],t:0.5,
+      color:PLAYER_COLORS[pi%8],t:0.5,dirSign,
       minT:0.5-goalHW/s.len,maxT:0.5+goalHW/s.len,
       cool:0,bumping:false,bumpT:0};
   });
@@ -532,9 +542,10 @@ export default {
         if(!isLocal&&myIdx>=0){
           if(inp[myIdx]){
             inp[myIdx].axis=0;
+            const sign=gs.pucks[myIdx]?.dirSign??1;
             KB.forEach(kb=>{
-              if(keys[kb.neg])inp[myIdx].axis=-1;
-              else if(keys[kb.pos])inp[myIdx].axis=1;
+              if(keys[kb.neg])inp[myIdx].axis=-1*sign;
+              else if(keys[kb.pos])inp[myIdx].axis=1*sign;
               if(keys[kb.bump])inp[myIdx].bump=true;
             });
           }
@@ -542,8 +553,9 @@ export default {
           KB.forEach((kb,pi)=>{
             if(!inp[pi])return;
             inp[pi].axis=0;
-            if(keys[kb.neg])inp[pi].axis=-1;
-            else if(keys[kb.pos])inp[pi].axis=1;
+            const sign=gs.pucks[pi]?.dirSign??1;
+            if(keys[kb.neg])inp[pi].axis=-1*sign;
+            else if(keys[kb.pos])inp[pi].axis=1*sign;
             if(keys[kb.bump])inp[pi].bump=true;
           });
         }

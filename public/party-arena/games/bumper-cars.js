@@ -587,8 +587,13 @@ export default {
                   myEjected=true;
                   setTimeout(()=>{show('ejected');const kc=ev.killerSlot!=null?CAR_COLORS[ev.killerSlot%6]:null;const el=document.getElementById('bc3-ejby');if(el)el.textContent=kc?`Ejected by ${kc.name} Driver!`:'You were ejected!';initSpectate();},1200);
                 }
-                if(!roundDone){const surv=hPlayers.filter(p=>p.alive&&!p.ejecting),ej=hPlayers.filter(p=>p.ejecting);if(surv.length<=1&&ej.length===0){roundDone=true;setTimeout(()=>endRound(),800);}}
               }
+              // Must run every tick, not just inside the evs loop above: a just-ejected
+              // player still has ejecting=true for ~90 ticks while their animation plays,
+              // so the old check (only evaluated on the tick the eject event fired) always
+              // saw ej.length>0 at that instant and never re-ran afterward — the round
+              // would hang forever once a player was down to 1 survivor.
+              if(!roundDone){const surv=hPlayers.filter(p=>p.alive&&!p.ejecting),ej=hPlayers.filter(p=>p.ejecting);if(surv.length<=1&&ej.length===0){roundDone=true;setTimeout(()=>endRound(),800);}}
               const snapshot=hPlayers.map(p=>({slot:p.slot,id:p.id,x:Math.round(p.x*10)/10,y:Math.round(p.y*10)/10,angle:Math.round(p.angle*1000)/1000,vx:Math.round(p.vx*10)/10,vy:Math.round(p.vy*10)/10,alive:p.alive,ejecting:p.ejecting,ejectProgress:p.ejectProgress,kills:p.kills,dodges:p.dodges}));
               snap=snapshot;
               if(T3&&scene) syncWorld(snapshot);

@@ -2408,6 +2408,18 @@
             state.players.push({ id: state.myId, name, isHost: state.isHost });
           }
 
+          // Announce our real name to the room. Necessary for the Cloudflare
+          // transport: the DO only knows bare playerIds (see "peer-joined" in
+          // cloudflareTransport.handleServerMessage), so without this the host
+          // and other guests add us to their player list with a "Player"
+          // placeholder that's never corrected on a fresh join (only on
+          // reconnect, which already re-announces). Harmless no-op duplicate
+          // for P2P, which already gets the name via connection metadata.
+          net.send({
+            type: "player-joined",
+            player: { id: state.myId, name, isHost: state.isHost },
+          });
+
           $("#lobby-room-code").textContent = code;
           renderPlayerList();
           renderGameGrid();
