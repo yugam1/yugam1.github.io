@@ -6,13 +6,13 @@
   "scripts": {
     "dev": "concurrently -n frontend,backend -c blue,green \"npm:dev:frontend\" \"npm:dev:backend\"",
     "dev:frontend": "vite --host 0.0.0.0",
-    "dev:backend": "wrangler dev --config backend/wrangler.toml",
+    "dev:backend": "wrangler dev --config backend/wrangler.toml --ip 0.0.0.0",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
     "predeploy": "npm run build",
     "deploy": "npm run deploy:frontend && npm run deploy:backend",
-    "deploy:frontend": "gh-pages -d dist",
+    "deploy:frontend": "gh-pages -d dist --nojekyll -t",
     "deploy:backend": "wrangler deploy --config backend/wrangler.toml"
   },
   "dependencies": {
