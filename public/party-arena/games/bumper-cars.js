@@ -1,7 +1,32 @@
 // ─── BOT BUMPER CARS — Party Arena (3D TPP port of FPG) ──────────────────────
 // Physics: exact port of server/index.js  |  Renderer: Three.js TPP on every device
 
-const ARENA = { w:1400, h:900, bumpers:[{x:350,y:450,r:55},{x:700,y:450,r:65},{x:1050,y:450,r:55}] };
+// Map registry — each map is fully self-contained (dimensions, bumper layout,
+// color theme). Nothing is fetched: all maps already live in this bundle, so
+// "loading a map" just means building Three.js geometry for the ONE selected
+// map (buildArena runs once per round start, same as before). Only a tiny
+// `mapId` string needs to travel over the network (piggybacks on the existing
+// matchCfg broadcast) — per-tick position sync is completely unaffected.
+const MAPS = {
+  classic: { id:'classic', name:'Classic Arena', emoji:'🏟️', w:1400, h:900,
+    bumpers:[{x:350,y:450,r:55},{x:700,y:450,r:65},{x:1050,y:450,r:55}],
+    floor:0x1a1a2e, wall:0x3a3a5a, accent:0xe8312a },
+  figure8: { id:'figure8', name:'Figure-8 Speedway', emoji:'♾️', w:1800, h:700,
+    bumpers:[{x:450,y:350,r:70},{x:1350,y:350,r:70}],
+    floor:0x1a2e1a, wall:0x3a5a3a, accent:0x2eaa4a },
+  chaosPit: { id:'chaosPit', name:'Chaos Pit', emoji:'💥', w:1300, h:1300,
+    bumpers:[{x:325,y:325,r:50},{x:975,y:325,r:50},{x:325,y:975,r:50},{x:975,y:975,r:50},{x:650,y:650,r:90}],
+    floor:0x2e1a1a, wall:0x5a3a3a, accent:0xd4a824 },
+  narrowAlley: { id:'narrowAlley', name:'Narrow Alley', emoji:'🛣️', w:2000, h:550,
+    bumpers:[{x:500,y:275,r:60},{x:1000,y:275,r:70},{x:1500,y:275,r:60}],
+    floor:0x1a1a2e, wall:0x3a3a5a, accent:0x3b8ecf },
+};
+const MAP_LIST = Object.values(MAPS);
+const DEFAULT_MAP_ID = 'classic';
+// Active map for the CURRENT round. Reassigned from matchCfg.mapId at the
+// start of each round (host in hostStart(), guest in the game-go handler)
+// before anything (spawn, physics bounds, geometry) reads it.
+let ARENA = MAPS[DEFAULT_MAP_ID];
 const CAR_COLORS = [
   {name:'Red',    body:'#e8312a',light:'#ff7a72',dark:'#9e1a15'},
   {name:'Blue',   body:'#3b8ecf',light:'#6bb8f5',dark:'#1a5c9e'},
@@ -48,6 +73,11 @@ function ensureCSS() {
 .bc3-bo-row{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:8px;font-size:13px;color:rgba(255,255,255,0.5);}
 .bc3-bo-btn{font-family:'Boogaloo',cursive;font-size:16px;padding:6px 16px;border-radius:10px;border:2px solid rgba(255,255,255,0.2);background:transparent;color:rgba(255,255,255,0.5);cursor:pointer;touch-action:manipulation;}
 .bc3-bo-btn.on{border-color:#6bb8f5;color:#6bb8f5;background:rgba(107,184,245,0.12);}
+.bc3-mapinfo{font-size:13px;color:rgba(255,255,255,0.7);margin-bottom:6px;text-align:center;min-height:16px;}
+.bc3-map-row{display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap;margin-bottom:10px;}
+.bc3-map-lbl{font-size:13px;color:rgba(255,255,255,0.5);margin-right:2px;}
+.bc3-map-btn{font-family:'Boogaloo',cursive;font-size:13px;letter-spacing:0.5px;padding:6px 12px;border-radius:10px;border:2px solid rgba(255,255,255,0.2);background:transparent;color:rgba(255,255,255,0.6);cursor:pointer;touch-action:manipulation;}
+.bc3-map-btn.on{border-color:#6bb8f5;color:#6bb8f5;background:rgba(107,184,245,0.12);}
 .bc3-mp{font-size:13px;color:rgba(255,255,255,0.5);margin-bottom:4px;text-align:center;}
 .bc3-mpdot{width:10px;height:10px;border-radius:50%;border:2px solid rgba(255,255,255,0.3);display:inline-block;margin:0 2px;}
 .bc3-mpdot.f{border-color:transparent;}
@@ -128,20 +158,21 @@ function makeCarMesh(col, T) {
   return {group:g, frontWheels:fw};
 }
 
-function buildArena(scene, T) {
-  const fl=new T.Mesh(new T.PlaneGeometry(ARENA.w*SCALE*1.5,ARENA.h*SCALE*1.5),new T.MeshBasicMaterial({color:0x1a1a2e}));
+function buildArena(scene, T, mapCfg) {
+  const M = mapCfg || ARENA;
+  const fl=new T.Mesh(new T.PlaneGeometry(M.w*SCALE*1.5,M.h*SCALE*1.5),new T.MeshBasicMaterial({color:M.floor}));
   fl.rotation.x=-Math.PI/2; scene.add(fl);
-  scene.add(new T.GridHelper(ARENA.w*SCALE,14,0x252538,0x252538));
-  const wm=new T.MeshBasicMaterial({color:0x3a3a5a}), wh=0.6;
-  [{w:ARENA.w*SCALE,d:0.1,x:0,z:-ARENA.h*SCALE*0.5},{w:ARENA.w*SCALE,d:0.1,x:0,z:ARENA.h*SCALE*0.5},
-   {w:0.1,d:ARENA.h*SCALE,x:-ARENA.w*SCALE*0.5,z:0},{w:0.1,d:ARENA.h*SCALE,x:ARENA.w*SCALE*0.5,z:0}].forEach(wd=>{
+  scene.add(new T.GridHelper(M.w*SCALE,14,0x252538,0x252538));
+  const wm=new T.MeshBasicMaterial({color:M.wall}), wh=0.6;
+  [{w:M.w*SCALE,d:0.1,x:0,z:-M.h*SCALE*0.5},{w:M.w*SCALE,d:0.1,x:0,z:M.h*SCALE*0.5},
+   {w:0.1,d:M.h*SCALE,x:-M.w*SCALE*0.5,z:0},{w:0.1,d:M.h*SCALE,x:M.w*SCALE*0.5,z:0}].forEach(wd=>{
     const m=new T.Mesh(new T.BoxGeometry(wd.w,wh,wd.d),wm); m.position.set(wd.x,wh/2,wd.z); scene.add(m);
-    const e=new T.Mesh(new T.BoxGeometry(wd.w+0.01,0.06,wd.d+0.01),new T.MeshBasicMaterial({color:0xe8312a}));
+    const e=new T.Mesh(new T.BoxGeometry(wd.w+0.01,0.06,wd.d+0.01),new T.MeshBasicMaterial({color:M.accent}));
     e.position.set(wd.x,wh-0.03,wd.z); scene.add(e);
   });
   const bms=[];
-  ARENA.bumpers.forEach(b=>{
-    const bx=(b.x-ARENA.w/2)*SCALE, bz=(b.y-ARENA.h/2)*SCALE, r=b.r*SCALE;
+  M.bumpers.forEach(b=>{
+    const bx=(b.x-M.w/2)*SCALE, bz=(b.y-M.h/2)*SCALE, r=b.r*SCALE;
     const m=new T.Mesh(new T.CylinderGeometry(r,r*1.1,0.7,10),new T.MeshLambertMaterial({color:0x4a4a7a}));
     m.position.set(bx,0.35,bz); scene.add(m); bms.push(m);
     const c=new T.Mesh(new T.CylinderGeometry(r*0.6,r*0.6,0.08,10),new T.MeshBasicMaterial({color:0x6b9fff}));
@@ -228,7 +259,7 @@ export default {
     ensureCSS();
     const me=api.getMe(), isHost=api.isHost(), isLocal=api.isLocal();
     const evCleaners=[];
-    let matchCfg={bestOf:3}, matchScores={}, currentRound=1;
+    let matchCfg={bestOf:3, mapId:DEFAULT_MAP_ID}, matchScores={}, currentRound=1;
 
     // ── root & screen manager ─────────────────────────────────────────────────
     const root=document.createElement('div'); root.className='bc3'; container.appendChild(root);
@@ -255,6 +286,7 @@ export default {
       <div class="bc3-badge" id="bc3-badge">🚗</div>
       <div class="bc3-sub" style="margin-bottom:12px">You're in the arena!</div>
       <div class="bc3-plist" id="bc3-pl"></div>
+      <div class="bc3-mapinfo" id="bc3-mapinfo"></div>
       <div class="bc3-mp" id="bc3-mp"></div>
       <div id="bc3-la"></div>
       <div class="bc3-sub" id="bc3-ls" style="margin-top:12px;font-size:12px;opacity:0.4">Waiting for host to start…</div>`;
@@ -280,12 +312,25 @@ export default {
             return `<span style="color:${c.light}">${c.name}</span> ${Array.from({length:matchCfg.bestOf},(_,di)=>`<span class="bc3-mpdot${di<w?' f':''}" style="${di<w?`background:${c.body}`:''}"></span>`).join('')}`;
           }).join(' &nbsp; '):'';
       }
+      const mi=document.getElementById('bc3-mapinfo');
+      if(mi&&!isHost){
+        const cm=MAPS[matchCfg.mapId]||MAPS[DEFAULT_MAP_ID];
+        mi.innerHTML=`<span style="opacity:0.5">Map:</span> ${cm.emoji} ${cm.name}`;
+      } else if(mi){
+        mi.innerHTML=''; // host sees the map picker below instead
+      }
       const la=document.getElementById('bc3-la');
       if(la&&isHost){
         const bo=matchCfg.bestOf, has=Object.values(matchScores).some(v=>v>0);
-        la.innerHTML=`<div class="bc3-bo-row"><span>Best of:</span>
+        la.innerHTML=`<div class="bc3-map-row"><span class="bc3-map-lbl">Map:</span>
+          ${MAP_LIST.map(m=>`<button class="bc3-map-btn${matchCfg.mapId===m.id?' on':''}" data-map="${m.id}">${m.emoji} ${m.name}</button>`).join('')}
+          </div>
+          <div class="bc3-bo-row"><span>Best of:</span>
           <button class="bc3-bo-btn${bo===3?' on':''}" id="bc3-bo3">3</button>
           <button class="bc3-bo-btn${bo===5?' on':''}" id="bc3-bo5">5</button></div>`;
+        la.querySelectorAll('.bc3-map-btn').forEach(btn=>{
+          btn.addEventListener('click',()=>{matchCfg.mapId=btn.dataset.map;api.send('cfg-sync',{matchCfg,matchScores,currentRound});renderLobby(players,slot);});
+        });
         document.getElementById('bc3-bo3')?.addEventListener('click',()=>{matchCfg.bestOf=3;api.send('cfg-sync',{matchCfg,matchScores,currentRound});renderLobby(players,slot);});
         document.getElementById('bc3-bo5')?.addEventListener('click',()=>{matchCfg.bestOf=5;api.send('cfg-sync',{matchCfg,matchScores,currentRound});renderLobby(players,slot);});
         if(players.length>=2||isLocal){
@@ -427,7 +472,7 @@ export default {
       renderer.setPixelRatio(Math.min(window.devicePixelRatio,1.5));
       scene=new T3.Scene(); scene.background=new T3.Color(0x0d0d1a);
       camera=new T3.PerspectiveCamera(68,1,0.05,50); // safe placeholder aspect; applySize() sets the real one
-      bumperMeshes=buildArena(scene,T3);
+      bumperMeshes=buildArena(scene,T3,ARENA);
       // Size from the canvas, guarding against a 0×0 first-paint measurement
       // (which would make aspect NaN and blank the first frames). Never divide by zero.
       function applySize(){
@@ -568,6 +613,10 @@ export default {
 
     function hostStart(players){
       if(physIv){clearInterval(physIv);physIv=null;}
+      // Lock in this round's map BEFORE spawning players (getSpawn reads ARENA.w/h)
+      // or building geometry. matchCfg.mapId already ships to guests inside `gi`
+      // below, so their game-go handler sets the same ARENA before rendering.
+      ARENA = MAPS[matchCfg.mapId] || MAPS[DEFAULT_MAP_ID];
       hPlayers=players.map((p,i)=>mkHPlayer(p,i,players.length));
       hInputs={}; roundDone=false;
       mySlot=hPlayers.find(p=>p.id===me.id)?.slot??0;
@@ -653,6 +702,8 @@ export default {
         const d=data?.payload??data;
         mySlot=d.players?.find(p=>p.id===me.id)?.slot??0;
         if(d.matchCfg)matchCfg=d.matchCfg; if(d.matchScores)matchScores=d.matchScores; if(d.currentRound)currentRound=d.currentRound;
+        // Match the host's map for this round before any geometry gets built.
+        ARENA = MAPS[matchCfg.mapId] || MAPS[DEFAULT_MAP_ID];
         myEjected=false; show('game');
         startThree()
           .then(()=>{ if(renderer) setupInput(inp=>api.send('input',inp)); })
@@ -684,6 +735,10 @@ export default {
       api.on('cfg-sync',(data)=>{
         const d=data?.payload??data;
         if(d.matchCfg)matchCfg=d.matchCfg; if(d.matchScores)matchScores=d.matchScores; if(d.currentRound)currentRound=d.currentRound;
+        // Re-render so the guest's map-info line stays live as the host
+        // changes best-of/map while still in the lobby.
+        const ps=api.getPlayers();
+        renderLobby(ps, ps.findIndex(p=>p.id===me.id));
       });
       api.send('bc-request-state',{});
     } else {
