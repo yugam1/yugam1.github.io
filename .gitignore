@@ -29,3 +29,11 @@ graphify-out/*
 # Cloudflare Workers (backend/)
 .wrangler/
 backend/.dev.vars
+
+# Ruflo local secrets and runtime data
+.env
+.claude-flow/*
+.swarm/
+ruvector.db
+.mcp.json
+CLAUDE.md
