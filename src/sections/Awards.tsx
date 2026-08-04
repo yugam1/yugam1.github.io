@@ -31,7 +31,12 @@ export default function Awards() {
                     <Icon className="w-8 h-8 text-yellow-500" />
                   </div>
                   <div>
-                    <h3 className="text-xl font-bold text-white mb-1 group-hover:text-yellow-400 transition-colors">{award.name}</h3>
+                    <div className="flex flex-wrap items-center gap-2 mb-1">
+                      <h3 className="text-xl font-bold text-white group-hover:text-yellow-400 transition-colors">{award.name}</h3>
+                      <span className="px-2 py-0.5 text-[11px] font-medium rounded-full bg-yellow-500/10 text-yellow-300/90 border border-yellow-500/20">
+                        {award.company}
+                      </span>
+                    </div>
                     <p className="text-gray-400 text-sm">{award.context}</p>
                   </div>
                 </div>

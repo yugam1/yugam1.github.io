@@ -45,6 +45,7 @@ export interface SkillCategory {
 
 export interface Award {
   name: string;
+  company: string;
   context: string;
 }
 
@@ -256,9 +257,10 @@ export const RESUME_DATA: ResumeData = {
     },
   ],
   awards: [
-    { name: "Champion Award", context: "Outstanding performance across teams" },
-    { name: "Principle Award", context: "Recognized for tech leadership" },
-    { name: "Hackathon Winner", context: "1st out of 52 teams" },
-    { name: "Town Hall Kudos", context: "For core backend optimizations" },
+    { name: "Champion Award", company: "DP World", context: "Outstanding performance across teams" },
+    { name: "Principle Award", company: "DP World", context: "Recognized for tech leadership" },
+    { name: "Hackathon Winner", company: "DP World", context: "HackPossible 2024 — 1st out of 52 teams" },
+    { name: "Town Hall Kudos", company: "KPIT", context: "For core backend optimizations" },
+    { name: "Pre-Placement Offer (PPO)", company: "Innoplexus", context: "Offered post data-science internship" },
   ],
 };
