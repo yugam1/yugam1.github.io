@@ -58,6 +58,30 @@ export interface ResumeData {
   awards: Award[];
 }
 
+// Career started July 2019. Experience is recomputed on every load so the
+// number ticks up on its own in quarter-year steps: 7+, 7.25, 7.5, 7.75, …
+const CAREER_START = new Date(2019, 6, 1); // month is 0-indexed → July 2019
+
+export function computeYearsOfExperience(now: Date = new Date()): number {
+  const months =
+    (now.getFullYear() - CAREER_START.getFullYear()) * 12 +
+    (now.getMonth() - CAREER_START.getMonth());
+  // Floor to the nearest quarter-year so we never overstate.
+  return Math.max(0, Math.floor(months / 3) / 4);
+}
+
+/** Full label, e.g. "7+ Years" (whole) or "7.25 Years" (quarter). */
+export function formatExperience(years = computeYearsOfExperience()): string {
+  return Number.isInteger(years) ? `${years}+ Years` : `${years} Years`;
+}
+
+/** Compact stat form, e.g. "7+" or "7.25". */
+export function experienceStatValue(years = computeYearsOfExperience()): string {
+  return Number.isInteger(years) ? `${years}+` : `${years}`;
+}
+
+export const YEARS_OF_EXPERIENCE = computeYearsOfExperience();
+
 export const RESUME_DATA: ResumeData = {
   personal: {
     name: "Yugam Prasad",
@@ -69,7 +93,7 @@ export const RESUME_DATA: ResumeData = {
   },
   tagline: "I build something new every weekend using AI",
   stats: {
-    experience: "6+ Years",
+    experience: formatExperience(),
     team: "15 Members Led",
     college: "IIT Kharagpur",
     hackathon: "1st / 52 Teams",
@@ -78,55 +102,77 @@ export const RESUME_DATA: ResumeData = {
     {
       company: "DP World",
       role: "SDE2",
-      period: "2023 - Present",
+      period: "Jul 2023 - Present",
       location: "Bengaluru, IN",
       bullets: [
-        "Led cross-functional initiatives and mentored team members.",
-        "Architected scalable microservices and integrated modern technologies.",
+        "Led and mentored a 15-member engineering team, driving delivery alignment, coding standards, and ownership.",
+        "Introduced document-driven development, achieving 90%+ unit-test coverage across services.",
+        "Built a Rate Management platform unifying freight-transport and location-based service lines, with a multi-modal routing engine stitching sea, rail, and air schedules and a pricing engine for buy/sell/margin/markup.",
+        "Introduced Elasticsearch as a read-optimized mirror of Postgres — dual-index routing, ngram prefix search, and zero-downtime reindex via alias swaps with real-time PG→ES sync.",
+        "Built a distributed offers pipeline: a Java/Spring Boot core proxies initiate/stream calls to a Node service, streaming vendor offers over SSE with a Kafka + transactional-outbox for exactly-once delivery.",
+        "Delivered an SLA workflow layer on Temporal with a role-gated state machine and SQL-aggregated KPI tiles for healthy, nearing-breach, and overdue jobs.",
       ],
-      techStack: ["Java", "Spring Boot", "React", "AWS"],
+      techStack: ["Node.js", "Java", "Spring Boot", "Elasticsearch", "Kafka", "Temporal", "Redis", "PostgreSQL"],
     },
     {
       company: "DP World",
       role: "SDE1",
-      period: "2021 - 2023",
+      period: "Jul 2021 - Jul 2023",
       location: "Bengaluru, IN",
       bullets: [
-        "Developed core backend services and optimized database queries.",
-        "Collaborated with product teams to gather requirements and deliver features.",
+        "Designed and implemented a core contract module supporting multiple agreement types between parties.",
+        "Led development of a subscription module letting clients subscribe to services for defined durations.",
+        "Enhanced Quartz-based scheduling to trigger subscription billing on user-defined frequencies.",
+        "Won DP World HackPossible 2024 (1st of 52 teams) — an AI-powered logistics quoting MVP combining voice input, contextual understanding, and forecasting, built in React and Node.js.",
       ],
-      techStack: ["Java", "Spring Boot", "SQL"],
+      techStack: ["Java", "Spring Boot", "Quartz", "React", "Node.js", "OpenAI"],
     },
     {
       company: "KPIT",
-      role: "Software Developer",
-      period: "2019 - 2021",
-      location: "Bengaluru, IN",
+      role: "Software Engineer",
+      period: "Aug 2019 - Jul 2021",
+      location: "Pune, IN",
       bullets: [
-        "Designed and implemented software components for automotive systems.",
-        "Improved system performance and efficiency through code refactoring.",
+        "Facilitated Over-the-Air (OTA) updates and remote diagnostics for Jaguar Land Rover, PSA, and Volkswagen.",
+        "Implemented UDS/DoIP protocols and ECU flashing sequences in C/C++.",
+        "Re-worked the transport layer of KPIT's diagnostics OSI stack to run over serial ports, cutting installation time by 66%.",
+        "Simulated ECU networks with Docker virtual networking and exposed a C++ diagnostic API over HTTP via a Flask + Cython wrapper.",
       ],
-      techStack: ["C++", "Python", "Embedded Systems"],
+      techStack: ["C", "C++", "Python", "Cython", "Flask", "Docker"],
     },
     {
       company: "Innoplexus",
-      role: "Data Engineer",
-      period: "2018 - 2019",
+      role: "Data Science Intern",
+      period: "May 2018 - Jul 2018",
       location: "Pune, IN",
       bullets: [
-        "Built robust data pipelines and scraping tools to collect structured data.",
-        "Automated data extraction and preprocessing tasks.",
+        "Predicted drug-target success probability in clinical trials using a customized Textual Entailment model and ensemble algorithms.",
+        "Built an NLP-driven system to replace traditional IVR flows in call centers.",
+        "Implemented Named-Entity Recognition with spaCy and Stanford NER for problem identification in call transcripts. Earned a Pre-Placement Offer (PPO).",
       ],
-      techStack: ["Python", "Spark", "SQL"],
+      techStack: ["Python", "spaCy", "NLP", "Machine Learning"],
     },
   ],
   weekendProjects: [
     {
-      name: "Digital Wardrobe",
-      desc: "AI-powered outfit suggester with vision API",
-      tech: ["Spring Boot", "React", "OpenAI Vision", "Redis", "Kafka"],
+      name: "Digital Wardrobe 👗",
+      desc: "3D virtual try-on mobile app — a rigged mannequin walks a runway wearing your clothes, with garments rebound onto a shared 65-bone skeleton so they deform with the body's live animation. Scan-by-wearing-it, a stylist marketplace, and a social runway feed, all on a clean ports/adapters architecture over a FastAPI backend.",
+      tech: ["React Native", "Expo", "Three.js / R3F", "expo-gl", "FastAPI", "Google OAuth"],
       status: "In Progress",
       highlight: true,
+    },
+    {
+      name: "Local RAG & LLM Serving 🧠",
+      desc: "Self-hosted RAG pipeline — chunking, embeddings, Qdrant vector store, top-k retrieval, and grounded generation with citations. Ran Ollama inference on GPU, hit the VRAM wall, added hybrid BM25 + vector search with a reranker, and built a 20-question eval harness scored via exact-match and LLM-as-judge.",
+      tech: ["Python", "Ollama", "Qdrant", "BM25", "Embeddings"],
+      status: "Built",
+    },
+    {
+      name: "Workspace MCP Server 🔌",
+      desc: "Custom TypeScript MCP server exposing filesystem, Azure DevOps, and memory tools to Claude Desktop/Code agents — with tool schemas, deferred tool-search, and persistent cross-session memory to drive agentic coding workflows.",
+      tech: ["TypeScript", "Node.js", "MCP"],
+      status: "Built",
+      link: "https://github.com/yugam1",
     },
     {
       name: "AI Logistics Quoting",

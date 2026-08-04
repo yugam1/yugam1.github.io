@@ -1,5 +1,6 @@
 import { motion, useInView, animate } from 'framer-motion';
 import { useEffect, useRef } from 'react';
+import { YEARS_OF_EXPERIENCE, experienceStatValue } from '../data/resume';
 
 const AnimatedNumber = ({ value }: { value: number }) => {
   const ref = useRef<HTMLSpanElement>(null);
@@ -86,7 +87,7 @@ export default function About() {
             }}
             className="grid grid-cols-2 gap-4 md:gap-6"
           >
-            <StatCard value={6} suffix="+" label="Years Exp" />
+            <StatCard textValue={experienceStatValue()} label="Years Exp" />
             <StatCard textValue="IIT KGP" label="Alumnus" />
             <StatCard value={15} suffix="+" label="Members Led" />
             <StatCard value={52} prefix="1st / " label="Teams Beaten" />
@@ -101,7 +102,7 @@ export default function About() {
             className="space-y-8 text-gray-300 text-lg leading-relaxed"
           >
             <p>
-              I am a Software Development Engineer with a strong foundation in building scalable backend architectures and dynamic user interfaces. Over the last 6+ years, I've had the privilege of leading cross-functional teams and architecting robust solutions that serve millions of users. My journey started at IIT Kharagpur, fueling a lifelong passion for complex problem-solving.
+              I am a Software Development Engineer with a strong foundation in building scalable backend architectures and dynamic user interfaces. Over the last {Math.floor(YEARS_OF_EXPERIENCE)}+ years, I've had the privilege of leading cross-functional teams and architecting robust solutions that serve millions of users. My journey started at IIT Kharagpur, fueling a lifelong passion for complex problem-solving.
             </p>
             <p>
               Currently at <span className="text-white font-medium">DP World</span>, I focus on optimizing core microservices and driving significant performance improvements. Whether it's crafting an elegant React frontend or deploying resilient Spring Boot services, I thrive in environments where technology meets real-world impact.
@@ -118,7 +119,7 @@ export default function About() {
                   <span className="text-3xl">🚀</span> Building the Future
                 </h3>
                 <p className="text-indigo-100/80 leading-relaxed">
-                  <span className="font-semibold text-white">I build something new every weekend using AI.</span> From vision-powered digital wardrobes to voice-based logistics platforms, I constantly push the boundaries of large language models to create functional, delightful products.
+                  <span className="font-semibold text-white">I build something new every weekend using AI.</span> From a 3D virtual try-on wardrobe to voice-based logistics platforms and self-hosted RAG pipelines, I constantly push the boundaries of large language models to create functional, delightful products.
                 </p>
               </div>
             </motion.div>
