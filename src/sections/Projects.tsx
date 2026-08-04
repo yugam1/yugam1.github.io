@@ -1,6 +1,7 @@
-import { motion } from 'framer-motion';
-import { Github, Trophy, Rocket } from 'lucide-react';
-import { RESUME_DATA } from '../data/resume';
+import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Github, Trophy, Rocket, Hammer, ChevronDown } from 'lucide-react';
+import { RESUME_DATA, type WeekendProject } from '../data/resume';
 
 const gradients = [
   "from-pink-500 via-purple-500 to-indigo-500",
@@ -24,7 +25,90 @@ const getTechColor = (tech: string) => {
   return 'bg-gray-500/10 text-gray-300 border-gray-500/20';
 };
 
+const ProjectCard = ({ project, index }: { project: WeekendProject; index: number }) => {
+  const gradient = gradients[index % gradients.length];
+
+  return (
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      transition={{ delay: index * 0.1 }}
+      whileHover={{ y: -8 }}
+      className="snap-center shrink-0 w-[85vw] sm:w-[350px] md:w-auto relative group"
+    >
+      {/* Gradient Border Wrapper */}
+      <div className={`absolute inset-0 bg-gradient-to-br ${gradient} rounded-2xl opacity-50 group-hover:opacity-100 transition-opacity duration-300 blur-[2px]`} />
+      <div className={`absolute inset-0 bg-gradient-to-br ${gradient} rounded-2xl group-hover:shadow-[0_0_30px_rgba(255,255,255,0.2)] transition-shadow duration-300`} />
+
+      {/* Card Content */}
+      <div className="relative h-full bg-background/95 backdrop-blur-xl m-[1px] p-6 rounded-[15px] flex flex-col border border-white/5">
+        <div className="flex justify-between items-start mb-4">
+          <div className="flex flex-wrap gap-2">
+            <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${statusColors[project.status]}`}>
+              {project.status}
+            </span>
+            {project.award && (
+              <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center gap-1">
+                <Trophy className="w-3 h-3" />
+                {project.award}
+              </span>
+            )}
+          </div>
+          <div className="flex gap-3">
+            {project.link && (
+              <a
+                href={project.link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-white/50 hover:text-white transition-colors"
+                title="Open Project"
+              >
+                <Rocket className="w-5 h-5 rotate-45" />
+              </a>
+            )}
+            <a
+              href={`https://github.com/${RESUME_DATA.personal.github}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-white/50 hover:text-white transition-colors"
+              title="View Code"
+            >
+              <Github className="w-5 h-5" />
+            </a>
+          </div>
+        </div>
+
+        <h3 className="text-xl font-bold text-white mb-2 group-hover:text-accent transition-colors">
+          {project.name}
+        </h3>
+
+        <p className="text-white/60 text-sm mb-6 flex-grow">
+          {project.desc}
+        </p>
+
+        <div className="flex flex-wrap gap-2 mt-auto">
+          {project.tech.map(tech => (
+            <span
+              key={tech}
+              className={`text-[11px] px-2 py-1 rounded-md border ${getTechColor(tech)}`}
+            >
+              {tech}
+            </span>
+          ))}
+        </div>
+      </div>
+    </motion.div>
+  );
+};
+
 export default function Projects() {
+  const [showInProgress, setShowInProgress] = useState(false);
+
+  const builtProjects = RESUME_DATA.weekendProjects.filter(p => p.status !== 'In Progress');
+  const inProgressProjects = RESUME_DATA.weekendProjects.filter(p => p.status === 'In Progress');
+
   return (
     <section id="projects" className="py-20 relative overflow-hidden">
       <div className="container mx-auto px-6">
@@ -41,85 +125,35 @@ export default function Projects() {
         </motion.div>
 
         {/* Mobile Horizontal Scroll / Desktop Grid */}
-        <div className="flex overflow-x-auto md:grid md:grid-cols-3 gap-6 pb-8 md:pb-0 snap-x snap-mandatory hide-scrollbar">
-          {RESUME_DATA.weekendProjects.map((project, index) => {
-            const gradient = gradients[index % gradients.length];
-            
-            return (
-              <motion.div
-                key={project.name}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: index * 0.1 }}
-                whileHover={{ y: -8 }}
-                className="snap-center shrink-0 w-[85vw] sm:w-[350px] md:w-auto relative group"
-              >
-                {/* Gradient Border Wrapper */}
-                <div className={`absolute inset-0 bg-gradient-to-br ${gradient} rounded-2xl opacity-50 group-hover:opacity-100 transition-opacity duration-300 blur-[2px]`} />
-                <div className={`absolute inset-0 bg-gradient-to-br ${gradient} rounded-2xl group-hover:shadow-[0_0_30px_rgba(255,255,255,0.2)] transition-shadow duration-300`} />
-                
-                {/* Card Content */}
-                <div className="relative h-full bg-background/95 backdrop-blur-xl m-[1px] p-6 rounded-[15px] flex flex-col border border-white/5">
-                  <div className="flex justify-between items-start mb-4">
-                    <div className="flex flex-wrap gap-2">
-                      <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${statusColors[project.status]}`}>
-                        {project.status}
-                      </span>
-                      {project.award && (
-                        <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center gap-1">
-                          <Trophy className="w-3 h-3" />
-                          {project.award}
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex gap-3">
-                      {project.link && (
-                        <a 
-                          href={project.link}
-                          target="_blank"
-                          rel="noopener noreferrer" 
-                          className="text-white/50 hover:text-white transition-colors"
-                          title="Open Project"
-                        >
-                          <Rocket className="w-5 h-5 rotate-45" />
-                        </a>
-                      )}
-                      <a 
-                        href={`https://github.com/${RESUME_DATA.personal.github}`}
-                        target="_blank"
-                        rel="noopener noreferrer" 
-                        className="text-white/50 hover:text-white transition-colors"
-                        title="View Code"
-                      >
-                        <Github className="w-5 h-5" />
-                      </a>
-                    </div>
-                  </div>
+        <motion.div layout className="flex overflow-x-auto md:grid md:grid-cols-3 gap-6 pb-8 md:pb-0 snap-x snap-mandatory hide-scrollbar">
+          {builtProjects.map((project, index) => (
+            <ProjectCard key={project.name} project={project} index={index} />
+          ))}
 
-                  <h3 className="text-xl font-bold text-white mb-2 group-hover:text-accent transition-colors">
-                    {project.name}
-                  </h3>
-                  
-                  <p className="text-white/60 text-sm mb-6 flex-grow">
-                    {project.desc}
-                  </p>
+          <AnimatePresence>
+            {showInProgress &&
+              inProgressProjects.map((project, i) => (
+                <ProjectCard key={project.name} project={project} index={builtProjects.length + i} />
+              ))}
+          </AnimatePresence>
+        </motion.div>
 
-                  <div className="flex flex-wrap gap-2 mt-auto">
-                    {project.tech.map(tech => (
-                      <span 
-                        key={tech}
-                        className={`text-[11px] px-2 py-1 rounded-md border ${getTechColor(tech)}`}
-                      >
-                        {tech}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              </motion.div>
-            );
-          })}
-        </div>
+        {/* Toggle: reveal the in-progress / this-weekend projects */}
+        {inProgressProjects.length > 0 && (
+          <div className="flex justify-center mt-8">
+            <button
+              onClick={() => setShowInProgress(prev => !prev)}
+              className="group inline-flex items-center gap-2 px-5 py-2.5 rounded-full border border-white/10 bg-white/5 text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 hover:border-white/20 transition-all"
+              aria-expanded={showInProgress}
+            >
+              <Hammer className="w-4 h-4 text-accent" />
+              {showInProgress
+                ? 'Hide what I\'m building'
+                : `See what I'm building this weekend (${inProgressProjects.length})`}
+              <ChevronDown className={`w-4 h-4 transition-transform duration-300 ${showInProgress ? 'rotate-180' : ''}`} />
+            </button>
+          </div>
+        )}
       </div>
       
       {/* Hide scrollbar styles directly applied using a custom class or inline style if preferred */}
