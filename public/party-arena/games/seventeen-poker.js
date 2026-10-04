@@ -221,7 +221,9 @@ export default {
     function freshPS() {
       return {
         phase: 'setup', // setup | cut | bet1 | draw | bet2 | result | match-over
+        setupStep: 'mode', // mode | faros
         deckMode: null,
+        faroChoice: null, // fixed riffle count, or 0 for "random each hand"
         faros: null,
         handNo: 1,
         chips: [START_CHIPS, START_CHIPS],
@@ -252,7 +254,9 @@ export default {
       if (PS.deckMode === 'sealed') {
         // Everything here is public: both players are told how many riffles
         // the dealer gave it, and a sealed deck's starting order is known.
-        PS.faros = 1 + Math.floor(Math.random() * FARO_PERIOD);
+        PS.faros = PS.faroChoice > 0
+          ? PS.faroChoice
+          : 1 + Math.floor(Math.random() * FARO_PERIOD);
         DECK = factoryDeck();
         for (let i = 0; i < PS.faros; i++) DECK = faro(DECK);
       } else {
@@ -449,11 +453,37 @@ export default {
       }
       if (PS.phase === 'setup') {
         // Host's call only — the guest never gets these controls.
-        if (seat !== 0 || a.k !== 'mode' || !DECK_MODES[a.m]) return;
-        PS.deckMode = a.m;
-        note(`Deck: ${DECK_MODES[a.m].label}.`);
-        startHand();
-        pushState();
+        if (seat !== 0) return;
+        if (a.k === 'back') {
+          PS.setupStep = 'mode';
+          PS.deckMode = null;
+          pushState();
+          return;
+        }
+        if (a.k === 'mode') {
+          if (!DECK_MODES[a.m]) return;
+          PS.deckMode = a.m;
+          if (a.m === 'sealed') {
+            PS.setupStep = 'faros'; // one more question before we deal
+            pushState();
+            return;
+          }
+          note(`Deck: ${DECK_MODES[a.m].label}.`);
+          startHand();
+          pushState();
+          return;
+        }
+        if (a.k === 'faros') {
+          if (PS.deckMode !== 'sealed') return;
+          const n = Math.floor(a.n);
+          if (!Number.isInteger(n) || n < 0 || n > FARO_PERIOD) return;
+          PS.faroChoice = n;
+          note(n > 0
+            ? `Deck: sealed, ${plural(n, 'perfect riffle')} every hand.`
+            : 'Deck: sealed, riffle count varies each hand.');
+          startHand();
+          pushState();
+        }
         return;
       }
       if (seat !== PS.toAct) return;
@@ -1094,8 +1124,42 @@ export default {
       </div>`;
     }
 
+    function faroStep() {
+      const counts = Array.from({ length: FARO_PERIOD }, (_, i) => i + 1).map((n) => `
+        <button data-act="faros-${n}" style="width:46px;height:46px;border-radius:10px;cursor:pointer;
+          background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.14);
+          color:${n === FARO_PERIOD ? v.accent : '#e2e8f0'};font-family:'Quicksand',sans-serif;
+          font-size:16px;font-weight:800;">${n}</button>`).join('');
+
+      return `<div style="width:min(92vw,420px);">
+        <div style="font-size:13px;opacity:0.65;margin-bottom:10px;line-height:1.6;">
+          How many perfect riffles does the dealer give the sealed deck?
+          Both players are told the number, so this is public either way.
+        </div>
+        <div style="display:flex;gap:7px;flex-wrap:wrap;justify-content:center;margin-bottom:12px;">
+          ${counts}
+        </div>
+        <div style="font-size:11px;opacity:0.45;text-align:center;margin-bottom:12px;line-height:1.6;">
+          A fixed count means the deck before the cuts is identical every hand —
+          the most predictable setting. ${FARO_PERIOD} riffles leaves it in factory order.
+        </div>
+        <button data-act="faros-0" style="display:block;width:100%;text-align:left;
+          padding:12px 15px;border-radius:12px;cursor:pointer;margin-bottom:10px;
+          background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);
+          color:#e2e8f0;font-family:'Quicksand',sans-serif;">
+          <div style="font-size:14px;font-weight:800;color:${v.accent};">Vary each hand</div>
+          <div style="font-size:12px;opacity:0.6;margin-top:3px;line-height:1.5;">
+            A different count from 1 to ${FARO_PERIOD} every hand, announced each time.
+            Still fully deducible, but you have to keep up.
+          </div>
+        </button>
+        <div style="text-align:center;">${btn('back', '← Back', 'ghost')}</div>
+      </div>`;
+    }
+
     function setupScreen() {
       const amHost = isLocal || isHost;
+      const onFaros = PS.setupStep === 'faros';
       const choices = Object.entries(DECK_MODES).map(([id, m]) => `
         <button data-act="mode-${id}" style="display:block;width:100%;text-align:left;
           margin-bottom:10px;padding:13px 15px;border-radius:12px;cursor:pointer;
@@ -1111,9 +1175,13 @@ export default {
           background:linear-gradient(135deg,#fbbf24,#f43f5e,#a855f7);
           -webkit-background-clip:text;-webkit-text-fill-color:transparent;">17 POKER</h2>
         <div style="font-size:12px;opacity:0.5;margin-bottom:18px;">
-          ${amHost ? 'How should the dealer prepare the deck?' : 'Waiting for the host to pick the deck…'}
+          ${amHost
+            ? (onFaros ? 'Sealed deck — how many riffles?' : 'How should the dealer prepare the deck?')
+            : 'Waiting for the host to pick the deck…'}
         </div>
-        ${amHost ? `<div style="width:min(92vw,420px);">${choices}</div>` : ''}
+        ${amHost
+          ? (onFaros ? faroStep() : `<div style="width:min(92vw,420px);">${choices}</div>`)
+          : ''}
         <details style="margin-top:6px;max-width:430px;font-size:12px;opacity:0.45;cursor:pointer;">
           <summary style="font-weight:600;">What's the difference?</summary>
           <div style="margin-top:8px;line-height:1.7;text-align:left;">
@@ -1221,7 +1289,7 @@ export default {
           <div style="font-size:11px;margin-bottom:12px;${PS.deckMode === 'sealed'
             ? `color:${v.accent};` : 'opacity:0.35;'}">
             ${PS.deckMode === 'sealed'
-              ? `Sealed deck · riffled ${plural(PS.faros, 'time')}${PS.faros === FARO_PERIOD ? ' (back to factory order)' : ''}`
+              ? `Sealed deck · riffled ${plural(PS.faros, 'time')}${PS.faroChoice > 0 ? ', fixed' : ''}${PS.faros === FARO_PERIOD ? ' · back to factory order' : ''}`
               : esc(DECK_MODES[PS.deckMode]?.short || '')}
           </div>
 
@@ -1347,6 +1415,8 @@ export default {
             return;
           }
           if (a.startsWith('mode-')) return act({ k: 'mode', m: a.slice(5) });
+          if (a.startsWith('faros-')) return act({ k: 'faros', n: Number(a.slice(6)) });
+          if (a === 'back') return act({ k: 'back' });
           if (a === 'cut') return act({ k: 'cut', n: cutAmt });
           if (a === 'draw') return act({ k: 'draw', idx: [...selected] });
           if (a === 'bet' || a === 'raise') return act({ k: a, amt: betAmt });
