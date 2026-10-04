@@ -212,7 +212,7 @@ export const RESUME_DATA: ResumeData = {
     },
 {
       name: "Party Arena 🎯",
-      desc: "P2P multiplayer party game platform — WebRTC rooms, zero backend, lazy-loaded game modules, TTS announcer. Games: Deeper Talk, Chaos Deck, Avalon, Ultimate Tic-Tac-Toe",
+      desc: "P2P multiplayer party game platform — WebRTC rooms, zero backend, lazy-loaded game modules, TTS announcer. Games: Deeper Talk, Chaos Deck, Avalon, Ultimate Tic-Tac-Toe, 17 Poker",
       tech: ["WebRTC", "PeerJS", "ES Modules", "Web Speech API", "Vanilla JS"],
       status: "Built",
       link: "/party-arena/index.html",
