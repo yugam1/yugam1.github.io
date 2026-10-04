@@ -19,12 +19,52 @@ const MAX_RAISES = 3;
 const HANDS_PER_MATCH = 10;
 const START_CHIPS = 200;
 
+const DECK_MODES = {
+  random: {
+    label: 'Random shuffle',
+    short: 'Random shuffle',
+    blurb: 'The dealer shuffles properly every hand. Nothing is predictable — pure poker.',
+  },
+  sealed: {
+    label: 'Sealed deck + perfect riffles',
+    short: 'Sealed deck',
+    blurb: 'A factory-ordered deck riffled perfectly a stated number of times. The order is fully determined — and so is the deal, if you can do the maths.',
+  },
+};
+
 const CAT_NAME = [
   'One Pair', 'Two Pair', 'Three of a Kind', 'Straight',
   'Full House', 'Four of a Kind', 'Royal Flush', 'Five of a Kind',
 ];
 const C_PAIR = 0, C_TWO = 1, C_TRIPS = 2, C_STRAIGHT = 3,
       C_FULL = 4, C_QUADS = 5, C_ROYAL = 6, C_FIVE = 7;
+
+// A sealed deck's order is knowable, which is the whole premise of the
+// manga's exploit: suit by suit, low to high (J Q K A), Joker last.
+function factoryDeck() {
+  const d = [];
+  for (const s of SUITS) for (const r of NATURAL_RANKS) d.push({ r, s });
+  d.push({ r: 'X', s: null });
+  return d;
+}
+
+// Perfect riffle (out-shuffle) on 17 cards: top 9 / bottom 8, interleaved
+// top first. It is a permutation of order 8 — eight of them restore the
+// deck exactly — because 2^8 = 1 (mod 17). The TV adaptation says six;
+// that is wrong for a 17-card faro.
+const FARO_PERIOD = 8;
+
+function faro(d) {
+  const half = Math.ceil(d.length / 2);
+  const top = d.slice(0, half);
+  const bot = d.slice(half);
+  const out = [];
+  for (let i = 0; i < half; i++) {
+    out.push(top[i]);
+    if (i < bot.length) out.push(bot[i]);
+  }
+  return out;
+}
 
 // ── Deck ──────────────────────────────────────────────────────────
 function makeDeck() {
@@ -180,7 +220,11 @@ export default {
 
     function freshPS() {
       return {
-        phase: 'cut', // cut | bet1 | draw | bet2 | result | match-over
+        phase: 'setup', // setup | cut | bet1 | draw | bet2 | result | match-over
+        setupStep: 'mode', // mode | faros
+        deckMode: null,
+        faroChoice: null, // fixed riffle count, or 0 for "random each hand"
+        faros: null,
         handNo: 1,
         chips: [START_CHIPS, START_CHIPS],
         pot: 0,
@@ -207,11 +251,25 @@ export default {
 
     // ── Host: hand lifecycle ────────────────────────────────────────
     function startHand() {
-      DECK = shuffle(makeDeck());
+      if (PS.deckMode === 'sealed') {
+        // Everything here is public: both players are told how many riffles
+        // the dealer gave it, and a sealed deck's starting order is known.
+        PS.faros = PS.faroChoice > 0
+          ? PS.faroChoice
+          : 1 + Math.floor(Math.random() * FARO_PERIOD);
+        DECK = factoryDeck();
+        for (let i = 0; i < PS.faros; i++) DECK = faro(DECK);
+      } else {
+        PS.faros = null;
+        DECK = shuffle(makeDeck());
+      }
       T = {
         hand: PS.handNo,
         button: PS.button,
         names: PS.names.slice(),
+        mode: PS.deckMode,
+        faros: PS.faros,
+        factory: PS.deckMode === 'sealed' ? factoryDeck().map(code) : null,
         shuffled: DECK.map(code),
         cuts: [],
         dealt: [[], []],
@@ -232,7 +290,9 @@ export default {
       PS.lastAudit = null;
       PS.phase = 'cut';
       PS.toAct = PS.button;
-      note(`— Hand ${PS.handNo} — fresh deck. ${PS.names[PS.button]} cuts first.`);
+      note(PS.deckMode === 'sealed'
+        ? `— Hand ${PS.handNo} — sealed deck, riffled ${plural(PS.faros, 'time')}. ${PS.names[PS.button]} cuts first.`
+        : `— Hand ${PS.handNo} — fresh deck, shuffled. ${PS.names[PS.button]} cuts first.`);
     }
 
     function deal() {
@@ -376,8 +436,7 @@ export default {
       T = null;
       PS = freshPS();
       PS.names = names;
-      note('New match.');
-      startHand();
+      note('New match — the host picks how the deck is prepared.');
     }
 
     // ── Host: action reducer ────────────────────────────────────────
@@ -390,6 +449,41 @@ export default {
       }
       if (PS.phase === 'result') {
         if (a.k === 'next') { nextHand(); pushState(); }
+        return;
+      }
+      if (PS.phase === 'setup') {
+        // Host's call only — the guest never gets these controls.
+        if (seat !== 0) return;
+        if (a.k === 'back') {
+          PS.setupStep = 'mode';
+          PS.deckMode = null;
+          pushState();
+          return;
+        }
+        if (a.k === 'mode') {
+          if (!DECK_MODES[a.m]) return;
+          PS.deckMode = a.m;
+          if (a.m === 'sealed') {
+            PS.setupStep = 'faros'; // one more question before we deal
+            pushState();
+            return;
+          }
+          note(`Deck: ${DECK_MODES[a.m].label}.`);
+          startHand();
+          pushState();
+          return;
+        }
+        if (a.k === 'faros') {
+          if (PS.deckMode !== 'sealed') return;
+          const n = Math.floor(a.n);
+          if (!Number.isInteger(n) || n < 0 || n > FARO_PERIOD) return;
+          PS.faroChoice = n;
+          note(n > 0
+            ? `Deck: sealed, ${plural(n, 'perfect riffle')} every hand.`
+            : 'Deck: sealed, riffle count varies each hand.');
+          startHand();
+          pushState();
+        }
         return;
       }
       if (seat !== PS.toAct) return;
@@ -567,6 +661,17 @@ export default {
       if (PS.phase === 'result' || PS.phase === 'match-over') return true;
       return isLocal ? true : PS.toAct === mySeat;
     }
+
+    // #game-container is `position:relative; overflow:hidden` in the host app
+    // (canvas games must not scroll), so a tall screen like this one gets
+    // clipped and the bottom becomes unreachable. Fill the container
+    // absolutely and scroll inside it instead of trying to grow it.
+    const ROOT = `position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;
+      -webkit-overflow-scrolling:touch;display:flex;flex-direction:column;
+      align-items:center;font-family:'Quicksand',sans-serif;color:#e2e8f0;`;
+    // Centring a scroll container with justify-content makes the overflow
+    // unreachable at the top — centre with auto margins instead.
+    const CENTRED = 'margin:auto;width:100%;display:flex;flex-direction:column;align-items:center;';
 
     // ── Card rendering ──────────────────────────────────────────────
     // Real card faces, built from CSS + inline SVG rather than a sprite
@@ -913,7 +1018,13 @@ export default {
           ${esc(label || `Hand ${t.hand}`)}
           <span style="opacity:0.5;font-weight:600;"> · ${esc(outcomeText(t))}</span>
         </summary>
-        ${auditRow(`Deck as opened — top → bottom (${n[t.button]} cuts first)`, codeRow(t.shuffled))}
+        ${t.mode === 'sealed' ? auditRow('Sealed deck, factory order', codeRow(t.factory)) : ''}
+        ${auditRow(
+          t.mode === 'sealed'
+            ? `After ${plural(t.faros, 'perfect riffle')} — ${n[t.button]} cuts first`
+            : `Deck as opened — top → bottom (${n[t.button]} cuts first)`,
+          codeRow(t.shuffled),
+        )}
         ${cuts}
         ${auditRow(`Dealt, alternating from ${n[t.button]} — ${n[0]}`, codeRow(t.dealt[0]))}
         ${auditRow(`Dealt — ${n[1]}`, codeRow(t.dealt[1]))}
@@ -928,7 +1039,12 @@ export default {
       for (const t of list || []) {
         const n = t.names;
         lines.push(`=== Hand ${t.hand} === ${outcomeText(t)}`);
-        lines.push(`deck opened (top->bottom): ${t.shuffled.join(' ')}`);
+        if (t.mode === 'sealed') {
+          lines.push(`sealed deck, factory order: ${t.factory.join(' ')}`);
+          lines.push(`after ${t.faros} perfect riffle(s): ${t.shuffled.join(' ')}`);
+        } else {
+          lines.push(`deck opened (top->bottom): ${t.shuffled.join(' ')}`);
+        }
         for (const c of t.cuts) lines.push(`cut: ${n[c.seat]} sent ${c.n} to bottom -> ${c.after.join(' ')}`);
         lines.push(`dealt (alternating from ${n[t.button]}):`);
         lines.push(`  ${n[0]}: ${t.dealt[0].join(' ')}`);
@@ -1019,25 +1135,112 @@ export default {
       </div>`;
     }
 
+    function faroStep() {
+      const counts = Array.from({ length: FARO_PERIOD }, (_, i) => i + 1).map((n) => `
+        <button data-act="faros-${n}" style="width:46px;height:46px;border-radius:10px;cursor:pointer;
+          background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.14);
+          color:${n === FARO_PERIOD ? v.accent : '#e2e8f0'};font-family:'Quicksand',sans-serif;
+          font-size:16px;font-weight:800;">${n}</button>`).join('');
+
+      return `<div style="width:min(92vw,420px);">
+        <div style="font-size:13px;opacity:0.65;margin-bottom:10px;line-height:1.6;">
+          How many perfect riffles does the dealer give the sealed deck?
+          Both players are told the number, so this is public either way.
+        </div>
+        <div style="display:flex;gap:7px;flex-wrap:wrap;justify-content:center;margin-bottom:12px;">
+          ${counts}
+        </div>
+        <div style="font-size:11px;opacity:0.45;text-align:center;margin-bottom:12px;line-height:1.6;">
+          A fixed count means the deck before the cuts is identical every hand —
+          the most predictable setting. ${FARO_PERIOD} riffles leaves it in factory order.
+        </div>
+        <button data-act="faros-0" style="display:block;width:100%;text-align:left;
+          padding:12px 15px;border-radius:12px;cursor:pointer;margin-bottom:10px;
+          background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);
+          color:#e2e8f0;font-family:'Quicksand',sans-serif;">
+          <div style="font-size:14px;font-weight:800;color:${v.accent};">Vary each hand</div>
+          <div style="font-size:12px;opacity:0.6;margin-top:3px;line-height:1.5;">
+            A different count from 1 to ${FARO_PERIOD} every hand, announced each time.
+            Still fully deducible, but you have to keep up.
+          </div>
+        </button>
+        <div style="text-align:center;">${btn('back', '← Back', 'ghost')}</div>
+      </div>`;
+    }
+
+    function setupScreen() {
+      const amHost = isLocal || isHost;
+      const onFaros = PS.setupStep === 'faros';
+      const choices = Object.entries(DECK_MODES).map(([id, m]) => `
+        <button data-act="mode-${id}" style="display:block;width:100%;text-align:left;
+          margin-bottom:10px;padding:13px 15px;border-radius:12px;cursor:pointer;
+          background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);
+          color:#e2e8f0;font-family:'Quicksand',sans-serif;">
+          <div style="font-size:14px;font-weight:800;color:${v.accent};">${esc(m.label)}</div>
+          <div style="font-size:12px;opacity:0.6;margin-top:3px;line-height:1.5;">${esc(m.blurb)}</div>
+        </button>`).join('');
+
+      return `<div style="${ROOT}padding:26px 14px;">
+        <div style="${CENTRED}">
+        <h2 style="font-family:'Righteous',cursive;font-size:clamp(15px,3.5vw,22px);margin:0 0 4px;
+          background:linear-gradient(135deg,#fbbf24,#f43f5e,#a855f7);
+          -webkit-background-clip:text;-webkit-text-fill-color:transparent;">17 POKER</h2>
+        <div style="font-size:12px;opacity:0.5;margin-bottom:18px;">
+          ${amHost
+            ? (onFaros ? 'Sealed deck — how many riffles?' : 'How should the dealer prepare the deck?')
+            : 'Waiting for the host to pick the deck…'}
+        </div>
+        ${amHost
+          ? (onFaros ? faroStep() : `<div style="width:min(92vw,420px);">${choices}</div>`)
+          : ''}
+        <details style="margin-top:6px;max-width:430px;font-size:12px;opacity:0.45;cursor:pointer;">
+          <summary style="font-weight:600;">What's the difference?</summary>
+          <div style="margin-top:8px;line-height:1.7;text-align:left;">
+            <p><strong>Random shuffle</strong> is ordinary poker — the deck is genuinely
+            shuffled each hand and nobody can predict it.</p>
+            <p><strong>Sealed deck</strong> is the premise from the manga. Every hand starts
+            from the same factory order and gets a stated number of perfect riffles, then
+            both players cut. All of that is public, so the entire deal is deducible — if you
+            can actually track the permutation.</p>
+            <p>A perfect riffle on 17 cards has a period of <strong>8</strong>: riffle a sealed
+            deck eight times and it is back exactly as it started. (That's the multiplicative
+            order of 2 mod 17 — the TV version's "every sixth shuffle" is wrong.)</p>
+            <p style="opacity:0.8;">Factory order, top to bottom:<br>
+            <span style="font-size:11px;">${factoryDeck().map(code).join(' ')}</span></p>
+          </div>
+        </details>
+        <div style="margin-top:16px;">${btn('leave', 'Leave', 'danger')}</div>
+        </div>
+      </div>`;
+    }
+
     function render() {
       if (!PS) {
-        container.innerHTML = `<div style="padding:40px;text-align:center;opacity:0.5;
-          font-family:'Quicksand',sans-serif;color:#e2e8f0;">Waiting for the dealer…</div>`;
+        container.innerHTML = `<div style="${ROOT}">
+          <div style="${CENTRED}padding:40px;text-align:center;opacity:0.5;">
+            Waiting for the dealer…
+          </div></div>`;
+        return;
+      }
+
+      if (PS.phase === 'setup') {
+        container.innerHTML = setupScreen();
+        bindEvents();
         return;
       }
 
       // Curtain: in local mode, hide the table while the device changes hands.
       if (curtain) {
         container.innerHTML = `
-          <div style="min-height:100%;display:flex;flex-direction:column;align-items:center;
-            justify-content:center;gap:16px;padding:40px 20px;text-align:center;
-            font-family:'Quicksand',sans-serif;color:#e2e8f0;">
+          <div style="${ROOT}padding:40px 20px;">
+            <div style="${CENTRED}gap:16px;text-align:center;">
             <div style="font-size:40px;">🂠</div>
             <div style="font-family:'Righteous',cursive;font-size:20px;">Pass the device</div>
             <div style="font-size:14px;opacity:0.6;max-width:300px;">
               ${esc(PS.names[PS.toAct])}, it's your turn — make sure no one else is looking.
             </div>
             ${btn('uncurtain', 'Show my hand', 'primary')}
+            </div>
           </div>`;
         bindEvents();
         return;
@@ -1087,15 +1290,20 @@ export default {
       lastRevealKey = revealKey;
 
       container.innerHTML = `
-        <div style="min-height:100%;display:flex;flex-direction:column;align-items:center;
-          padding:14px 10px 24px;font-family:'Quicksand',sans-serif;color:#e2e8f0;">
+        <div style="${ROOT}padding:14px 10px 24px;">
 
           <h2 style="font-family:'Righteous',cursive;font-size:clamp(15px,3.5vw,22px);
             margin:0 0 2px;letter-spacing:-0.5px;
             background:linear-gradient(135deg,#fbbf24,#f43f5e,#a855f7);
             -webkit-background-clip:text;-webkit-text-fill-color:transparent;">17 POKER</h2>
-          <div style="font-size:11px;opacity:0.45;margin-bottom:12px;letter-spacing:0.5px;">
+          <div style="font-size:11px;opacity:0.45;margin-bottom:4px;letter-spacing:0.5px;">
             HAND ${PS.handNo}/${HANDS_PER_MATCH} · ${phaseLabel.toUpperCase()}
+          </div>
+          <div style="font-size:11px;margin-bottom:12px;${PS.deckMode === 'sealed'
+            ? `color:${v.accent};` : 'opacity:0.35;'}">
+            ${PS.deckMode === 'sealed'
+              ? `Sealed deck · riffled ${plural(PS.faros, 'time')}${PS.faroChoice > 0 ? ', fixed' : ''}${PS.faros === FARO_PERIOD ? ' · back to factory order' : ''}`
+              : esc(DECK_MODES[PS.deckMode]?.short || '')}
           </div>
 
           <div style="display:flex;gap:22px;align-items:center;justify-content:center;flex-wrap:wrap;
@@ -1219,6 +1427,9 @@ export default {
             );
             return;
           }
+          if (a.startsWith('mode-')) return act({ k: 'mode', m: a.slice(5) });
+          if (a.startsWith('faros-')) return act({ k: 'faros', n: Number(a.slice(6)) });
+          if (a === 'back') return act({ k: 'back' });
           if (a === 'cut') return act({ k: 'cut', n: cutAmt });
           if (a === 'draw') return act({ k: 'draw', idx: [...selected] });
           if (a === 'bet' || a === 'raise') return act({ k: a, amt: betAmt });
@@ -1241,7 +1452,6 @@ export default {
         PS.names = seatNames();
       } else {
         PS = freshPS();
-        startHand();
       }
 
       if (isLocal) {
