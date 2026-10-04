@@ -153,6 +153,7 @@ That's it — your game will appear in the lobby automatically.
 | Game           | Description                                                | Players |
 | -------------- | ---------------------------------------------------------- | ------- |
 | 💬 Deeper Talk | Take turns answering deep, spicy, and surprising questions | 2-12    |
+| ♠️ 17 Poker    | Seventeen Poker from *Liar Game* — 17-card deck, wild Joker, 10 hands, bluffing and a deal audit at the end | 2       |
 
 ## Tech Stack
 
