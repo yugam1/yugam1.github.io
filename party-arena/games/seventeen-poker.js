@@ -193,6 +193,7 @@ export default {
         cuts: [null, null],
         drawn: [null, null],
         result: null,
+        lastAudit: null,
         finalMsg: '',
         log: [],
         names: seatNames(),
@@ -228,6 +229,7 @@ export default {
       PS.cuts = [null, null];
       PS.drawn = [null, null];
       PS.result = null;
+      PS.lastAudit = null;
       PS.phase = 'cut';
       PS.toAct = PS.button;
       note(`— Hand ${PS.handNo} — fresh deck. ${PS.names[PS.button]} cuts first.`);
@@ -285,6 +287,7 @@ export default {
       ];
       T.outcome = summary;
       TRACES.push(T);
+      PS.lastAudit = T; // shown on the hand-over screen, cleared next deal
       T = null;
     }
 
@@ -884,7 +887,7 @@ export default {
       return `${n[o.winner]} won ${o.potWon} with ${t.final[o.winner].name}`;
     }
 
-    function auditHand(t) {
+    function auditHand(t, label) {
       const n = t.names;
       const cuts = t.cuts.map((c) => auditRow(
         `${n[c.seat]} sent ${plural(c.n, 'card')} to the bottom`,
@@ -907,7 +910,7 @@ export default {
       return `<details style="margin:8px 0;border:1px solid rgba(255,255,255,0.07);
         border-radius:9px;padding:8px 10px;background:rgba(255,255,255,0.02);">
         <summary style="cursor:pointer;font-size:12px;font-weight:700;">
-          Hand ${t.hand}
+          ${esc(label || `Hand ${t.hand}`)}
           <span style="opacity:0.5;font-weight:600;"> · ${esc(outcomeText(t))}</span>
         </summary>
         ${auditRow(`Deck as opened — top → bottom (${n[t.button]} cuts first)`, codeRow(t.shuffled))}
@@ -920,9 +923,9 @@ export default {
       </details>`;
     }
 
-    function auditText() {
+    function auditText(list) {
       const lines = [];
-      for (const t of PS.audit || []) {
+      for (const t of list || []) {
         const n = t.names;
         lines.push(`=== Hand ${t.hand} === ${outcomeText(t)}`);
         lines.push(`deck opened (top->bottom): ${t.shuffled.join(' ')}`);
@@ -941,6 +944,17 @@ export default {
         lines.push('');
       }
       return lines.join('\n');
+    }
+
+    function handAuditPanel() {
+      const t = PS.lastAudit;
+      if (!t) return '';
+      return `<div style="width:min(94vw,520px);text-align:left;margin-top:10px;">
+        ${auditHand(t, `How hand ${t.hand} was dealt`)}
+        <div style="text-align:center;margin-top:4px;">
+          ${btn('copy-hand', 'Copy this hand', 'ghost')}
+        </div>
+      </div>`;
     }
 
     function auditPanel() {
@@ -1106,6 +1120,7 @@ export default {
           ${showAll ? resultPanel() : `
             <div style="height:1px;width:min(80%,320px);background:rgba(255,255,255,0.07);margin:16px 0;"></div>
           `}
+          ${PS.phase === 'result' ? handAuditPanel() : ''}
 
           ${PS.phase === 'match-over' ? `
             <div style="text-align:center;margin:10px 0 14px;">
@@ -1196,8 +1211,8 @@ export default {
           const a = el.dataset.act;
           if (a === 'leave') return api.endGame();
           if (a === 'uncurtain') { curtain = false; return render(); }
-          if (a === 'copy-audit') {
-            const text = auditText();
+          if (a === 'copy-audit' || a === 'copy-hand') {
+            const text = auditText(a === 'copy-hand' ? [PS.lastAudit] : PS.audit);
             navigator.clipboard?.writeText(text).then(
               () => { el.textContent = 'Copied'; },
               () => { el.textContent = 'Copy failed'; },
