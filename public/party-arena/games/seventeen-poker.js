@@ -662,6 +662,17 @@ export default {
       return isLocal ? true : PS.toAct === mySeat;
     }
 
+    // #game-container is `position:relative; overflow:hidden` in the host app
+    // (canvas games must not scroll), so a tall screen like this one gets
+    // clipped and the bottom becomes unreachable. Fill the container
+    // absolutely and scroll inside it instead of trying to grow it.
+    const ROOT = `position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;
+      -webkit-overflow-scrolling:touch;display:flex;flex-direction:column;
+      align-items:center;font-family:'Quicksand',sans-serif;color:#e2e8f0;`;
+    // Centring a scroll container with justify-content makes the overflow
+    // unreachable at the top — centre with auto margins instead.
+    const CENTRED = 'margin:auto;width:100%;display:flex;flex-direction:column;align-items:center;';
+
     // ── Card rendering ──────────────────────────────────────────────
     // Real card faces, built from CSS + inline SVG rather than a sprite
     // library: the deck is only 17 faces (A/K/Q/J in four suits, plus the
@@ -1169,8 +1180,8 @@ export default {
           <div style="font-size:12px;opacity:0.6;margin-top:3px;line-height:1.5;">${esc(m.blurb)}</div>
         </button>`).join('');
 
-      return `<div style="min-height:100%;display:flex;flex-direction:column;align-items:center;
-        justify-content:center;padding:26px 14px;font-family:'Quicksand',sans-serif;color:#e2e8f0;">
+      return `<div style="${ROOT}padding:26px 14px;">
+        <div style="${CENTRED}">
         <h2 style="font-family:'Righteous',cursive;font-size:clamp(15px,3.5vw,22px);margin:0 0 4px;
           background:linear-gradient(135deg,#fbbf24,#f43f5e,#a855f7);
           -webkit-background-clip:text;-webkit-text-fill-color:transparent;">17 POKER</h2>
@@ -1199,13 +1210,16 @@ export default {
           </div>
         </details>
         <div style="margin-top:16px;">${btn('leave', 'Leave', 'danger')}</div>
+        </div>
       </div>`;
     }
 
     function render() {
       if (!PS) {
-        container.innerHTML = `<div style="padding:40px;text-align:center;opacity:0.5;
-          font-family:'Quicksand',sans-serif;color:#e2e8f0;">Waiting for the dealer…</div>`;
+        container.innerHTML = `<div style="${ROOT}">
+          <div style="${CENTRED}padding:40px;text-align:center;opacity:0.5;">
+            Waiting for the dealer…
+          </div></div>`;
         return;
       }
 
@@ -1218,15 +1232,15 @@ export default {
       // Curtain: in local mode, hide the table while the device changes hands.
       if (curtain) {
         container.innerHTML = `
-          <div style="min-height:100%;display:flex;flex-direction:column;align-items:center;
-            justify-content:center;gap:16px;padding:40px 20px;text-align:center;
-            font-family:'Quicksand',sans-serif;color:#e2e8f0;">
+          <div style="${ROOT}padding:40px 20px;">
+            <div style="${CENTRED}gap:16px;text-align:center;">
             <div style="font-size:40px;">🂠</div>
             <div style="font-family:'Righteous',cursive;font-size:20px;">Pass the device</div>
             <div style="font-size:14px;opacity:0.6;max-width:300px;">
               ${esc(PS.names[PS.toAct])}, it's your turn — make sure no one else is looking.
             </div>
             ${btn('uncurtain', 'Show my hand', 'primary')}
+            </div>
           </div>`;
         bindEvents();
         return;
@@ -1276,8 +1290,7 @@ export default {
       lastRevealKey = revealKey;
 
       container.innerHTML = `
-        <div style="min-height:100%;display:flex;flex-direction:column;align-items:center;
-          padding:14px 10px 24px;font-family:'Quicksand',sans-serif;color:#e2e8f0;">
+        <div style="${ROOT}padding:14px 10px 24px;">
 
           <h2 style="font-family:'Righteous',cursive;font-size:clamp(15px,3.5vw,22px);
             margin:0 0 2px;letter-spacing:-0.5px;
