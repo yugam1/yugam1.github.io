@@ -1,8 +1,9 @@
 import { motion } from 'framer-motion';
-import { Mail, Github, Linkedin, MapPin, ArrowUpRight } from 'lucide-react';
+import { Mail, Github, Linkedin, MapPin, ArrowUpRight, FileText } from 'lucide-react';
 import { RESUME_DATA } from '../data/resume';
 
 const { email, github, linkedin, location } = RESUME_DATA.personal;
+const RESUME_URL = `${import.meta.env.BASE_URL}Yugam_Prasad_Resume.pdf`;
 
 const channels = [
   {
@@ -84,7 +85,8 @@ export default function Contact() {
           ))}
         </motion.div>
 
-        {/* Primary CTA */}
+        {/* Primary CTAs */}
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
         <motion.a
           href={`mailto:${email}`}
           initial={{ opacity: 0, y: 20 }}
@@ -97,6 +99,21 @@ export default function Contact() {
           <Mail className="w-5 h-5" />
           Say Hello
         </motion.a>
+        <motion.a
+          href={RESUME_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          whileHover={{ scale: 1.04 }}
+          whileTap={{ scale: 0.98 }}
+          className="inline-flex items-center gap-2 px-8 py-4 rounded-full font-semibold text-white bg-white/5 border border-white/15 hover:bg-white/10 hover:border-white/25 backdrop-blur-md transition-colors"
+        >
+          <FileText className="w-5 h-5" />
+          View Resume
+        </motion.a>
+        </div>
       </div>
     </section>
   );
