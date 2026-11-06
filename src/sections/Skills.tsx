@@ -1,20 +1,50 @@
 import { motion } from "framer-motion";
 import { RESUME_DATA } from "../data/resume";
-import { Code, Server, Cloud, Brain, Terminal } from "lucide-react";
+import {
+  Activity,
+  Bot,
+  Brain,
+  Cloud,
+  Code,
+  Database,
+  FlaskConical,
+  Layout,
+  Network,
+  Server,
+  Terminal,
+  Users,
+  Workflow,
+} from "lucide-react";
 import SectionHeading from "../components/SectionHeading";
 
 const getCategoryIcon = (category: string) => {
   switch (category) {
-    case "Frontend":
-      return <Code className="w-6 h-6 text-blue-400" />;
+    case "Languages":
+      return <Code className="w-5 h-5 text-blue-400" />;
     case "Backend":
-      return <Server className="w-6 h-6 text-green-400" />;
-    case "DevOps & Cloud":
-      return <Cloud className="w-6 h-6 text-purple-400" />;
-    case "AI & Data":
-      return <Brain className="w-6 h-6 text-orange-400" />;
+      return <Server className="w-5 h-5 text-green-400" />;
+    case "Frontend":
+      return <Layout className="w-5 h-5 text-cyan-400" />;
+    case "Databases & Search":
+      return <Database className="w-5 h-5 text-amber-400" />;
+    case "Messaging & Workflow":
+      return <Workflow className="w-5 h-5 text-pink-400" />;
+    case "Cloud & DevOps":
+      return <Cloud className="w-5 h-5 text-purple-400" />;
+    case "Observability & Quality":
+      return <Activity className="w-5 h-5 text-emerald-400" />;
+    case "AI / LLM":
+      return <Brain className="w-5 h-5 text-orange-400" />;
+    case "Agentic AI":
+      return <Bot className="w-5 h-5 text-indigo-400" />;
+    case "Architecture":
+      return <Network className="w-5 h-5 text-sky-400" />;
+    case "Data Science & NLP":
+      return <FlaskConical className="w-5 h-5 text-rose-400" />;
+    case "Ways of Working":
+      return <Users className="w-5 h-5 text-teal-400" />;
     default:
-      return <Terminal className="w-6 h-6 text-gray-400" />;
+      return <Terminal className="w-5 h-5 text-gray-400" />;
   }
 };
 
@@ -23,41 +53,32 @@ export default function Skills() {
     <section id="skills" className="py-20 relative z-10">
       <div className="container mx-auto px-4 md:px-8">
         <SectionHeading title="Technical Arsenal" subtitle="Skills & Technologies" />
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-12">
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-12">
           {RESUME_DATA.skills.map((category, idx) => (
             <motion.div
               key={category.category}
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-100px" }}
-              transition={{ delay: idx * 0.1, duration: 0.5 }}
+              transition={{ delay: (idx % 3) * 0.1, duration: 0.5 }}
               className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-6"
             >
-              <div className="flex items-center gap-3 mb-6">
-                <div className="p-3 bg-white/10 rounded-lg">
+              <div className="flex items-center gap-3 mb-5">
+                <div className="p-2.5 bg-white/10 rounded-lg">
                   {getCategoryIcon(category.category)}
                 </div>
-                <h3 className="text-xl font-semibold text-white">{category.category}</h3>
+                <h3 className="text-lg font-semibold text-white">{category.category}</h3>
               </div>
 
-              <div className="space-y-5">
-                {category.items.map((skill, skillIdx) => (
-                  <div key={skill.name}>
-                    <div className="flex justify-between mb-2">
-                      <span className="text-sm font-medium text-gray-300">{skill.name}</span>
-                      <span className="text-sm font-medium text-gray-400">{skill.proficiency}/10</span>
-                    </div>
-                    <div className="w-full bg-white/10 rounded-full h-2 overflow-hidden">
-                      <motion.div
-                        className="bg-gradient-to-r from-blue-500 to-purple-500 h-full rounded-full"
-                        initial={{ width: 0 }}
-                        whileInView={{ width: `${skill.proficiency * 10}%` }}
-                        viewport={{ once: true, margin: "-100px" }}
-                        transition={{ duration: 1, delay: 0.2 + skillIdx * 0.1, ease: "easeOut" }}
-                      />
-                    </div>
-                  </div>
+              <div className="flex flex-wrap gap-2">
+                {category.items.map((skill) => (
+                  <span
+                    key={skill}
+                    className="px-3 py-1 text-sm rounded-full bg-white/5 border border-white/10 text-gray-300 hover:bg-white/10 hover:text-white transition-colors"
+                  >
+                    {skill}
+                  </span>
                 ))}
               </div>
             </motion.div>

@@ -102,10 +102,10 @@ export default function About() {
             className="space-y-8 text-gray-300 text-lg leading-relaxed"
           >
             <p>
-              I am a Software Development Engineer with a strong foundation in building scalable backend architectures and dynamic user interfaces. Over the last {Math.floor(YEARS_OF_EXPERIENCE)}+ years, I've had the privilege of leading cross-functional teams and architecting robust solutions that serve millions of users. My journey started at IIT Kharagpur, fueling a lifelong passion for complex problem-solving.
+              I am a Software Development Engineer with a strong foundation in building scalable backend architectures and dynamic user interfaces. Over the last {Math.floor(YEARS_OF_EXPERIENCE)}+ years, I've had the privilege of leading a 15-member engineering team and architecting distributed, event-driven systems for enterprise logistics. My journey started at IIT Kharagpur, fueling a lifelong passion for complex problem-solving.
             </p>
             <p>
-              Currently at <span className="text-white font-medium">DP World</span>, I focus on optimizing core microservices and driving significant performance improvements. Whether it's crafting an elegant React frontend or deploying resilient Spring Boot services, I thrive in environments where technology meets real-world impact.
+              Currently a Group SDE II at <span className="text-white font-medium">DP World</span>, I architect Network Price Manager, a multi-tenant pricing platform serving 80 tenants through 9 client systems, across Java/Spring Boot and Node.js services. Whether it's crafting an elegant React frontend or deploying resilient Spring Boot services, I thrive in environments where technology meets real-world impact.
             </p>
             
             {/* Passion Statement */}

@@ -86,21 +86,21 @@ const ExperienceCard = ({
              </div>
 
              {/* Tech Stack initially visible as pills */}
-             <div className={`flex flex-wrap gap-2 mb-5 ${isLeft ? 'md:justify-end' : 'md:justify-start'}`}>
+             {experience.techStack.length > 0 && <div className={`flex flex-wrap gap-2 mb-5 ${isLeft ? 'md:justify-end' : 'md:justify-start'}`}>
                {experience.techStack.map((tech, i) => (
                  <span key={i} className={`px-3 py-1 text-xs font-medium rounded-full bg-white/5 border ${isDPWorld ? 'border-purple-500/20 text-purple-200' : 'border-white/10 text-gray-300'} hover:bg-white/10 transition-colors`}>
                    {tech}
                  </span>
                ))}
-             </div>
+             </div>}
 
-             <button 
+             {experience.bullets.length > 0 && <button 
                onClick={() => setIsExpanded(!isExpanded)}
                className={`flex items-center gap-2 text-sm font-medium transition-colors ${isDPWorld ? 'text-purple-400 hover:text-purple-300' : 'text-accent hover:text-accent/80'}`}
              >
                {isExpanded ? 'Hide Details' : 'View Details'}
                {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-             </button>
+             </button>}
 
              <AnimatePresence>
                {isExpanded && (

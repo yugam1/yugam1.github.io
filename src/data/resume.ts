@@ -33,14 +33,9 @@ export interface WeekendProject {
   link?: string;
 }
 
-export interface Skill {
-  name: string;
-  proficiency: number;
-}
-
 export interface SkillCategory {
   category: string;
-  items: Skill[];
+  items: string[];
 }
 
 export interface Award {
@@ -86,7 +81,7 @@ export const YEARS_OF_EXPERIENCE = computeYearsOfExperience();
 export const RESUME_DATA: ResumeData = {
   personal: {
     name: "Yugam Prasad",
-    title: "SDE2 @ DP World",
+    title: "Group SDE II @ DP World",
     location: "Bengaluru, IN",
     email: "projectyugam@gmail.com",
     linkedin: "in/yugam-15a645126",
@@ -102,31 +97,32 @@ export const RESUME_DATA: ResumeData = {
   workExperience: [
     {
       company: "DP World",
-      role: "SDE2",
-      period: "Jul 2023 - Present",
+      role: "Group SDE II",
+      period: "Oct 2023 - Present",
       location: "Bengaluru, IN",
       bullets: [
-        "Led and mentored a 15-member engineering team, driving delivery alignment, coding standards, and ownership.",
-        "Introduced document-driven development, achieving 90%+ unit-test coverage across services.",
-        "Built a Rate Management platform unifying freight-transport and location-based service lines, with a multi-modal routing engine stitching sea, rail, and air schedules and a pricing engine for buy/sell/margin/markup.",
-        "Introduced Elasticsearch as a read-optimized mirror of Postgres — dual-index routing, ngram prefix search, and zero-downtime reindex via alias swaps with real-time PG→ES sync.",
-        "Built a distributed offers pipeline: a Java/Spring Boot core proxies initiate/stream calls to a Node service, streaming vendor offers over SSE with a Kafka + transactional-outbox for exactly-once delivery.",
-        "Delivered an SLA workflow layer on Temporal with a role-gated state machine and SQL-aggregated KPI tiles for healthy, nearing-breach, and overdue jobs.",
+        "Architected Network Price Manager (NPM), a multi-tenant enterprise pricing platform managing millions of contractual, tariff, and spot rates across global multi-modal logistics networks — serving 80 tenants through 9 client systems and 1,000+ concurrent users.",
+        "Split NPM into a Java/Spring Boot core owning the write path and a Node.js offer engine owning the read path, with a two-phase initiate/stream flow that streams vendor offers over SSE and a Kafka + transactional outbox for exactly-once delivery.",
+        "Built a unified Platform Offers API for all client systems (HTTP, SSE, and event-driven responses) and integrated live rates from carriers, aggregators, and external vendor APIs through Spring WebFlux.",
+        "Cut offer-generation latency by ~40% with streaming computation and Redis caching of hot pricing and tenant configuration data.",
+        "Engineered an async ingestion pipeline processing 2M+ pricing records per cycle in under 5 minutes, with sub-500ms queries across million-record datasets.",
+        "Introduced Elasticsearch as a read-optimized mirror of Postgres — dual-index routing, ngram prefix search, and zero-downtime reindexing via alias swaps with real-time PG→ES sync.",
+        "Implemented end-to-end distributed tracing across HTTP, Kafka, and worker-pool boundaries, with New Relic dashboards on custom offer events.",
+        "Designed AI-assisted pricing validation and explainability services using LLM APIs to flag anomalous rate configurations and explain complex pricing decisions.",
+        "Developed a multi-modal routing engine stitching sea, rail, road, and air schedules into end-to-end offers, plus a contract and subscription module with Quartz-scheduled billing.",
+        "Built an SLA workflow layer on Temporal with a role-gated state machine and Kafka side-effects for notifications.",
+        "Won DP World HackPossible 2024 (1st of 52 teams) with an AI-powered logistics quoting solution combining voice input, contextual understanding, and forecasting.",
+        "Led and mentored a 15-member engineering team and introduced document-driven development, achieving 90%+ unit-test coverage.",
       ],
-      techStack: ["Node.js", "Java", "Spring Boot", "Elasticsearch", "Kafka", "Temporal", "Redis", "PostgreSQL"],
+      techStack: ["Java", "Spring Boot", "Spring WebFlux", "Node.js", "Kafka", "PostgreSQL", "Redis", "Elasticsearch", "Temporal"],
     },
     {
       company: "DP World",
       role: "SDE1",
-      period: "Jul 2021 - Jul 2023",
+      period: "Jul 2021 - Oct 2023",
       location: "Bengaluru, IN",
-      bullets: [
-        "Designed and implemented a core contract module supporting multiple agreement types between parties.",
-        "Led development of a subscription module letting clients subscribe to services for defined durations.",
-        "Enhanced Quartz-based scheduling to trigger subscription billing on user-defined frequencies.",
-        "Won DP World HackPossible 2024 (1st of 52 teams) — an AI-powered logistics quoting MVP combining voice input, contextual understanding, and forecasting, built in React and Node.js.",
-      ],
-      techStack: ["Java", "Spring Boot", "Quartz", "React", "Node.js", "OpenAI"],
+      bullets: [],
+      techStack: [],
     },
     {
       company: "KPIT",
@@ -219,42 +215,18 @@ export const RESUME_DATA: ResumeData = {
     },
   ],
   skills: [
-    {
-      category: "Frontend",
-      items: [
-        { name: "React", proficiency: 8 },
-        { name: "Next.js", proficiency: 7 },
-        { name: "Tailwind CSS", proficiency: 8 },
-        { name: "TypeScript / JavaScript", proficiency: 8 },
-      ],
-    },
-    {
-      category: "Backend",
-      items: [
-        { name: "Java", proficiency: 9 },
-        { name: "Spring Boot", proficiency: 9 },
-        { name: "Node.js", proficiency: 8 },
-        { name: "Python", proficiency: 8 },
-      ],
-    },
-    {
-      category: "DevOps & Cloud",
-      items: [
-        { name: "AWS", proficiency: 7 },
-        { name: "Kafka", proficiency: 7 },
-        { name: "Redis", proficiency: 7 },
-        { name: "Docker", proficiency: 7 },
-      ],
-    },
-    {
-      category: "AI & Data",
-      items: [
-        { name: "OpenAI API", proficiency: 8 },
-        { name: "Stable Diffusion", proficiency: 7 },
-        { name: "LoRA", proficiency: 6 },
-        { name: "Spark", proficiency: 7 },
-      ],
-    },
+    { category: "Languages", items: ["Java (17+)", "Python", "JavaScript", "TypeScript", "C++"] },
+    { category: "Backend", items: ["Spring Boot", "Spring", "Spring WebFlux", "Hibernate", "Node.js", "Express.js", "Flask", "Sequelize", "RESTful APIs", "Microservices"] },
+    { category: "Frontend", items: ["React.js", "HTML", "CSS"] },
+    { category: "Databases & Search", items: ["PostgreSQL", "MySQL", "MongoDB", "Redis", "Elasticsearch", "Flyway"] },
+    { category: "Messaging & Workflow", items: ["Kafka", "Azure Event Grid", "Temporal", "Server-Sent Events (SSE)", "Node.js Worker Threads"] },
+    { category: "Cloud & DevOps", items: ["Azure", "AWS", "Docker", "Kubernetes", "Linux", "Azure Kubernetes Service (AKS)", "Azure DevOps", "CI/CD", "Git"] },
+    { category: "Observability & Quality", items: ["New Relic", "SonarQube", "Veracode (SAST)"] },
+    { category: "AI / LLM", items: ["RAG", "Vector Search (Qdrant)", "Embeddings", "Reranking", "LLM Serving (Ollama)", "Evals (LLM-as-judge)"] },
+    { category: "Agentic AI", items: ["MCP Servers", "Tool Calling", "Multi-Agent Orchestration", "Agent Loops", "Prompt Grounding", "Claude Code"] },
+    { category: "Architecture", items: ["Distributed Systems", "Event-Driven Architecture", "High Availability", "Scalability", "Design Patterns (Mediator, Strategy)"] },
+    { category: "Data Science & NLP", items: ["spaCy", "Stanford NER", "Textual Entailment", "Sentiment Analysis", "Topic Modelling (LDA)", "Time-Series Analysis", "SAS"] },
+    { category: "Ways of Working", items: ["Team Leadership", "Mentoring", "Document-Driven Development", "Agile / Scrum"] },
   ],
   awards: [
     { name: "Champion Award", company: "DP World", context: "Outstanding performance across teams" },
