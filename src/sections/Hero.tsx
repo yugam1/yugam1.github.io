@@ -6,7 +6,7 @@ import { Link } from 'react-scroll';
 import { RESUME_DATA } from '../data/resume';
 
 const subtitles = [
-  "SDE2 @ DP World",
+  "Group SDE II @ DP World",
   "IIT KGP Alumnus",
   "Vibe Coder",
   "Hackathon Winner"
@@ -57,7 +57,7 @@ export default function Hero() {
         </motion.h1>
 
         {/* Cycling Subtitle */}
-        <div className="h-8 md:h-12 mb-6 pointer-events-none">
+        <div data-build="text" className="h-8 md:h-12 mb-6 pointer-events-none">
           <AnimatePresence mode="wait">
             <motion.h2
               key={currentSubtitle}

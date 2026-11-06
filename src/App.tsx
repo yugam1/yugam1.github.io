@@ -6,6 +6,7 @@ import Experience from './sections/Experience'
 import Skills from './sections/Skills'
 import Awards from './sections/Awards'
 import Contact from './sections/Contact'
+import BuildSwarm from './components/BuildSwarm'
 
 function App() {
   return (
@@ -24,6 +25,7 @@ function App() {
         made with <span className="text-[#ff4d94]">♥</span><br />
         <small className="opacity-60 text-[11px] mt-1 inline-block">&copy; 2026 yugam1.github.io &middot; all rights reserved</small>
       </footer>
+      <BuildSwarm />
     </div>
   )
 }
