@@ -34,8 +34,10 @@ function alpha(color: string): number {
 }
 
 function hasBoxStyle(cs: CSSStyleDeclaration): boolean {
-  if (alpha(cs.backgroundColor) > 0.02) return true
-  if (cs.backgroundImage && cs.backgroundImage !== 'none') return true
+  // Gradient text (background clipped to the glyphs) is text, not a box.
+  const clipText = cs.getPropertyValue('background-clip') === 'text' || cs.getPropertyValue('-webkit-background-clip') === 'text'
+  if (!clipText && alpha(cs.backgroundColor) > 0.02) return true
+  if (!clipText && cs.backgroundImage && cs.backgroundImage !== 'none') return true
   if (cs.boxShadow && cs.boxShadow !== 'none') return true
   if (cs.backdropFilter && cs.backdropFilter !== 'none') return true
   for (const side of ['Top', 'Right', 'Bottom', 'Left'] as const) {

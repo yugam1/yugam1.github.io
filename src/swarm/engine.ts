@@ -9,14 +9,13 @@
 // visitor, after which the build simply follows their scrolling.
 
 import { captureTasks, refreshBounds, type Task } from './capture'
-import { ICONS, IMAGE_ICON, SCROLL_KEYS, clamp, div, easeInOut, easeOut, measureLines, type Line, type Tool } from './visuals'
+import type { Rect, SwarmControl, SwarmStats } from './types'
+import { ICONS, IMAGE_ICON, SCROLL_KEYS, clamp, div, easeInOut, easeOut, ghostOf, measureLines, typedClips, type Line, type Tool } from './visuals'
 
 const NAMES = ['Pixel', 'Byte', 'Kern', 'Flex', 'Grid', 'Hex', 'Lint', 'Node', 'Hook', 'Prop', 'Vec', 'Span']
 const COLORS = ['#6366f1', '#22d3ee', '#ec4899', '#10b981', '#f59e0b', '#a855f7', '#f43f5e', '#14b8a6', '#3b82f6', '#eab308', '#8b5cf6', '#f97316']
 
 type Phase = 'sleep' | 'idle' | 'travel' | 'drag' | 'type' | 'leave' | 'gone'
-
-interface Rect { x: number; y: number; w: number; h: number }
 
 interface TypeLayout { lines: Line[]; total: number }
 
@@ -40,20 +39,8 @@ interface Agent {
   frameDy: number
   size: HTMLSpanElement | null
   caret: HTMLDivElement | null
+  ghost: HTMLDivElement | null // stand-in for a text box while it's drawn
   layout: TypeLayout | null
-}
-
-export interface SwarmStats {
-  agents: { name: string; color: string }[]
-  done: number
-  total: number
-  finished: boolean
-  seconds: number
-}
-
-export interface SwarmControl {
-  skip(): void
-  destroy(): void
 }
 
 export function startSwarm(root: Element, onStats: (s: SwarmStats) => void): SwarmControl {
@@ -92,7 +79,7 @@ export function startSwarm(root: Element, onStats: (s: SwarmStats) => void): Swa
       phase: 'sleep', next: 'idle', t0: start + 150 + i * 60, dur: 0,
       fx: ox, fy: oy, tx: ox, ty: oy, cx: ox, cy: oy,
       task: -1, rect: { x: 0, y: 0, w: 0, h: 0 }, lastClaim: 0,
-      frame: null, frameDx: 0, frameDy: 0, size: null, caret: null, layout: null,
+      frame: null, frameDx: 0, frameDy: 0, size: null, caret: null, ghost: null, layout: null,
     })
   }
 
@@ -228,8 +215,17 @@ export function startSwarm(root: Element, onStats: (s: SwarmStats) => void): Swa
   function beginDrag(a: Agent, now: number) {
     const t = tasks[a.task]
     makeFrame(a, t.kind === 'media' ? 'media' : 'box')
-    // Boxes appear under the drag; media waits behind its placeholder.
-    if (t.kind !== 'media') {
+    // Boxes appear under the drag; media waits behind its placeholder. A box
+    // with text draws a ghost of itself instead, so the text first appears
+    // when it's typed rather than showing, vanishing and being typed again.
+    if (t.text) {
+      const g = ghostOf(t.el, a.rect.w, a.rect.h)
+      g.style.left = `${a.rect.x}px`
+      g.style.top = `${a.rect.y}px`
+      g.style.clipPath = 'inset(0 100% 100% 0)'
+      world.insertBefore(g, world.firstChild)
+      a.ghost = g
+    } else if (t.kind !== 'media') {
       t.el.style.clipPath = 'inset(0 100% 100% 0)'
       t.el.removeAttribute('data-sw')
     }
@@ -278,6 +274,10 @@ export function startSwarm(root: Element, onStats: (s: SwarmStats) => void): Swa
       a.frame.style.left = `${a.rect.x + a.frameDx}px`
       a.frame.style.top = `${a.rect.y + a.frameDy}px`
     }
+    if (a.ghost) {
+      a.ghost.style.left = `${a.rect.x}px`
+      a.ghost.style.top = `${a.rect.y}px`
+    }
   }
 
   function finish(a: Agent) {
@@ -292,7 +292,8 @@ export function startSwarm(root: Element, onStats: (s: SwarmStats) => void): Swa
       setTimeout(() => f.remove(), 300)
     }
     a.caret?.remove()
-    a.frame = a.size = a.caret = null
+    a.ghost?.remove()
+    a.frame = a.size = a.caret = a.ghost = null
     a.layout = null
     a.task = -1
     a.phase = 'idle'
@@ -344,7 +345,9 @@ export function startSwarm(root: Element, onStats: (s: SwarmStats) => void): Swa
         a.frame.style.width = `${cw}px`
         a.frame.style.height = `${ch}px`
         if (a.size) a.size.textContent = `${Math.round(cw)} × ${Math.round(ch)}`
-        if (t.kind !== 'media') t.el.style.clipPath = `inset(0 ${w - cw}px ${h - ch}px 0)`
+        const clip = `inset(0 ${w - cw}px ${h - ch}px 0)`
+        if (a.ghost) a.ghost.style.clipPath = clip
+        else if (t.kind !== 'media') t.el.style.clipPath = clip
         if (p >= 1) {
           if (t.text) beginType(a, now)
           else finish(a)
@@ -355,19 +358,9 @@ export function startSwarm(root: Element, onStats: (s: SwarmStats) => void): Swa
       case 'type': {
         if (!t || !a.layout || !a.caret) break
         track(a, t)
-        const { lines, total } = a.layout
-        const { w } = a.rect
-        // Walk the typed width along the lines to find the current one.
-        let left = p * total
-        let i = 0
-        while (i < lines.length - 1 && left > lines[i].x1 - lines[i].x0) {
-          left -= lines[i].x1 - lines[i].x0
-          i++
-        }
-        const line = lines[i]
-        const x = p >= 1 ? w : Math.min(line.x1, line.x0 + left)
-        const top = i === 0 ? 0 : line.y0
-        t.el.style.clipPath = `polygon(0 0, ${w}px 0, ${w}px ${top}px, ${x}px ${top}px, ${x}px ${line.y1}px, 0 ${line.y1}px)`
+        const { line, x, typed, rest } = typedClips(a.layout.lines, a.layout.total, p, a.rect.w, a.rect.h)
+        t.el.style.clipPath = typed
+        if (a.ghost) a.ghost.style.clipPath = rest
         const caretX = a.rect.x + Math.min(x, line.x1)
         const caretY = a.rect.y + line.y0
         const lh = line.y1 - line.y0
@@ -497,3 +490,5 @@ export function startSwarm(root: Element, onStats: (s: SwarmStats) => void): Swa
     },
   }
 }
+
+export type { SwarmControl, SwarmStats }

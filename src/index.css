@@ -42,6 +42,7 @@
 .sw-world { position: absolute; top: 0; left: 0; will-change: transform; }
 .sw-cursor { position: absolute; top: 0; left: 0; will-change: transform; filter: drop-shadow(0 1px 1.5px rgba(0, 0, 0, 0.45)); }
 .sw-cursor svg { position: absolute; display: block; }
+.sw-ghost { position: absolute; box-sizing: border-box; }
 .sw-frame { position: absolute; box-sizing: border-box; border: 1px solid var(--sw-sel); transition: opacity 0.25s ease; }
 .sw-frame.sw-media { background: rgba(255, 255, 255, 0.06); }
 .sw-frame.sw-fade { opacity: 0; }

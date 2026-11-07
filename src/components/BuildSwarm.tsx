@@ -3,7 +3,6 @@ import { Volume2, VolumeX } from 'lucide-react'
 import { startSwarm, type SwarmControl, type SwarmStats } from '../swarm/engine'
 import { useBgm } from '../hooks/useBgm'
 
-const SESSION_KEY = 'build:done'
 // Drop the track at public/audio/bgm.mp3. It plays while the page is being
 // built and fades out when the build finishes or is skipped.
 const BGM_SRC = `${import.meta.env.BASE_URL}audio/bgm.mp3`
@@ -11,28 +10,15 @@ const BGM_SRC = `${import.meta.env.BASE_URL}audio/bgm.mp3`
 // bars at 80 BPM, so the loop lands back on the beat.
 const BGM_CLIP = { start: 1, end: 55.2 }
 
-// ?build=1 always plays, ?build=off never does. Otherwise it plays once per
-// browser session, and never for reduced-motion users or crawlers (who should
-// index the real page, not a hidden one).
+// Plays on every load, reloads included. ?build=off never plays it and
+// ?build=1 always does; otherwise it's skipped for reduced-motion users and
+// crawlers (who should index the real page, not a hidden one).
 function shouldBuild(): boolean {
   const flag = new URLSearchParams(window.location.search).get('build')
   if (flag === 'off' || flag === '0') return false
   if (flag === '1' || flag === 'on') return true
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return false
-  if (/bot|crawl|spider|slurp|lighthouse/i.test(navigator.userAgent)) return false
-  try {
-    return sessionStorage.getItem(SESSION_KEY) !== '1'
-  } catch {
-    return true
-  }
-}
-
-function markDone() {
-  try {
-    sessionStorage.setItem(SESSION_KEY, '1')
-  } catch {
-    // Storage blocked: the intro just plays again next time.
-  }
+  return !/bot|crawl|spider|slurp|lighthouse/i.test(navigator.userAgent)
 }
 
 export default function BuildSwarm() {
@@ -62,14 +48,12 @@ export default function BuildSwarm() {
 
   useEffect(() => {
     if (!finished) return
-    markDone()
     const id = setTimeout(() => setDismissed(true), 6000)
     return () => clearTimeout(id)
   }, [finished])
 
   const skip = useCallback(() => {
     control.current?.skip()
-    markDone()
     setDismissed(true)
   }, [])
 

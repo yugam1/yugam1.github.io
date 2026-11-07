@@ -52,3 +52,44 @@ export function measureLines(el: HTMLElement, box: DOMRect): Line[] {
   lines.sort((p, q) => p.y0 - q.y0)
   return lines.length ? lines : [{ x0: 0, x1: box.width, y0: 0, y1: box.height }]
 }
+
+// A box's own look (fill, border, corners), without its contents, so a frame
+// can be drawn without its text showing before it's typed.
+const GHOST_PROPS = [
+  'background-color', 'background-image', 'background-size', 'background-position', 'background-repeat',
+  'border-top-width', 'border-right-width', 'border-bottom-width', 'border-left-width',
+  'border-top-style', 'border-right-style', 'border-bottom-style', 'border-left-style',
+  'border-top-color', 'border-right-color', 'border-bottom-color', 'border-left-color',
+  'border-top-left-radius', 'border-top-right-radius', 'border-bottom-right-radius', 'border-bottom-left-radius',
+  'backdrop-filter',
+]
+
+export function ghostOf(el: HTMLElement, w: number, h: number): HTMLDivElement {
+  const cs = getComputedStyle(el)
+  const g = div('sw-ghost')
+  for (const p of GHOST_PROPS) g.style.setProperty(p, cs.getPropertyValue(p))
+  g.style.width = `${w}px`
+  g.style.height = `${h}px`
+  return g
+}
+
+// Clip paths for typing: the element shows everything typed so far, and its
+// ghost (if any) shows exactly the rest of the box, so nothing doubles up.
+export function typedClips(lines: Line[], total: number, p: number, w: number, h: number) {
+  let left = p * total
+  let i = 0
+  while (i < lines.length - 1 && left > lines[i].x1 - lines[i].x0) {
+    left -= lines[i].x1 - lines[i].x0
+    i++
+  }
+  const line = lines[i]
+  const x = p >= 1 ? w : Math.min(line.x1, line.x0 + left)
+  const top = i === 0 ? 0 : line.y0
+  const b = line.y1
+  return {
+    line,
+    x,
+    typed: `polygon(0 0, ${w}px 0, ${w}px ${top}px, ${x}px ${top}px, ${x}px ${b}px, 0 ${b}px)`,
+    rest: `polygon(${x}px ${top}px, ${w}px ${top}px, ${w}px ${h}px, 0 ${h}px, 0 ${b}px, ${x}px ${b}px)`,
+  }
+}
