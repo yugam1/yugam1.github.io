@@ -36,6 +36,10 @@ export default function BuildSwarm() {
   // Layout effect: hide the page before the browser ever paints it.
   useLayoutEffect(() => {
     if (!shouldBuild()) return
+    // A reload would otherwise restore the old scroll position, and the
+    // build would start mid-page. Always build from the top.
+    if ('scrollRestoration' in history) history.scrollRestoration = 'manual'
+    window.scrollTo({ top: 0, behavior: 'instant' })
     run()
     return () => {
       control.current?.destroy()
